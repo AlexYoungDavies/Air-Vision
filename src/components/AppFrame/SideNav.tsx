@@ -8,9 +8,53 @@ import {
   ListItemText,
   Collapse,
 } from '@mui/material';
-import { MaterialSymbol } from 'react-material-symbols';
+import Home from '@mui/icons-material/Home';
+import CalendarMonth from '@mui/icons-material/CalendarMonth';
+import Chat from '@mui/icons-material/Chat';
+import Person from '@mui/icons-material/Person';
+import FeaturedPlayList from '@mui/icons-material/FeaturedPlayList';
+import Medication from '@mui/icons-material/Medication';
+import BarChart from '@mui/icons-material/BarChart';
+import Flag from '@mui/icons-material/Flag';
+import HowToReg from '@mui/icons-material/HowToReg';
+import ShowChart from '@mui/icons-material/ShowChart';
+import Inbox from '@mui/icons-material/Inbox';
+import Assignment from '@mui/icons-material/Assignment';
+import ReceiptLong from '@mui/icons-material/ReceiptLong';
+import Description from '@mui/icons-material/Description';
+import CreditCard from '@mui/icons-material/CreditCard';
+import RequestQuote from '@mui/icons-material/RequestQuote';
+import Settings from '@mui/icons-material/Settings';
+import Logout from '@mui/icons-material/Logout';
+import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
+import ChevronRight from '@mui/icons-material/ChevronRight';
+import ChevronLeft from '@mui/icons-material/ChevronLeft';
+import type { SvgIconComponent } from '@mui/icons-material';
 
-const ICON_WEIGHT = 300;
+const NAV_ICONS: Record<string, SvgIconComponent> = {
+  home: Home,
+  calendar_month: CalendarMonth,
+  chat: Chat,
+  person: Person,
+  featured_play_list: FeaturedPlayList,
+  medication: Medication,
+  bar_chart: BarChart,
+  flag: Flag,
+  how_to_reg: HowToReg,
+  show_chart: ShowChart,
+  inbox: Inbox,
+  assignment: Assignment,
+  receipt_long: ReceiptLong,
+  description: Description,
+  credit_card: CreditCard,
+  request_quote: RequestQuote,
+  settings: Settings,
+  logout: Logout,
+  keyboard_arrow_down: KeyboardArrowDown,
+  chevron_right: ChevronRight,
+  chevron_left: ChevronLeft,
+};
+
 const SIDEBAR_WIDTH = 180;
 const SIDEBAR_COLLAPSED = 56;
 const ITEM_HEIGHT = 28;
@@ -53,13 +97,11 @@ const bottomNavItems = [
 function NavItem({
   label,
   icon,
-  fill,
   active,
   collapsed,
 }: {
   label: string;
   icon: string;
-  fill?: boolean;
   active?: boolean;
   collapsed: boolean;
 }) {
@@ -87,13 +129,10 @@ function NavItem({
           color: active ? 'primary.dark' : 'text.secondary',
         }}
       >
-        <MaterialSymbol
-          icon={icon as never}
-          size={18}
-          weight={ICON_WEIGHT}
-          fill={fill ?? false}
-          color="currentColor"
-        />
+        {(() => {
+          const IconComponent = NAV_ICONS[icon];
+          return IconComponent ? <IconComponent sx={{ fontSize: 18 }} /> : null;
+        })()}
       </ListItemIcon>
       {!collapsed && (
         <ListItemText
@@ -151,12 +190,9 @@ function SectionHeaderButton({
       >
         {label}
       </Box>
-      <MaterialSymbol
-        icon="keyboard_arrow_down"
-        size={14}
-        weight={ICON_WEIGHT}
-        color="currentColor"
-        style={{
+      <KeyboardArrowDown
+        sx={{
+          fontSize: 14,
           transform: expanded ? 'rotate(0deg)' : 'rotate(-90deg)',
           transition: 'transform 0.2s',
         }}
@@ -223,19 +259,9 @@ export function SideNav({ collapsed, onToggle }: SideNavProps) {
           }}
         >
           {collapsed ? (
-            <MaterialSymbol
-              icon="chevron_right"
-              size={18}
-              weight={ICON_WEIGHT}
-              color="currentColor"
-            />
+            <ChevronRight sx={{ fontSize: 18 }} />
           ) : (
-            <MaterialSymbol
-              icon="chevron_left"
-              size={18}
-              weight={ICON_WEIGHT}
-              color="currentColor"
-            />
+            <ChevronLeft sx={{ fontSize: 18 }} />
           )}
         </IconButton>
       </Box>
@@ -281,7 +307,6 @@ export function SideNav({ collapsed, onToggle }: SideNavProps) {
                     key={item.id}
                     label={item.label}
                     icon={item.icon}
-                    fill={item.fill}
                     collapsed={collapsed}
                   />
                 ))}

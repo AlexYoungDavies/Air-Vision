@@ -1,7 +1,11 @@
 import { Box, IconButton, TextField, Avatar, Button } from '@mui/material';
-import { MaterialSymbol } from 'react-material-symbols';
+import ArrowBack from '@mui/icons-material/ArrowBack';
+import ArrowForward from '@mui/icons-material/ArrowForward';
+import History from '@mui/icons-material/History';
+import Search from '@mui/icons-material/Search';
+import SmartToy from '@mui/icons-material/SmartToy';
 
-const ICON_WEIGHT = 300;
+const ICON_SIZE = 18;
 
 export function HeaderBar() {
   return (
@@ -29,12 +33,7 @@ export function HeaderBar() {
             borderRadius: '9px',
           }}
         >
-          <MaterialSymbol
-            icon="arrow_back"
-            size={18}
-            weight={ICON_WEIGHT}
-            color="currentColor"
-          />
+          <ArrowBack sx={{ fontSize: ICON_SIZE }} />
         </IconButton>
         <IconButton
           size="small"
@@ -46,12 +45,7 @@ export function HeaderBar() {
             borderRadius: '9px',
           }}
         >
-          <MaterialSymbol
-            icon="arrow_forward"
-            size={18}
-            weight={ICON_WEIGHT}
-            color="currentColor"
-          />
+          <ArrowForward sx={{ fontSize: ICON_SIZE }} />
         </IconButton>
         <IconButton
           size="small"
@@ -63,12 +57,7 @@ export function HeaderBar() {
             borderRadius: '9px',
           }}
         >
-          <MaterialSymbol
-            icon="history"
-            size={18}
-            weight={ICON_WEIGHT}
-            color="currentColor"
-          />
+          <History sx={{ fontSize: ICON_SIZE }} />
         </IconButton>
       </Box>
 
@@ -92,12 +81,7 @@ export function HeaderBar() {
         InputProps={{
           startAdornment: (
             <Box component="span" sx={{ mr: 1, display: 'flex', color: 'text.disabled' }}>
-              <MaterialSymbol
-                icon="search"
-                size={18}
-                weight={ICON_WEIGHT}
-                color="currentColor"
-              />
+              <Search sx={{ fontSize: ICON_SIZE }} />
             </Box>
           ),
         }}
@@ -119,14 +103,7 @@ export function HeaderBar() {
         </Avatar>
         <Button
           variant="text"
-          startIcon={
-            <MaterialSymbol
-              icon="smart_toy"
-              size={18}
-              weight={ICON_WEIGHT}
-              color="currentColor"
-            />
-          }
+          startIcon={<SmartToy sx={{ fontSize: ICON_SIZE }} />}
           sx={{
             height: 28,
             px: 1.25,
