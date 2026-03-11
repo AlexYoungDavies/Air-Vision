@@ -92,4 +92,44 @@ export function getBillingCharges(patientId: string, patientName: string): Billi
   return CHARGES_CACHE[patientId];
 }
 
+// Transaction History
+
+export type TransactionPaymentType = 'Payment for service' | 'Refund (credit)' | 'Write';
+
+export interface BillingTransaction {
+  id: string;
+  date: string;
+  amount: number;
+  paymentType: TransactionPaymentType;
+  paymentMethod: string;
+}
+
+function buildTransactions(patientId: string): BillingTransaction[] {
+  const base = [
+    { paymentType: 'Payment for service' as const, amount: 287.54, date: '02/15/2026', method: 'Credit Card' },
+    { paymentType: 'Payment for service' as const, amount: 150.00, date: '01/28/2026', method: 'ACH' },
+    { paymentType: 'Refund (credit)' as const, amount: -45.00, date: '01/20/2026', method: 'Credit Card' },
+    { paymentType: 'Payment for service' as const, amount: 89.25, date: '01/10/2026', method: 'Check' },
+    { paymentType: 'Write' as const, amount: -25.00, date: '01/05/2026', method: '—' },
+    { paymentType: 'Payment for service' as const, amount: 312.00, date: '12/18/2025', method: 'Credit Card' },
+    { paymentType: 'Refund (credit)' as const, amount: -100.00, date: '12/01/2025', method: 'ACH' },
+    { paymentType: 'Write' as const, amount: -15.50, date: '11/22/2025', method: '—' },
+    { paymentType: 'Payment for service' as const, amount: 75.00, date: '11/15/2025', method: 'Credit Card' },
+  ];
+  return base.map((t, i) => ({
+    id: `txn-${patientId}-${i + 1}`,
+    date: t.date,
+    amount: t.amount,
+    paymentType: t.paymentType,
+    paymentMethod: t.method,
+  }));
+}
+
+const TRANSACTIONS_CACHE: Record<string, BillingTransaction[]> = {};
+
+export function getBillingTransactions(patientId: string): BillingTransaction[] {
+  if (!TRANSACTIONS_CACHE[patientId]) TRANSACTIONS_CACHE[patientId] = buildTransactions(patientId);
+  return TRANSACTIONS_CACHE[patientId];
+}
+
 export { formatCurrency };

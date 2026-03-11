@@ -18,6 +18,7 @@ import TaskAltOutlined from '@mui/icons-material/TaskAltOutlined';
 import HistoryOutlined from '@mui/icons-material/HistoryOutlined';
 import type { Patient } from '../../data/mockPatients';
 import { AppointmentsTabContent } from './AppointmentsTabContent';
+import { AttachmentsTabContent } from './AttachmentsTabContent';
 import { BillingTabContent } from './BillingTabContent';
 
 const PRIMARY_TABS = [
@@ -42,6 +43,8 @@ const SPLIT_BUTTON_ACTIONS = [
   { id: 'prescribe-med', label: 'Prescribe Med' },
   { id: 'create-order', label: 'Create Order' },
   { id: 'print-sheet', label: 'Print Patient Sheet' },
+  { id: 'charge-patient', label: 'Charge Patient' },
+  { id: 'print-statements', label: 'Print Statements' },
 ] as const;
 
 export type PrimaryTabId = (typeof PRIMARY_TABS)[number]['id'];
@@ -334,6 +337,8 @@ export function PatientProfilePage({
             <AppointmentsTabContent patientId={patient.id} />
           ) : activeTab === 'billing' ? (
             <BillingTabContent patient={patient} />
+          ) : activeTab === 'attachment' ? (
+            <AttachmentsTabContent patientId={patient.id} />
           ) : (
             <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'auto' }}>
               <Typography variant="body1" color="text.secondary">

@@ -1,5 +1,4 @@
 import { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -16,24 +15,28 @@ import {
   Tabs,
   Tab,
   Checkbox,
+  IconButton,
+  Tooltip,
+  Popover,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
-import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined';
-import PushPinOutlined from '@mui/icons-material/PushPinOutlined';
-import FlagOutlined from '@mui/icons-material/FlagOutlined';
-import QuestionAnswerOutlined from '@mui/icons-material/QuestionAnswerOutlined';
 import DownloadOutlined from '@mui/icons-material/DownloadOutlined';
-import FolderOutlined from '@mui/icons-material/FolderOutlined';
-import EditOutlined from '@mui/icons-material/EditOutlined';
 import AddOutlined from '@mui/icons-material/AddOutlined';
+import FilterListOutlined from '@mui/icons-material/FilterListOutlined';
 import {
   getBillingSummary,
   getBillingCharges,
+  getBillingTransactions,
   formatCurrency,
   type ChargeStatus,
 } from '../../data/mockBilling';
 import type { Patient } from '../../data/mockPatients';
+import { MOCK_PROVIDERS } from '../../data/mockProviders';
 
-const BILLING_TABS = ['Charges', 'Credits ($0.00)', 'Transaction History', 'Eligibility', 'Touchpoints (538)', 'Claims (60)', 'Prior Authorization (5)', 'Documents'] as const;
+const BILLING_TABS = ['Charges', 'Transaction History', 'Eligibility', 'Touchpoints (538)', 'Claims (60)', 'Prior Authorization (5)'] as const;
 const CHARGE_SUB_TABS: { id: ChargeStatus | 'All'; label: string }[] = [
   { id: 'All', label: 'All' },
   { id: 'Outstanding', label: 'Outstanding' },
@@ -51,24 +54,21 @@ export interface BillingTabContentProps {
   patient: Patient;
 }
 
-function formatAddress(patient: Patient): string {
-  const { line1, line2, city, state, zip } = patient.homeAddress;
-  return [line1, line2, `${city}, ${state} ${zip}`].filter(Boolean).join(', ');
-}
-
 export function BillingTabContent({ patient }: BillingTabContentProps) {
   const [billingTab, setBillingTab] = useState(0);
   const [chargeFilter, setChargeFilter] = useState<ChargeStatus | 'All'>('All');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [filterAnchor, setFilterAnchor] = useState<HTMLElement | null>(null);
+  const [dateOfService, setDateOfService] = useState<string>('');
+  const [providerId, setProviderId] = useState<string>('');
 
   const summary = getBillingSummary(patient.id);
   const allCharges = useMemo(() => getBillingCharges(patient.id, patient.fullName), [patient.id, patient.fullName]);
+  const transactions = useMemo(() => getBillingTransactions(patient.id), [patient.id]);
   const charges = useMemo(
     () => (chargeFilter === 'All' ? allCharges : allCharges.filter((c) => c.status === chargeFilter)),
     [allCharges, chargeFilter]
   );
-
-  const patientDisplayId = 2000000 + parseInt(patient.id, 10);
 
   const toggleSelectAll = () => {
     if (selectedIds.size === charges.length) setSelectedIds(new Set());
@@ -83,82 +83,33 @@ export function BillingTabContent({ patient }: BillingTabContentProps) {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'auto' }}>
-      {/* Back + Patient header */}
-      <Box sx={{ px: 2, pt: 2, pb: 1, flexShrink: 0 }}>
-        <Link to="/patients" style={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, color: 'inherit', textDecoration: 'none', fontSize: 14, marginBottom: 1 }}>
-          <ArrowBackOutlined sx={{ fontSize: 18 }} /> Back
-        </Link>
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
-          <Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-              <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                {patient.fullName}
-              </Typography>
-              <Chip label={`Patient ID: ${patientDisplayId}`} size="small" sx={{ bgcolor: '#f5f5f5', color: '#616161', fontWeight: 500, fontSize: '0.75rem' }} />
-            </Box>
-            <Box sx={{ display: 'grid', gridTemplateColumns: 'auto 1fr', columnGap: 3, rowGap: 0.5, mt: 1.5, typography: 'body2', color: 'text.secondary' }}>
-              <Typography variant="body2" color="text.secondary">Gender:</Typography>
-              <Typography variant="body2" color="text.secondary">{patient.gender}</Typography>
-              <Typography variant="body2" color="text.secondary">Address:</Typography>
-              <Typography variant="body2" color="text.secondary">{formatAddress(patient)}</Typography>
-              <Typography variant="body2" color="text.secondary">Phone:</Typography>
-              <Typography variant="body2" color="text.secondary">{patient.phone}</Typography>
-              <Typography variant="body2" color="text.secondary">Email:</Typography>
-              <Typography variant="body2" color="text.secondary">{patient.email}</Typography>
-              <Typography variant="body2" color="text.secondary">Date of Birth:</Typography>
-              <Typography variant="body2" color="text.secondary">{patient.dateOfBirth}</Typography>
-              <Typography variant="body2" color="text.secondary">Primary Language:</Typography>
-              <Typography variant="body2" color="text.secondary">English</Typography>
-            </Box>
-          </Box>
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
-            <Button variant="contained" color="primary" size="small" sx={{ textTransform: 'none', fontWeight: 600, boxShadow: 'none' }}>
-              Cards On File
-            </Button>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
-              <Button variant="text" size="small" sx={{ minWidth: 32, px: 0.5 }}><PushPinOutlined sx={{ fontSize: 18 }} /></Button>
-              <Button variant="text" size="small" sx={{ minWidth: 32, px: 0.5 }}><FlagOutlined sx={{ fontSize: 18 }} /></Button>
-              <Button variant="text" size="small" sx={{ minWidth: 32, px: 0.5 }}><QuestionAnswerOutlined sx={{ fontSize: 18 }} /></Button>
-              <Button variant="text" size="small" sx={{ minWidth: 32, px: 0.5 }}><DownloadOutlined sx={{ fontSize: 18 }} /></Button>
-              <Button variant="text" size="small" sx={{ minWidth: 32, px: 0.5 }}><FolderOutlined sx={{ fontSize: 18 }} /></Button>
-              <Button variant="text" size="small" sx={{ minWidth: 32, px: 0.5 }}><EditOutlined sx={{ fontSize: 18 }} /></Button>
-            </Box>
-            <Link to="#" style={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, color: 'primary.main', fontSize: 14, textDecoration: 'none' }}>
-              <EditOutlined sx={{ fontSize: 16 }} /> Edit
-            </Link>
-          </Box>
-        </Box>
-      </Box>
-
       {/* Financial Summary */}
       <Box sx={{ px: 2, py: 2, flexShrink: 0 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Financial Summary
-          </Typography>
-          <Button variant="text" color="primary" size="small" sx={{ textTransform: 'none', fontWeight: 500 }}>
-            + Analyze Patient Balance
-          </Button>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, flexShrink: 0 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Financial Summary
+            </Typography>
+            <Button variant="text" color="primary" size="small" sx={{ textTransform: 'none', fontWeight: 500 }}>
+              + Analyze Patient Balance
+            </Button>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 3, flexShrink: 0 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'success.main' }} />
+              <Typography variant="body2" color="text.secondary">Auto Send Text Message: Active</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'grey.400' }} />
+              <Typography variant="body2" color="text.secondary">Payment Plan: Inactive</Typography>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'grey.400' }} />
+              <Typography variant="body2" color="text.secondary">In Collections: Inactive</Typography>
+            </Box>
+          </Box>
         </Box>
-        {/* Status toggles - directly below Financial Summary heading */}
-        <Box sx={{ display: 'flex', gap: 3, py: 1.5, flexShrink: 0 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'success.main' }} />
-            <Typography variant="body2" color="text.secondary">Auto Send Text Message: Active</Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'grey.400' }} />
-            <Typography variant="body2" color="text.secondary">Payment Plan: Inactive</Typography>
-          </Box>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'grey.400' }} />
-            <Typography variant="body2" color="text.secondary">In Collections: Inactive</Typography>
-          </Box>
-        </Box>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-          All {patient.fullName}
-        </Typography>
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 2 }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 2, mt: 1.5, py: 1.5 }}>
           <Box><Typography variant="caption" color="text.secondary">Patient Charges</Typography><Typography variant="body1" fontWeight={600}>{formatCurrency(summary.patientCharges)}</Typography></Box>
           <Box><Typography variant="caption" color="text.secondary">Payments</Typography><Typography variant="body1" fontWeight={600}>{formatCurrency(summary.payments)}</Typography></Box>
           <Box><Typography variant="caption" color="text.secondary">Balance</Typography><Typography variant="body1" fontWeight={600}>{formatCurrency(summary.balance)}</Typography></Box>
@@ -193,28 +144,98 @@ export function BillingTabContent({ patient }: BillingTabContentProps) {
       {billingTab === 0 && (
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
           <Box sx={{ px: 2, py: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1.5 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-              <TextField size="small" placeholder="Date of Service" sx={{ width: 160 }} />
-              <TextField size="small" placeholder="Provider" sx={{ width: 140 }} />
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            {/* Filled tabs: first in row */}
+            <Box
+              sx={{
+                display: 'inline-flex',
+                alignItems: 'stretch',
+                gap: 0.5,
+                flexShrink: 0,
+              }}
+            >
               {CHARGE_SUB_TABS.map(({ id, label }) => (
                 <Button
                   key={id}
-                  variant={chargeFilter === id ? 'contained' : 'text'}
+                  variant="text"
                   size="small"
                   onClick={() => setChargeFilter(id)}
-                  sx={{ textTransform: 'none', fontWeight: 500, boxShadow: chargeFilter === id ? 'none' : undefined }}
+                  sx={{
+                    textTransform: 'none',
+                    fontWeight: 500,
+                    borderRadius: '8px',
+                    minWidth: 0,
+                    px: 1.5,
+                    py: 0.75,
+                    ...(chargeFilter === id
+                      ? { bgcolor: 'primary.light', color: 'primary.main' }
+                      : { color: 'text.secondary' }),
+                  }}
                 >
                   {label}
                 </Button>
               ))}
             </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Button variant="text" size="small" startIcon={<DownloadOutlined />} sx={{ textTransform: 'none' }}>Export as PDF</Button>
-              <Button variant="text" size="small" startIcon={<AddOutlined />} sx={{ textTransform: 'none' }}>Miscellaneous Charge</Button>
-              <Button variant="contained" color="primary" size="small" sx={{ textTransform: 'none', fontWeight: 600, boxShadow: 'none' }}>Pay Balance</Button>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <Tooltip title="Export as PDF">
+                <IconButton size="small" aria-label="Export as PDF">
+                  <DownloadOutlined fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Miscellaneous Charge">
+                <IconButton size="small" aria-label="Miscellaneous Charge">
+                  <AddOutlined fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Filter">
+                <IconButton
+                  size="small"
+                  aria-label="Filter"
+                  aria-haspopup="true"
+                  aria-expanded={Boolean(filterAnchor)}
+                  onClick={(e) => setFilterAnchor(e.currentTarget)}
+                  sx={{ ...(filterAnchor ? { bgcolor: 'action.selected' } : {}) }}
+                >
+                  <FilterListOutlined fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Popover
+                open={Boolean(filterAnchor)}
+                anchorEl={filterAnchor}
+                onClose={() => setFilterAnchor(null)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                slotProps={{ paper: { sx: { mt: 1.5, p: 2, minWidth: 280 } } }}
+              >
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <TextField
+                    size="small"
+                    label="Date of Service"
+                    type="date"
+                    value={dateOfService}
+                    onChange={(e) => setDateOfService(e.target.value)}
+                    slotProps={{ htmlInput: { sx: { minWidth: 220 } } }}
+                    sx={{ width: 220 }}
+                  />
+                  <FormControl size="small" sx={{ minWidth: 220 }}>
+                    <InputLabel id="billing-filter-provider-label">Provider</InputLabel>
+                    <Select
+                      labelId="billing-filter-provider-label"
+                      label="Provider"
+                      value={providerId}
+                      onChange={(e) => setProviderId(e.target.value)}
+                    >
+                      <MenuItem value="">All providers</MenuItem>
+                      {MOCK_PROVIDERS.map((p) => (
+                        <MenuItem key={p.id} value={p.id}>
+                          {p.fullName}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Box>
+              </Popover>
               <Button variant="outlined" size="small" sx={{ textTransform: 'none' }}>Verify</Button>
+              <Button variant="contained" color="primary" size="small" sx={{ textTransform: 'none', fontWeight: 600, boxShadow: 'none' }}>Pay Balance</Button>
             </Box>
           </Box>
           <TableContainer component={Paper} sx={{ flex: 1, minHeight: 0, overflow: 'auto', borderRadius: 0, boxShadow: 'none' }}>
@@ -270,7 +291,41 @@ export function BillingTabContent({ patient }: BillingTabContentProps) {
         </Box>
       )}
 
-      {billingTab !== 0 && (
+      {/* Transaction History tab */}
+      {billingTab === 1 && (
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0, overflow: 'hidden' }}>
+          <TableContainer component={Paper} sx={{ flex: 1, overflow: 'auto', borderRadius: 0, boxShadow: 'none' }}>
+            <Table size="small" stickyHeader>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Date</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Amount</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Payment type</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Payment method</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>View receipt</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {transactions.map((row) => (
+                  <TableRow key={row.id} hover>
+                    <TableCell>{row.date}</TableCell>
+                    <TableCell>{formatCurrency(row.amount)}</TableCell>
+                    <TableCell>{row.paymentType}</TableCell>
+                    <TableCell>{row.paymentMethod}</TableCell>
+                    <TableCell>
+                      <Typography component="a" href="#" variant="body2" color="primary" sx={{ textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
+                        View receipt
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
+      )}
+
+      {billingTab !== 0 && billingTab !== 1 && (
         <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', p: 4 }}>
           <Typography variant="body2" color="text.secondary">Content for {BILLING_TABS[billingTab]} coming soon.</Typography>
         </Box>
