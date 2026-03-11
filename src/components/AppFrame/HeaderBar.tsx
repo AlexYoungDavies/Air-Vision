@@ -1,3 +1,5 @@
+import { useRef, useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Box, IconButton, TextField, Avatar, Button } from '@mui/material';
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined';
 import ArrowForwardOutlined from '@mui/icons-material/ArrowForwardOutlined';
@@ -8,6 +10,29 @@ import SmartToyOutlined from '@mui/icons-material/SmartToyOutlined';
 const ICON_SIZE = 18;
 
 export function HeaderBar() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const cameFromBackRef = useRef(false);
+  const [canGoForward, setCanGoForward] = useState(false);
+
+  useEffect(() => {
+    if (cameFromBackRef.current) {
+      setCanGoForward(true);
+      cameFromBackRef.current = false;
+    } else {
+      setCanGoForward(false);
+    }
+  }, [location.key]);
+
+  const handleBack = () => {
+    cameFromBackRef.current = true;
+    navigate(-1);
+  };
+
+  const handleForward = () => {
+    navigate(1);
+  };
+
   return (
     <Box
       component="header"
@@ -28,6 +53,7 @@ export function HeaderBar() {
         <IconButton
           size="small"
           aria-label="Back"
+          onClick={handleBack}
           sx={{
             color: 'text.secondary',
             width: 28,
@@ -40,6 +66,8 @@ export function HeaderBar() {
         <IconButton
           size="small"
           aria-label="Forward"
+          onClick={handleForward}
+          disabled={!canGoForward}
           sx={{
             color: 'text.secondary',
             width: 28,

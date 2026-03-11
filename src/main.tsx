@@ -66,6 +66,13 @@ const theme = createTheme({
       fontWeight: 700,
     },
   },
+  components: {
+    MuiButtonBase: {
+      defaultProps: {
+        disableRipple: true,
+      },
+    },
+  },
 })
 
 const rootEl = document.getElementById('root')
