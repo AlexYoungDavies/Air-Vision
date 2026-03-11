@@ -33,6 +33,7 @@ export function AppFrame({ children }: AppFrameProps) {
             display: 'flex',
             flexDirection: 'column',
             minWidth: 0,
+            minHeight: 0,
             bgcolor: 'background.default',
           }}
         >

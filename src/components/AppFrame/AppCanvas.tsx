@@ -10,9 +10,10 @@ export function AppCanvas({ children }: AppCanvasProps) {
       component="main"
       sx={{
         flex: 1,
-        height: '100%',
-        overflow: 'auto',
         minHeight: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
         pt: 0,
         pr: 1,
         pb: 1,
@@ -22,7 +23,7 @@ export function AppCanvas({ children }: AppCanvasProps) {
       <Box
         sx={{
           flex: 1,
-          minHeight: '100%',
+          minHeight: 0,
           bgcolor: 'background.paper',
           border: '1px solid',
           borderColor: 'divider',

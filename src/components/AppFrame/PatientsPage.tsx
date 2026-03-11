@@ -10,8 +10,10 @@ import {
   Card,
   CardContent,
   Avatar,
+  Button,
 } from '@mui/material';
 import SearchOutlined from '@mui/icons-material/SearchOutlined';
+import PersonAddOutlined from '@mui/icons-material/PersonAddOutlined';
 import { MOCK_PATIENTS, TODAYS_PATIENTS, type Patient } from '../../data/mockPatients';
 
 /** Parse "7:00 AM" / "2:30 PM" to minutes since midnight, or null if unparseable. */
@@ -84,6 +86,7 @@ export function PatientsPage() {
           sx={{
             width: 320,
             flexShrink: 0,
+            height: '100%',
             borderRight: 1,
             borderColor: 'divider',
             display: 'flex',
@@ -91,10 +94,25 @@ export function PatientsPage() {
             overflow: 'hidden',
           }}
         >
-          <Box sx={{ px: 2, pt: 2, pb: 1.5 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1.5 }}>
-              Patients
-            </Typography>
+          <Box sx={{ px: 2, pt: 2, pb: 1.5, flexShrink: 0 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                Patients
+              </Typography>
+              <Button
+                variant="text"
+                color="primary"
+                size="small"
+                startIcon={<PersonAddOutlined />}
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 600,
+                  borderRadius: '8px',
+                }}
+              >
+                New Patient
+              </Button>
+            </Box>
             <TextField
               placeholder="Search"
               size="small"
@@ -109,6 +127,7 @@ export function PatientsPage() {
               }}
               sx={{
                 '& .MuiOutlinedInput-root': {
+                  height: 36,
                   borderRadius: '8px',
                   bgcolor: 'grey.50',
                 },
@@ -120,6 +139,8 @@ export function PatientsPage() {
             disablePadding
             sx={{
               flex: 1,
+              minHeight: 0,
+              height: '100%',
               overflow: 'auto',
               py: 0,
             }}
@@ -167,7 +188,7 @@ export function PatientsPage() {
             justifyContent: 'center',
           }}
         >
-          <Box sx={{ maxWidth: 800, width: '100%' }}>
+          <Box sx={{ maxWidth: 800, width: '100%', display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
               Today&apos;s Patients
             </Typography>
@@ -190,7 +211,8 @@ export function PatientsPage() {
                   sx={{
                     display: 'grid',
                     gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-                    gap: 1.5,
+                    columnGap: '8px',
+                    rowGap: '16px',
                   }}
                 >
                   {patients.map((patient) => (
@@ -213,17 +235,20 @@ function TodayPatientCard({ patient }: { patient: Patient }) {
       sx={{
         borderRadius: 1.5,
         overflow: 'hidden',
+        height: 'fit-content',
+        border: 'none',
         '&:hover': { bgcolor: 'action.hover' },
       }}
     >
-      <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-        <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'flex-start' }}>
+      <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
+        <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'center', justifyContent: 'flex-start' }}>
           <Avatar
+            variant="rounded"
             src={patient.picture}
             alt={patient.fullName}
-            sx={{ width: 40, height: 40, flexShrink: 0 }}
+            sx={{ width: 40, height: 40, flexShrink: 0, borderRadius: 1 }}
           />
-          <Box sx={{ minWidth: 0, flex: 1 }}>
+          <Box sx={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: 0 }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: 13, lineHeight: 1.3 }}>
               {patient.fullName}
             </Typography>
