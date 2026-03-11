@@ -288,33 +288,44 @@ export function SideNav({ collapsed, onToggle }: SideNavProps) {
         </IconButton>
       </Box>
 
-      {/* Menu groups */}
+      {/* Menu groups: 12px between groups; 24px bottom padding inside each list (only visible when expanded) */}
       <Box
         sx={{
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          justifyContent: 'space-between',
           minHeight: 0,
           px: 1,
           py: 3,
         }}
       >
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-          <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
-            {topNavItems.map((item) => (
-              <NavItem
-                key={item.id}
-                label={item.label}
-                icon={item.icon}
-                path={item.path}
-                active={item.path === location.pathname}
-                collapsed={collapsed}
-              />
-            ))}
-          </List>
+        <Box
+          sx={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 0.5,
+            minHeight: 0,
+          }}
+        >
+          {/* Universal (no heading) */}
+          <Box component="nav" aria-label="Main">
+            <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, pb: 3 }}>
+              {topNavItems.map((item) => (
+                <NavItem
+                  key={item.id}
+                  label={item.label}
+                  icon={item.icon}
+                  path={item.path}
+                  active={item.path === location.pathname}
+                  collapsed={collapsed}
+                />
+              ))}
+            </List>
+          </Box>
 
-          <Box sx={{ pb: 2.5 }}>
+          {/* Medical Records */}
+          <Box component="nav" aria-label="Medical Records">
             <List disablePadding>
               <SectionHeaderButton
                 label="Medical Records"
@@ -324,7 +335,7 @@ export function SideNav({ collapsed, onToggle }: SideNavProps) {
               />
             </List>
             <Collapse in={medicalRecordsOpen}>
-              <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, pb: 2.5 }}>
+              <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, pb: 3 }}>
                 {medicalRecordsItems.map((item) => (
                   <NavItem
                     key={item.id}
@@ -339,7 +350,8 @@ export function SideNav({ collapsed, onToggle }: SideNavProps) {
             </Collapse>
           </Box>
 
-          <Box>
+          {/* Business */}
+          <Box component="nav" aria-label="Business">
             <List disablePadding>
               <SectionHeaderButton
                 label="Business"
@@ -349,7 +361,7 @@ export function SideNav({ collapsed, onToggle }: SideNavProps) {
               />
             </List>
             <Collapse in={businessOpen}>
-              <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, pb: 2.5 }}>
+              <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, pb: 3 }}>
                 {businessItems.map((item) => (
                   <NavItem
                     key={item.id}
@@ -364,7 +376,8 @@ export function SideNav({ collapsed, onToggle }: SideNavProps) {
             </Collapse>
           </Box>
 
-          <Box>
+          {/* Revenue Cycle */}
+          <Box component="nav" aria-label="Revenue Cycle">
             <List disablePadding>
               <SectionHeaderButton
                 label="Revenue Cycle"
@@ -374,7 +387,7 @@ export function SideNav({ collapsed, onToggle }: SideNavProps) {
               />
             </List>
             <Collapse in={revenueCycleOpen}>
-              <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, pb: 2.5 }}>
+              <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, pb: 3 }}>
                 {revenueCycleItems.map((item) => (
                   <NavItem
                     key={item.id}
@@ -390,7 +403,7 @@ export function SideNav({ collapsed, onToggle }: SideNavProps) {
           </Box>
         </Box>
 
-        <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+        <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, flexShrink: 0 }}>
           {bottomNavItems.map((item) => (
             <NavItem
               key={item.id}

@@ -26,6 +26,15 @@ import { AppointmentsTabContent } from './AppointmentsTabContent';
 import { AttachmentsTabContent } from './AttachmentsTabContent';
 import { BillingTabContent } from './BillingTabContent';
 import { VisitNoteContent } from './VisitNoteContent';
+import {
+  MedicationsTabContent,
+  OrdersTabContent,
+  ProblemListTabContent,
+  LabsTabContent,
+  VitalsTabContent,
+  AllergiesTabContent,
+  ImmunizationsTabContent,
+} from './OverflowTabContent';
 
 const visitNoteTabSlideUp = keyframes`
   0% { transform: translateY(10px); opacity: 0.7; }
@@ -544,6 +553,20 @@ export function PatientProfilePage({
             <BillingTabContent patient={patient} />
           ) : activeTab === 'attachment' ? (
             <AttachmentsTabContent patientId={patient.id} />
+          ) : activeTab === 'medications' ? (
+            <MedicationsTabContent patientId={patient.id} />
+          ) : activeTab === 'orders' ? (
+            <OrdersTabContent patientId={patient.id} />
+          ) : activeTab === 'problem-list' ? (
+            <ProblemListTabContent patientId={patient.id} />
+          ) : activeTab === 'labs' ? (
+            <LabsTabContent patientId={patient.id} />
+          ) : activeTab === 'vitals' ? (
+            <VitalsTabContent patientId={patient.id} />
+          ) : activeTab === 'allergies' ? (
+            <AllergiesTabContent patientId={patient.id} />
+          ) : activeTab === 'immunizations' ? (
+            <ImmunizationsTabContent patientId={patient.id} />
           ) : (
             <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'auto' }}>
               <Typography variant="body1" color="text.secondary">
