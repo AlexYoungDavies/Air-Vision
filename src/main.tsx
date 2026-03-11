@@ -72,6 +72,15 @@ const theme = createTheme({
         disableRipple: true,
       },
     },
+    MuiTableRow: {
+      styleOverrides: {
+        root: {
+          '& td, & th': {
+            borderBottom: '1px solid rgba(0, 0, 0, 0.08)',
+          },
+        },
+      },
+    },
   },
 })
 

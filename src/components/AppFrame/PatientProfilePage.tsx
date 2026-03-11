@@ -17,6 +17,8 @@ import QuestionAnswerOutlined from '@mui/icons-material/QuestionAnswerOutlined';
 import TaskAltOutlined from '@mui/icons-material/TaskAltOutlined';
 import HistoryOutlined from '@mui/icons-material/HistoryOutlined';
 import type { Patient } from '../../data/mockPatients';
+import { AppointmentsTabContent } from './AppointmentsTabContent';
+import { BillingTabContent } from './BillingTabContent';
 
 const PRIMARY_TABS = [
   { id: 'overview', label: 'Overview' },
@@ -323,15 +325,22 @@ export function PatientProfilePage({
             flex: 1,
             minWidth: 0,
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            overflow: 'auto',
+            flexDirection: 'column',
+            overflow: 'hidden',
             bgcolor: 'background.paper',
           }}
         >
-          <Typography variant="body1" color="text.secondary">
-            Primary Content — {activeTab}
-          </Typography>
+          {activeTab === 'appointments' ? (
+            <AppointmentsTabContent patientId={patient.id} />
+          ) : activeTab === 'billing' ? (
+            <BillingTabContent patient={patient} />
+          ) : (
+            <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'auto' }}>
+              <Typography variant="body1" color="text.secondary">
+                Primary Content — {activeTab}
+              </Typography>
+            </Box>
+          )}
         </Box>
         {/* Secondary panel with slide animation */}
         <Box
