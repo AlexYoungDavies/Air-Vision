@@ -130,22 +130,6 @@ export function BillingTabContent({ patient }: BillingTabContentProps) {
         </Box>
       </Box>
 
-      {/* Status toggles */}
-      <Box sx={{ display: 'flex', gap: 3, px: 2, py: 1.5, flexShrink: 0, borderBottom: 1, borderColor: 'divider' }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'success.main' }} />
-          <Typography variant="body2" color="text.secondary">Auto Send Text Message: Active</Typography>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'grey.400' }} />
-          <Typography variant="body2" color="text.secondary">Payment Plan: Inactive</Typography>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'grey.400' }} />
-          <Typography variant="body2" color="text.secondary">In Collections: Inactive</Typography>
-        </Box>
-      </Box>
-
       {/* Financial Summary */}
       <Box sx={{ px: 2, py: 2, flexShrink: 0 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1.5 }}>
@@ -155,6 +139,21 @@ export function BillingTabContent({ patient }: BillingTabContentProps) {
           <Button variant="text" color="primary" size="small" sx={{ textTransform: 'none', fontWeight: 500 }}>
             + Analyze Patient Balance
           </Button>
+        </Box>
+        {/* Status toggles - directly below Financial Summary heading */}
+        <Box sx={{ display: 'flex', gap: 3, py: 1.5, flexShrink: 0 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'success.main' }} />
+            <Typography variant="body2" color="text.secondary">Auto Send Text Message: Active</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'grey.400' }} />
+            <Typography variant="body2" color="text.secondary">Payment Plan: Inactive</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: 'grey.400' }} />
+            <Typography variant="body2" color="text.secondary">In Collections: Inactive</Typography>
+          </Box>
         </Box>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
           All {patient.fullName}
