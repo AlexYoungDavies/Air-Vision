@@ -10,6 +10,7 @@ export function AppCanvas({ children }: AppCanvasProps) {
       component="main"
       sx={{
         flex: 1,
+        height: '100%',
         overflow: 'auto',
         minHeight: 0,
         pt: 0,
