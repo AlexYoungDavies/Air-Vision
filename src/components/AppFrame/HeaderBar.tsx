@@ -1,9 +1,9 @@
 import { Box, IconButton, TextField, Avatar, Button } from '@mui/material';
-import ArrowBack from '@mui/icons-material/ArrowBack';
-import ArrowForward from '@mui/icons-material/ArrowForward';
-import History from '@mui/icons-material/History';
-import Search from '@mui/icons-material/Search';
-import SmartToy from '@mui/icons-material/SmartToy';
+import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined';
+import ArrowForwardOutlined from '@mui/icons-material/ArrowForwardOutlined';
+import HistoryOutlined from '@mui/icons-material/HistoryOutlined';
+import SearchOutlined from '@mui/icons-material/SearchOutlined';
+import SmartToyOutlined from '@mui/icons-material/SmartToyOutlined';
 
 const ICON_SIZE = 18;
 
@@ -12,18 +12,19 @@ export function HeaderBar() {
     <Box
       component="header"
       sx={{
+        width: '100%',
         height: 'fit-content',
-        px: 1,
+        pl: 2,
+        pr: 2,
         pt: 0.5,
         pb: 0.5,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: 1,
         flexShrink: 0,
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
         <IconButton
           size="small"
           aria-label="Back"
@@ -34,7 +35,7 @@ export function HeaderBar() {
             borderRadius: '9px',
           }}
         >
-          <ArrowBack sx={{ fontSize: ICON_SIZE }} />
+          <ArrowBackOutlined sx={{ fontSize: ICON_SIZE }} />
         </IconButton>
         <IconButton
           size="small"
@@ -46,7 +47,7 @@ export function HeaderBar() {
             borderRadius: '9px',
           }}
         >
-          <ArrowForward sx={{ fontSize: ICON_SIZE }} />
+          <ArrowForwardOutlined sx={{ fontSize: ICON_SIZE }} />
         </IconButton>
         <IconButton
           size="small"
@@ -58,37 +59,38 @@ export function HeaderBar() {
             borderRadius: '9px',
           }}
         >
-          <History sx={{ fontSize: ICON_SIZE }} />
+          <HistoryOutlined sx={{ fontSize: ICON_SIZE }} />
         </IconButton>
       </Box>
 
-      <TextField
-        placeholder="Search for anything"
-        size="small"
-        variant="outlined"
-        hiddenLabel
-        sx={{
-          width: 360,
-          flexShrink: 0,
-          '& .MuiOutlinedInput-root': {
-            height: 28,
-            bgcolor: 'rgba(0, 0, 0, 0.08)',
-            borderRadius: 1,
-            fontSize: 14,
-            '& fieldset': { border: 'none' },
-            '&:hover fieldset': { border: 'none' },
-          },
-        }}
+      <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', minWidth: 0 }}>
+        <TextField
+          placeholder="Search for anything"
+          size="small"
+          variant="outlined"
+          hiddenLabel
+          sx={{
+            width: 360,
+            '& .MuiOutlinedInput-root': {
+              height: 28,
+              bgcolor: 'rgba(0, 0, 0, 0.08)',
+              borderRadius: 1,
+              fontSize: 14,
+              '& fieldset': { border: 'none' },
+              '&:hover fieldset': { border: 'none' },
+            },
+          }}
         InputProps={{
           startAdornment: (
             <Box component="span" sx={{ mr: 1, display: 'flex', color: 'text.disabled' }}>
-              <Search sx={{ fontSize: ICON_SIZE }} />
+              <SearchOutlined sx={{ fontSize: ICON_SIZE }} />
             </Box>
           ),
         }}
       />
+      </Box>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, ml: 'auto' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
         <Avatar
           sx={{
             width: 28,
@@ -104,7 +106,7 @@ export function HeaderBar() {
         </Avatar>
         <Button
           variant="text"
-          startIcon={<SmartToy sx={{ fontSize: ICON_SIZE }} />}
+          startIcon={<SmartToyOutlined sx={{ fontSize: ICON_SIZE }} />}
           sx={{
             height: 28,
             px: 1.25,

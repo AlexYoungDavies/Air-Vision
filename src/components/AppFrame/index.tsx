@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Box } from '@mui/material';
+import { Outlet } from 'react-router-dom';
 import { SideNav } from './SideNav';
 import { HeaderBar } from './HeaderBar';
 import { AppCanvas } from './AppCanvas';
@@ -36,7 +37,7 @@ export function AppFrame({ children }: AppFrameProps) {
           }}
         >
           <HeaderBar />
-          <AppCanvas>{children}</AppCanvas>
+          <AppCanvas>{children ?? <Outlet />}</AppCanvas>
         </Box>
       </Box>
     </Box>

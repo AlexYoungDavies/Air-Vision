@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import {
   Box,
   IconButton,
@@ -8,51 +9,51 @@ import {
   ListItemText,
   Collapse,
 } from '@mui/material';
-import Home from '@mui/icons-material/Home';
-import CalendarMonth from '@mui/icons-material/CalendarMonth';
-import Chat from '@mui/icons-material/Chat';
-import Person from '@mui/icons-material/Person';
-import FeaturedPlayList from '@mui/icons-material/FeaturedPlayList';
-import Medication from '@mui/icons-material/Medication';
-import BarChart from '@mui/icons-material/BarChart';
-import Flag from '@mui/icons-material/Flag';
-import HowToReg from '@mui/icons-material/HowToReg';
-import ShowChart from '@mui/icons-material/ShowChart';
-import Inbox from '@mui/icons-material/Inbox';
-import Assignment from '@mui/icons-material/Assignment';
-import ReceiptLong from '@mui/icons-material/ReceiptLong';
-import Description from '@mui/icons-material/Description';
-import CreditCard from '@mui/icons-material/CreditCard';
-import RequestQuote from '@mui/icons-material/RequestQuote';
-import Settings from '@mui/icons-material/Settings';
-import Logout from '@mui/icons-material/Logout';
-import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown';
-import ChevronRight from '@mui/icons-material/ChevronRight';
-import ChevronLeft from '@mui/icons-material/ChevronLeft';
+import HomeOutlined from '@mui/icons-material/HomeOutlined';
+import CalendarMonthOutlined from '@mui/icons-material/CalendarMonthOutlined';
+import ChatOutlined from '@mui/icons-material/ChatOutlined';
+import PersonOutlined from '@mui/icons-material/PersonOutlined';
+import FeaturedPlayListOutlined from '@mui/icons-material/FeaturedPlayListOutlined';
+import MedicationOutlined from '@mui/icons-material/MedicationOutlined';
+import BarChartOutlined from '@mui/icons-material/BarChartOutlined';
+import FlagOutlined from '@mui/icons-material/FlagOutlined';
+import HowToRegOutlined from '@mui/icons-material/HowToRegOutlined';
+import ShowChartOutlined from '@mui/icons-material/ShowChartOutlined';
+import InboxOutlined from '@mui/icons-material/InboxOutlined';
+import AssignmentOutlined from '@mui/icons-material/AssignmentOutlined';
+import ReceiptLongOutlined from '@mui/icons-material/ReceiptLongOutlined';
+import DescriptionOutlined from '@mui/icons-material/DescriptionOutlined';
+import CreditCardOutlined from '@mui/icons-material/CreditCardOutlined';
+import RequestQuoteOutlined from '@mui/icons-material/RequestQuoteOutlined';
+import SettingsOutlined from '@mui/icons-material/SettingsOutlined';
+import LogoutOutlined from '@mui/icons-material/LogoutOutlined';
+import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined';
+import ChevronRightOutlined from '@mui/icons-material/ChevronRightOutlined';
+import ChevronLeftOutlined from '@mui/icons-material/ChevronLeftOutlined';
 import type { SvgIconComponent } from '@mui/icons-material';
 
 const NAV_ICONS: Record<string, SvgIconComponent> = {
-  home: Home,
-  calendar_month: CalendarMonth,
-  chat: Chat,
-  person: Person,
-  featured_play_list: FeaturedPlayList,
-  medication: Medication,
-  bar_chart: BarChart,
-  flag: Flag,
-  how_to_reg: HowToReg,
-  show_chart: ShowChart,
-  inbox: Inbox,
-  assignment: Assignment,
-  receipt_long: ReceiptLong,
-  description: Description,
-  credit_card: CreditCard,
-  request_quote: RequestQuote,
-  settings: Settings,
-  logout: Logout,
-  keyboard_arrow_down: KeyboardArrowDown,
-  chevron_right: ChevronRight,
-  chevron_left: ChevronLeft,
+  home: HomeOutlined,
+  calendar_month: CalendarMonthOutlined,
+  chat: ChatOutlined,
+  person: PersonOutlined,
+  featured_play_list: FeaturedPlayListOutlined,
+  medication: MedicationOutlined,
+  bar_chart: BarChartOutlined,
+  flag: FlagOutlined,
+  how_to_reg: HowToRegOutlined,
+  show_chart: ShowChartOutlined,
+  inbox: InboxOutlined,
+  assignment: AssignmentOutlined,
+  receipt_long: ReceiptLongOutlined,
+  description: DescriptionOutlined,
+  credit_card: CreditCardOutlined,
+  request_quote: RequestQuoteOutlined,
+  settings: SettingsOutlined,
+  logout: LogoutOutlined,
+  keyboard_arrow_down: KeyboardArrowDownOutlined,
+  chevron_right: ChevronRightOutlined,
+  chevron_left: ChevronLeftOutlined,
 };
 
 const SIDEBAR_WIDTH = 180;
@@ -61,26 +62,34 @@ const ITEM_HEIGHT = 28;
 const NAV_ITEM_FONT_SIZE = 14;
 const SECTION_HEADER_FONT_SIZE = 11;
 
-const topNavItems = [
-  { id: 'home', label: 'Home', icon: 'home', active: true },
-  { id: 'visits', label: 'Visits', icon: 'calendar_month', active: false },
-  { id: 'messages', label: 'Message & Tasks', icon: 'chat', active: false },
+type NavItemConfig = {
+  id: string;
+  label: string;
+  icon: string;
+  path?: string;
+  fill?: boolean;
+};
+
+const topNavItems: NavItemConfig[] = [
+  { id: 'home', label: 'Home', icon: 'home', path: '/' },
+  { id: 'visits', label: 'Visits', icon: 'calendar_month' },
+  { id: 'messages', label: 'Message & Tasks', icon: 'chat' },
 ];
 
-const medicalRecordsItems = [
-  { id: 'patients', label: 'Patients', icon: 'person', fill: true },
+const medicalRecordsItems: NavItemConfig[] = [
+  { id: 'patients', label: 'Patients', icon: 'person', fill: true, path: '/patients' },
   { id: 'orders', label: 'Orders', icon: 'featured_play_list' },
   { id: 'pharmacies', label: 'Pharmacies', icon: 'medication' },
 ];
 
-const businessItems = [
+const businessItems: NavItemConfig[] = [
   { id: 'overview', label: 'Overview', icon: 'bar_chart' },
   { id: 'lead-management', label: 'Lead Management', icon: 'flag' },
   { id: 'outreach', label: 'Outreach', icon: 'how_to_reg' },
   { id: 'reports', label: 'Reports', icon: 'show_chart' },
 ];
 
-const revenueCycleItems = [
+const revenueCycleItems: NavItemConfig[] = [
   { id: 'encounters', label: 'Encounters', icon: 'inbox' },
   { id: 'claims', label: 'Claims', icon: 'assignment' },
   { id: 'remittances', label: 'Remittances', icon: 'receipt_long' },
@@ -89,7 +98,7 @@ const revenueCycleItems = [
   { id: 'statements', label: 'Statements', icon: 'request_quote' },
 ];
 
-const bottomNavItems = [
+const bottomNavItems: NavItemConfig[] = [
   { id: 'preferences', label: 'Preferences', icon: 'settings' },
   { id: 'logout', label: 'Log Out', icon: 'logout' },
 ];
@@ -97,31 +106,18 @@ const bottomNavItems = [
 function NavItem({
   label,
   icon,
+  path,
   active,
   collapsed,
 }: {
   label: string;
   icon: string;
+  path?: string;
   active?: boolean;
   collapsed: boolean;
 }) {
-  return (
-    <ListItemButton
-      sx={{
-        height: ITEM_HEIGHT,
-        minHeight: ITEM_HEIGHT,
-        maxHeight: ITEM_HEIGHT,
-        py: 0,
-        px: 1,
-        gap: 0.75,
-        borderRadius: 1,
-        justifyContent: collapsed ? 'center' : 'flex-start',
-        bgcolor: active ? 'rgba(0, 102, 70, 0.2)' : 'transparent',
-        '&:hover': {
-          bgcolor: active ? 'rgba(0, 102, 70, 0.25)' : 'action.hover',
-        },
-      }}
-    >
+  const content = (
+    <>
       <ListItemIcon
         sx={{
           minWidth: collapsed ? 'auto' : 18,
@@ -145,8 +141,33 @@ function NavItem({
           }}
         />
       )}
-    </ListItemButton>
+    </>
   );
+
+  const sx = {
+    height: ITEM_HEIGHT,
+    minHeight: ITEM_HEIGHT,
+    maxHeight: ITEM_HEIGHT,
+    py: 0,
+    px: 1,
+    gap: 0.75,
+    borderRadius: 1,
+    justifyContent: collapsed ? 'center' : 'flex-start',
+    bgcolor: active ? 'rgba(0, 102, 70, 0.2)' : 'transparent',
+    '&:hover': {
+      bgcolor: active ? 'rgba(0, 102, 70, 0.25)' : 'action.hover',
+    },
+  };
+
+  if (path) {
+    return (
+      <ListItemButton component={Link} to={path} sx={sx}>
+        {content}
+      </ListItemButton>
+    );
+  }
+
+  return <ListItemButton sx={sx}>{content}</ListItemButton>;
 }
 
 function SectionHeaderButton({
@@ -190,7 +211,7 @@ function SectionHeaderButton({
       >
         {label}
       </Box>
-      <KeyboardArrowDown
+      <KeyboardArrowDownOutlined
         sx={{
           fontSize: 14,
           transform: expanded ? 'rotate(0deg)' : 'rotate(-90deg)',
@@ -207,6 +228,7 @@ export interface SideNavProps {
 }
 
 export function SideNav({ collapsed, onToggle }: SideNavProps) {
+  const location = useLocation();
   const width = collapsed ? SIDEBAR_COLLAPSED : SIDEBAR_WIDTH;
 
   const [medicalRecordsOpen, setMedicalRecordsOpen] = useState(true);
@@ -259,9 +281,9 @@ export function SideNav({ collapsed, onToggle }: SideNavProps) {
           }}
         >
           {collapsed ? (
-            <ChevronRight sx={{ fontSize: 18 }} />
+            <ChevronRightOutlined sx={{ fontSize: 18 }} />
           ) : (
-            <ChevronLeft sx={{ fontSize: 18 }} />
+            <ChevronLeftOutlined sx={{ fontSize: 18 }} />
           )}
         </IconButton>
       </Box>
@@ -278,20 +300,21 @@ export function SideNav({ collapsed, onToggle }: SideNavProps) {
           py: 3,
         }}
       >
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3.5 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
           <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
             {topNavItems.map((item) => (
               <NavItem
                 key={item.id}
                 label={item.label}
                 icon={item.icon}
-                active={item.active}
+                path={item.path}
+                active={item.path === location.pathname}
                 collapsed={collapsed}
               />
             ))}
           </List>
 
-          <Box>
+          <Box sx={{ pb: 2.5 }}>
             <List disablePadding>
               <SectionHeaderButton
                 label="Medical Records"
@@ -301,12 +324,14 @@ export function SideNav({ collapsed, onToggle }: SideNavProps) {
               />
             </List>
             <Collapse in={medicalRecordsOpen}>
-              <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+              <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, pb: 2.5 }}>
                 {medicalRecordsItems.map((item) => (
                   <NavItem
                     key={item.id}
                     label={item.label}
                     icon={item.icon}
+                    path={item.path}
+                    active={item.path === location.pathname}
                     collapsed={collapsed}
                   />
                 ))}
@@ -324,12 +349,14 @@ export function SideNav({ collapsed, onToggle }: SideNavProps) {
               />
             </List>
             <Collapse in={businessOpen}>
-              <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+              <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, pb: 2.5 }}>
                 {businessItems.map((item) => (
                   <NavItem
                     key={item.id}
                     label={item.label}
                     icon={item.icon}
+                    path={item.path}
+                    active={item.path === location.pathname}
                     collapsed={collapsed}
                   />
                 ))}
@@ -347,12 +374,14 @@ export function SideNav({ collapsed, onToggle }: SideNavProps) {
               />
             </List>
             <Collapse in={revenueCycleOpen}>
-              <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
+              <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, pb: 2.5 }}>
                 {revenueCycleItems.map((item) => (
                   <NavItem
                     key={item.id}
                     label={item.label}
                     icon={item.icon}
+                    path={item.path}
+                    active={item.path === location.pathname}
                     collapsed={collapsed}
                   />
                 ))}
@@ -367,6 +396,8 @@ export function SideNav({ collapsed, onToggle }: SideNavProps) {
               key={item.id}
               label={item.label}
               icon={item.icon}
+              path={item.path}
+              active={item.path === location.pathname}
               collapsed={collapsed}
             />
           ))}
