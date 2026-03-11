@@ -4,22 +4,33 @@ import {
   Typography,
   Avatar,
   Button,
+  Divider,
   IconButton,
   Menu,
   MenuItem,
   Tabs,
   Tab,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
+import { keyframes } from '@mui/system';
 import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined';
 import MoreHorizOutlined from '@mui/icons-material/MoreHorizOutlined';
+import CloseOutlined from '@mui/icons-material/CloseOutlined';
 import PushPinOutlined from '@mui/icons-material/PushPinOutlined';
 import QuestionAnswerOutlined from '@mui/icons-material/QuestionAnswerOutlined';
 import TaskAltOutlined from '@mui/icons-material/TaskAltOutlined';
 import HistoryOutlined from '@mui/icons-material/HistoryOutlined';
 import type { Patient } from '../../data/mockPatients';
+import type { Appointment } from '../../data/mockAppointments';
 import { AppointmentsTabContent } from './AppointmentsTabContent';
 import { AttachmentsTabContent } from './AttachmentsTabContent';
 import { BillingTabContent } from './BillingTabContent';
+import { VisitNoteContent } from './VisitNoteContent';
+
+const visitNoteTabSlideUp = keyframes`
+  0% { transform: translateY(10px); opacity: 0.7; }
+  100% { transform: translateY(0); opacity: 1; }
+`;
 
 const PRIMARY_TABS = [
   { id: 'overview', label: 'Overview' },
@@ -53,6 +64,11 @@ export type ProfileTabId = PrimaryTabId | MoreTabId;
 
 export type SecondaryPanelMode = 'pin' | 'chat' | 'tasks' | 'history';
 
+export interface OpenVisitNote {
+  id: string;
+  appointment: Appointment;
+}
+
 export interface PatientProfilePageProps {
   patient: Patient;
   /** Controlled: which secondary panel is open (null = closed). If omitted, internal state is used. */
@@ -82,6 +98,12 @@ export function PatientProfilePage({
   const [moreMenuAnchor, setMoreMenuAnchor] = useState<null | HTMLElement>(null);
   const [splitMenuAnchor, setSplitMenuAnchor] = useState<null | HTMLElement>(null);
   const [patientMenuAnchor, setPatientMenuAnchor] = useState<null | HTMLElement>(null);
+  const [openVisitNotes, setOpenVisitNotes] = useState<OpenVisitNote[]>([]);
+  const [activeVisitNoteId, setActiveVisitNoteId] = useState<string | null>(null);
+  const [lastOpenedNoteId, setLastOpenedNoteId] = useState<string | null>(null);
+  const [overflowTabVisible, setOverflowTabVisible] = useState<MoreTabId | null>(null);
+  const [overflowTabFadingOut, setOverflowTabFadingOut] = useState<MoreTabId | null>(null);
+  const [overflowTabFadeIn, setOverflowTabFadeIn] = useState(false);
 
   const isControlled = controlledPanelMode !== undefined;
   const secondaryPanelMode = isControlled ? controlledPanelMode : internalPanelMode;
@@ -103,9 +125,58 @@ export function PatientProfilePage({
   const handleMoreTabSelect = (id: MoreTabId) => {
     setActiveTab(id);
     setMoreMenuAnchor(null);
+    setActiveVisitNoteId(null);
+    setOverflowTabVisible(id);
+    setOverflowTabFadingOut(null);
+    setOverflowTabFadeIn(true);
   };
-  const tabsValue = isPrimaryTab(activeTab) ? activeTab : false;
+
+  const openNoteAnimationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleOpenNote = (appointment: Appointment) => {
+    const id = `visit-note-${appointment.id}-${Date.now()}`;
+    setOpenVisitNotes((prev) => [...prev, { id, appointment }]);
+    setActiveVisitNoteId(id);
+    setLastOpenedNoteId(id);
+    if (openNoteAnimationTimerRef.current) clearTimeout(openNoteAnimationTimerRef.current);
+    openNoteAnimationTimerRef.current = setTimeout(() => setLastOpenedNoteId(null), 220);
+  };
+
+  const handleCloseVisitNote = (e: React.MouseEvent, noteId: string) => {
+    e.stopPropagation();
+    setOpenVisitNotes((prev) => {
+      const next = prev.filter((n) => n.id !== noteId);
+      if (activeVisitNoteId === noteId) {
+        const remaining = next.length ? next[next.length - 1].id : null;
+        setActiveVisitNoteId(remaining);
+      }
+      return next;
+    });
+  };
+
+  const handleSelectVisitNote = (noteId: string) => {
+    setActiveVisitNoteId(noteId);
+    if (overflowTabVisible) setOverflowTabFadingOut(overflowTabVisible);
+  };
+
+  const tabsValue = activeVisitNoteId ? false : activeTab;
+
+  useEffect(() => {
+    if (!overflowTabFadingOut) return;
+    const timer = setTimeout(() => {
+      setOverflowTabVisible(null);
+      setOverflowTabFadingOut(null);
+    }, 220);
+    return () => clearTimeout(timer);
+  }, [overflowTabFadingOut]);
+
+  useEffect(() => {
+    if (!overflowTabVisible || !overflowTabFadeIn) return;
+    const frame = requestAnimationFrame(() => setOverflowTabFadeIn(false));
+    return () => cancelAnimationFrame(frame);
+  }, [overflowTabVisible, overflowTabFadeIn]);
   const secondaryPanelOpen = secondaryPanelMode !== null;
+  const activeVisitNote = openVisitNotes.find((n) => n.id === activeVisitNoteId);
 
   return (
     <Box
@@ -213,7 +284,13 @@ export function PatientProfilePage({
               anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
               transformOrigin={{ vertical: 'top', horizontal: 'right' }}
             >
-              {SPLIT_BUTTON_ACTIONS.map(({ id, label }) => (
+              {SPLIT_BUTTON_ACTIONS.slice(0, -2).map(({ id, label }) => (
+                <MenuItem key={id} onClick={() => setSplitMenuAnchor(null)}>
+                  {label}
+                </MenuItem>
+              ))}
+              <Divider component="li" sx={{ my: 0.5 }} />
+              {SPLIT_BUTTON_ACTIONS.slice(-2).map(({ id, label }) => (
                 <MenuItem key={id} onClick={() => setSplitMenuAnchor(null)}>
                   {label}
                 </MenuItem>
@@ -233,11 +310,20 @@ export function PatientProfilePage({
         >
           <Tabs
             value={tabsValue}
-            onChange={(_, value: PrimaryTabId) => setActiveTab(value)}
+            onChange={(_, value: ProfileTabId) => {
+              if (isPrimaryTab(value)) {
+                if (overflowTabVisible) {
+                  setOverflowTabFadingOut(overflowTabVisible);
+                }
+                setActiveTab(value);
+                setActiveVisitNoteId(null);
+              }
+            }}
             variant="scrollable"
             scrollButtons={false}
             sx={{
               minHeight: 0,
+              flexShrink: 0,
               '& .MuiTabs-flexContainer': { gap: '16px' },
               '& .MuiTabs-indicator': { height: 2, borderRadius: '2px 2px 0 0' },
               '& .MuiTab-root': {
@@ -257,6 +343,23 @@ export function PatientProfilePage({
             {PRIMARY_TABS.map(({ id, label }) => (
               <Tab key={id} value={id} label={label} />
             ))}
+            {overflowTabVisible &&
+              (() => {
+                const option = MORE_TAB_OPTIONS.find((t) => t.id === overflowTabVisible);
+                const label = option?.label ?? overflowTabVisible;
+                const isFadingOut = overflowTabFadingOut === overflowTabVisible;
+                const opacity = isFadingOut || overflowTabFadeIn ? 0 : 1;
+                return (
+                  <Tab
+                    value={overflowTabVisible}
+                    label={label}
+                    sx={{
+                      opacity,
+                      transition: 'opacity 0.2s ease',
+                    }}
+                  />
+                );
+              })()}
             <Tab
               icon={<MoreHorizOutlined sx={{ fontSize: 20 }} />}
               iconPosition="start"
@@ -265,6 +368,106 @@ export function PatientProfilePage({
               sx={{ minWidth: 'unset' }}
             />
           </Tabs>
+          {openVisitNotes.length > 0 && (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0,
+                flex: 1,
+                minWidth: 0,
+                overflowX: 'auto',
+                borderLeft: 1,
+                borderColor: 'divider',
+                pl: 1,
+                ml: 1.5,
+              }}
+            >
+              {openVisitNotes.map((note) => {
+                const isActive = note.id === activeVisitNoteId;
+                const isJustOpened = note.id === lastOpenedNoteId;
+                const label = `${note.appointment.date} | ${note.appointment.clinicalStage}`;
+                return (
+                  <Box
+                    key={note.id}
+                    role="tab"
+                    tabIndex={0}
+                    onClick={() => handleSelectVisitNote(note.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleSelectVisitNote(note.id);
+                      }
+                    }}
+                    sx={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 0.5,
+                      px: 1,
+                      py: 0.5,
+                      mr: 0.5,
+                      mt: 0.25,
+                      mb: 0.25,
+                      maxWidth: 200,
+                      width: 'fit-content',
+                      height: 'fit-content',
+                      minWidth: 0,
+                      borderRadius: 1,
+                      cursor: 'pointer',
+                      borderBottom: 0,
+                      ...(isJustOpened && {
+                        animation: `${visitNoteTabSlideUp} 0.2s ease-out`,
+                      }),
+                      bgcolor: isActive
+                        ? (theme) => alpha(theme.palette.primary.main, 0.08)
+                        : 'transparent',
+                      color: isActive ? 'primary.main' : 'text.primary',
+                      fontSize: 14,
+                      fontWeight: 500,
+                      '&:hover': {
+                        bgcolor: isActive
+                          ? (theme) => alpha(theme.palette.primary.main, 0.08)
+                          : 'action.hover',
+                      },
+                      ...(!isActive && {
+                        '&:hover .visit-note-tab-close': { opacity: 1 },
+                      }),
+                    }}
+                  >
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: 500,
+                        fontSize: 14,
+                        minWidth: 0,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {label}
+                    </Typography>
+                    <IconButton
+                      className="visit-note-tab-close"
+                      size="small"
+                      onClick={(e) => handleCloseVisitNote(e, note.id)}
+                      aria-label={`Close ${label}`}
+                      sx={{
+                        width: 20,
+                        height: 20,
+                        p: 0,
+                        opacity: isActive ? 1 : 0,
+                        transition: 'opacity 0.15s ease',
+                        '&:hover': { bgcolor: 'action.hover' },
+                      }}
+                    >
+                      <CloseOutlined sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </Box>
+                );
+              })}
+            </Box>
+          )}
           <Menu
             anchorEl={moreMenuAnchor}
             open={Boolean(moreMenuAnchor)}
@@ -278,7 +481,7 @@ export function PatientProfilePage({
               </MenuItem>
             ))}
           </Menu>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, pb: 0.5 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, pb: 0.5, flexShrink: 0 }}>
             {SECONDARY_PANEL_ICONS.map(({ mode, title }) => {
               const active = secondaryPanelMode === mode;
               const Icon =
@@ -333,8 +536,10 @@ export function PatientProfilePage({
             bgcolor: 'background.paper',
           }}
         >
-          {activeTab === 'appointments' ? (
-            <AppointmentsTabContent patientId={patient.id} />
+          {activeVisitNote ? (
+            <VisitNoteContent noteId={activeVisitNote.id} appointment={activeVisitNote.appointment} />
+          ) : activeTab === 'appointments' ? (
+            <AppointmentsTabContent patientId={patient.id} onOpenNote={handleOpenNote} />
           ) : activeTab === 'billing' ? (
             <BillingTabContent patient={patient} />
           ) : activeTab === 'attachment' ? (

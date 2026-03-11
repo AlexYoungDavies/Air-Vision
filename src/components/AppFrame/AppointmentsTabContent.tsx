@@ -39,6 +39,8 @@ const STICKY_ACTIONS_HEADER = { ...STICKY_ACTIONS_CELL, bgcolor: 'grey.50', zInd
 
 export interface AppointmentsTabContentProps {
   patientId: string;
+  /** Called when user clicks "Open Note" on a complete appointment. Opens a visit note tab. */
+  onOpenNote?: (appointment: Appointment) => void;
 }
 
 const STATUS_CHIP_STYLES: Record<
@@ -53,7 +55,7 @@ const STATUS_CHIP_STYLES: Record<
   'No Show': { bgcolor: '#fff8e1', color: '#f57c00' },
 };
 
-export function AppointmentsTabContent({ patientId }: AppointmentsTabContentProps) {
+export function AppointmentsTabContent({ patientId, onOpenNote }: AppointmentsTabContentProps) {
   const [search, setSearch] = useState('');
   const [moreAnchor, setMoreAnchor] = useState<{ el: HTMLElement; appointment: Appointment } | null>(null);
   const appointments = useMemo(() => {
@@ -159,7 +161,12 @@ export function AppointmentsTabContent({ patientId }: AppointmentsTabContentProp
               appointments.map((apt) => {
                 const isComplete = apt.status === 'Complete';
                 return (
-                  <TableRow key={apt.id} hover>
+                  <TableRow
+                    key={apt.id}
+                    hover
+                    onDoubleClick={() => isComplete && onOpenNote?.(apt)}
+                    sx={isComplete ? { cursor: 'pointer' } : undefined}
+                  >
                     <TableCell>{apt.date}</TableCell>
                     <TableCell>{apt.time}</TableCell>
                     <TableCell>
@@ -213,14 +220,14 @@ export function AppointmentsTabContent({ patientId }: AppointmentsTabContentProp
                                 <MoreVertOutlined fontSize="small" />
                               </IconButton>
                             </Tooltip>
-                            <Button
-                              variant="text"
-                              size="small"
-                              href="#"
-                              sx={{ textTransform: 'none', fontWeight: 500, minWidth: 'auto', px: 0.5 }}
-                            >
-                              Open Note
-                            </Button>
+                          <Button
+                            variant="text"
+                            size="small"
+                            onClick={() => onOpenNote?.(apt)}
+                            sx={{ textTransform: 'none', fontWeight: 500, minWidth: 'auto', px: 0.5 }}
+                          >
+                            Open Note
+                          </Button>
                           </>
                         ) : (
                           <>
