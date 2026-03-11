@@ -13,11 +13,12 @@ export function HeaderBar() {
       component="header"
       sx={{
         height: 'fit-content',
-        px: 2,
+        px: 1,
         pt: 0.5,
         pb: 0.5,
         display: 'flex',
         alignItems: 'center',
+        justifyContent: 'space-between',
         gap: 1,
         flexShrink: 0,
       }}

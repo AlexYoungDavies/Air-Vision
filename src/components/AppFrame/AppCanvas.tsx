@@ -12,10 +12,10 @@ export function AppCanvas({ children }: AppCanvasProps) {
         flex: 1,
         overflow: 'auto',
         minHeight: 0,
-        pt: 0.5,
+        pt: 0,
         pr: 1,
         pb: 1,
-        pl: 1,
+        pl: 0,
       }}
     >
       <Box
