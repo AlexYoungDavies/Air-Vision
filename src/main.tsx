@@ -40,7 +40,7 @@ const theme = createTheme({
       light: 'rgba(0, 102, 70, 0.1)',
     },
     background: {
-      default: '#f7f7f7',
+      default: '#F7FCFB',
       paper: '#ffffff',
     },
     text: {
