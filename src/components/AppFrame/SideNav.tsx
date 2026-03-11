@@ -182,11 +182,8 @@ export function SideNav({ collapsed, onToggle }: SideNavProps) {
       sx={{
         width,
         flexShrink: 0,
-        borderRight: 1,
-        borderColor: 'divider',
         display: 'flex',
         flexDirection: 'column',
-        bgcolor: 'background.paper',
         transition: (theme) =>
           theme.transitions.create('width', {
             easing: theme.transitions.easing.sharp,
