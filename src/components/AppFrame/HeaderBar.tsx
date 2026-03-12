@@ -2,7 +2,6 @@ import { useRef, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Box, IconButton, TextField, Avatar, Button, SvgIcon } from '@mui/material';
 import SearchOutlined from '@mui/icons-material/SearchOutlined';
-import SmartToyOutlined from '@mui/icons-material/SmartToyOutlined';
 import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
 import hoverAnimationData from '../../assets/hover.json';
 

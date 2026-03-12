@@ -506,7 +506,7 @@ export interface SideNavProps {
   onToggle: () => void;
 }
 
-export function SideNav({ collapsed, onToggle }: SideNavProps) {
+export function SideNav({ collapsed, onToggle: _onToggle }: SideNavProps) {
   const location = useLocation();
   const width = collapsed ? SIDEBAR_COLLAPSED : SIDEBAR_WIDTH;
 

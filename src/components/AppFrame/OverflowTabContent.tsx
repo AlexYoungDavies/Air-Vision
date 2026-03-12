@@ -31,7 +31,7 @@ const mockMedications = [
   { id: '4', name: 'Omeprazole', dose: '20 mg', frequency: 'Once daily', status: 'Active', prescriber: 'Dr. Smith' },
 ];
 
-export function MedicationsTabContent({ patientId }: { patientId: string }) {
+export function MedicationsTabContent({ patientId: _patientId }: { patientId: string }) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       <Box sx={PAGE_HEADER}>
@@ -73,7 +73,7 @@ const mockOrders = [
   { id: '4', type: 'Lab - Metabolic Panel', date: '2025-02-20', status: 'Completed', provider: 'Dr. Smith' },
 ];
 
-export function OrdersTabContent({ patientId }: { patientId: string }) {
+export function OrdersTabContent({ patientId: _patientId }: { patientId: string }) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       <Box sx={PAGE_HEADER}>
@@ -120,7 +120,7 @@ const mockProblems = [
   { id: '4', problem: 'Seasonal allergic rhinitis', status: 'Resolved', onset: '2018-03', icd: 'J30.2' },
 ];
 
-export function ProblemListTabContent({ patientId }: { patientId: string }) {
+export function ProblemListTabContent({ patientId: _patientId }: { patientId: string }) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       <Box sx={PAGE_HEADER}>
@@ -160,7 +160,7 @@ const mockLabs = [
   { id: '4', name: 'Lipid Panel', date: '2025-02-15', result: 'LDL 98', provider: 'Dr. Jones' },
 ];
 
-export function LabsTabContent({ patientId }: { patientId: string }) {
+export function LabsTabContent({ patientId: _patientId }: { patientId: string }) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       <Box sx={PAGE_HEADER}>
@@ -199,7 +199,7 @@ const mockVitals = [
   { id: '3', date: '2025-01-10', bp: '130/80', hr: 74, temp: '98.6°F', weight: '188 lb', resp: 16 },
 ];
 
-export function VitalsTabContent({ patientId }: { patientId: string }) {
+export function VitalsTabContent({ patientId: _patientId }: { patientId: string }) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       <Box sx={PAGE_HEADER}>
@@ -241,7 +241,7 @@ const mockAllergies = [
   { id: '2', allergen: 'Sulfa drugs', reaction: 'Hives', severity: 'Mild' },
 ];
 
-export function AllergiesTabContent({ patientId }: { patientId: string }) {
+export function AllergiesTabContent({ patientId: _patientId }: { patientId: string }) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       <Box sx={PAGE_HEADER}>
@@ -286,7 +286,7 @@ const mockImmunizations = [
   { id: '4', vaccine: 'Pneumococcal (PPSV23)', date: '2021-06-20', dose: '1' },
 ];
 
-export function ImmunizationsTabContent({ patientId }: { patientId: string }) {
+export function ImmunizationsTabContent({ patientId: _patientId }: { patientId: string }) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
       <Box sx={PAGE_HEADER}>

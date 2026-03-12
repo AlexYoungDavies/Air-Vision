@@ -11,7 +11,7 @@ export interface VisitNoteContentProps {
  * Placeholder for visit note content. Takes over the primary content area when a note is open.
  * Full note UI to be built later.
  */
-export function VisitNoteContent({ noteId, appointment }: VisitNoteContentProps) {
+export function VisitNoteContent({ noteId: _noteId, appointment }: VisitNoteContentProps) {
   return (
     <Box
       sx={{

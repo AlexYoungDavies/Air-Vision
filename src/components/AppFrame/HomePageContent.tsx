@@ -19,7 +19,6 @@ import ImageOutlined from '@mui/icons-material/ImageOutlined';
 import ContentPasteOutlined from '@mui/icons-material/ContentPasteOutlined';
 import PersonOutlined from '@mui/icons-material/PersonOutlined';
 import TaskAltOutlined from '@mui/icons-material/TaskAltOutlined';
-import ChatOutlined from '@mui/icons-material/ChatOutlined';
 import { Link } from 'react-router-dom';
 import { MOCK_PATIENTS, TODAYS_PATIENTS, type Patient } from '../../data/mockPatients';
 import { getPatientVisitPanelData } from '../../data/mockPatientVisitPanel';
