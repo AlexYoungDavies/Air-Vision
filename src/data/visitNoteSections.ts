@@ -1,8 +1,8 @@
 /**
- * Visit note structure: SOAP + Other sections and subsections for TOC and content.
+ * Visit note structure: SOAP sections and subsections for TOC and content.
  */
 
-export type SectionId = 'subjective' | 'objective' | 'assessment' | 'plan' | 'other' | 'notarize';
+export type SectionId = 'subjective' | 'objective' | 'assessment' | 'plan' | 'notarize';
 
 export interface SubsectionDef {
   id: string;
@@ -56,16 +56,6 @@ export const VISIT_NOTE_SECTIONS: SectionDef[] = [
       { id: 'treatment-plan', label: 'Treatment Plan', anchorId: 'subsection-treatment-plan' },
       { id: 'goals', label: 'Goals', anchorId: 'subsection-goals' },
       { id: 'plan-of-care', label: 'Plan of Care', anchorId: 'subsection-plan-of-care' },
-    ],
-  },
-  {
-    id: 'other',
-    label: 'Other',
-    anchorId: 'section-other',
-    subsections: [
-      { id: 'visits', label: 'Visits', anchorId: 'subsection-visits' },
-      { id: 'billing', label: 'Billing', anchorId: 'subsection-billing' },
-      { id: 'fax', label: 'Fax', anchorId: 'subsection-fax' },
     ],
   },
   {
@@ -147,11 +137,6 @@ export interface VisitNoteData {
       careTimelineEnd: string;
     };
   };
-  other: {
-    visits: Record<string, string>;
-    billing: Record<string, string>;
-    fax: Record<string, string>;
-  };
   notarize: {
     notarize: {
       selectedProviderIds: string[];
@@ -206,6 +191,9 @@ const CONTINUED_CARE_DEFAULT =
 const ADDITIONAL_NOTES_DEFAULT =
   'Patient is engaged in treatment and has been compliant with home exercise recommendations. Progress is gradual; will continue to monitor response to manual therapy and therapeutic exercise.';
 
+const HISTORY_OF_CONDITION_DEFAULT =
+  'Patient reports a 2-week history of increased low back stiffness and pain following a weekend of yard work and prolonged driving. No prior lumbar surgery. Symptoms have been relatively stable over the past week with morning stiffness that eases somewhat with movement. Patient denies radicular symptoms, numbness, or weakness in the lower extremities.';
+
 export const DEFAULT_VISIT_NOTE_DATA: VisitNoteData = {
   subjective: {
     'chief-complaint': {
@@ -219,7 +207,7 @@ export const DEFAULT_VISIT_NOTE_DATA: VisitNoteData = {
       dateOfSurgery: '',
       stateOfCondition: 'maintaining',
       sideOfIssue: 'bilateral',
-      historyOfCondition: '',
+      historyOfCondition: HISTORY_OF_CONDITION_DEFAULT,
     },
     'exacerbating-factors': {
       exacerbatingFactors: EXACERBATING_FACTORS_DEFAULT,
@@ -232,23 +220,23 @@ export const DEFAULT_VISIT_NOTE_DATA: VisitNoteData = {
     },
     measurements: {
       'lumbar-mobility': [
-        [undefined, undefined],
-        [undefined, undefined],
-        [undefined, undefined],
-        [undefined, undefined],
+        ['48', '45'],
+        ['18', '16'],
+        ['24', ''],
+        ['', '22'],
       ],
       thoracic: [
-        [undefined, undefined],
-        [undefined, undefined],
-        [undefined, undefined],
-        [undefined, undefined],
+        ['34', ''],
+        ['', '32'],
+        ['16', '15'],
+        ['20', '19'],
       ],
-      'general-upright': [[undefined], [undefined], [undefined], [undefined]],
+      'general-upright': [['26'], ['9'], ['10'], ['12']],
     },
   },
   assessment: {
     'diagnosis-summary': {
-      cptCodes: [],
+      cptCodes: ['97110', '97140'],
       summary: DIAGNOSIS_SUMMARY_DEFAULT,
     },
     'continued-care': {
@@ -259,28 +247,66 @@ export const DEFAULT_VISIT_NOTE_DATA: VisitNoteData = {
     },
   },
   plan: {
-    'treatment-plan': { content: '' },
+    'treatment-plan': {
+      content:
+        'Therapeutic exercise (97110): lumbar ROM, core stabilization, and hip flexor stretching 2x/week. Manual therapy (97140): soft tissue mobilization and joint mobilization to lumbar and thoracic segments as indicated. Patient to continue home exercise program (lumbar stretches, cat-cow, supported bridge) daily. Reassess in 2 weeks for progress toward goals.',
+    },
     goals: {
       goals: [
-        { id: 'goal-1', title: '', type: 'long-term', targetDate: '', status: 'in-progress', description: '', initialState: '', currentState: '', previousVisitPercent: 0 },
-        { id: 'goal-2', title: '', type: 'long-term', targetDate: '', status: 'in-progress', description: '', initialState: '', currentState: '', previousVisitPercent: 0 },
-        { id: 'goal-3', title: '', type: 'long-term', targetDate: '', status: 'in-progress', description: '', initialState: '', currentState: '', previousVisitPercent: 0 },
-        { id: 'goal-4', title: '', type: 'long-term', targetDate: '', status: 'in-progress', description: '', initialState: '', currentState: '', previousVisitPercent: 0 },
+        {
+          id: 'goal-1',
+          title: 'Improve lumbar flexion ROM',
+          type: 'short-term',
+          targetDate: '2025-04-15',
+          status: 'in-progress',
+          description: 'Increase active lumbar flexion to within functional range (target 60°+) to reduce stiffness with sit-to-stand and forward bending.',
+          initialState: 'Lumbar flexion limited to approximately 45° bilaterally with stiffness.',
+          currentState: 'Lumbar flexion ~48° left, 45° right; mild improvement with warm-up.',
+          previousVisitPercent: 15,
+        },
+        {
+          id: 'goal-2',
+          title: 'Reduce pain with bed mobility',
+          type: 'short-term',
+          targetDate: '2025-04-15',
+          status: 'in-progress',
+          description: 'Patient to report decreased pain (≤3/10) during morning get-up and bed mobility.',
+          initialState: 'Pain 5–6/10 with sit-to-stand from bed and prolonged sitting.',
+          currentState: 'Pain 5/10 with bed mobility; improved with consistent HEP.',
+          previousVisitPercent: 20,
+        },
+        {
+          id: 'goal-3',
+          title: 'Independent HEP and activity modification',
+          type: 'long-term',
+          targetDate: '2025-05-30',
+          status: 'in-progress',
+          description: 'Patient to perform home exercise program independently and apply activity modification (posture, breaks) to manage symptoms during work and ADLs.',
+          initialState: 'Limited awareness of aggravating postures; HEP not yet established.',
+          currentState: 'Performing HEP 4–5x/week; using lumbar support when driving.',
+          previousVisitPercent: 40,
+        },
+        {
+          id: 'goal-4',
+          title: 'Return to prior level of activity',
+          type: 'long-term',
+          targetDate: '2025-06-15',
+          status: 'in-progress',
+          description: 'Resume yard work, prolonged driving, and recreational activities without significant increase in symptoms.',
+          initialState: 'Symptoms flared after yard work and long drive; avoiding these activities.',
+          currentState: 'Able to drive 30 min with minimal discomfort; not yet ready for prolonged yard work.',
+          previousVisitPercent: 25,
+        },
       ],
     },
     'plan-of-care': {
-      durationValue: '',
+      durationValue: '6',
       durationUnit: 'weeks',
-      frequencyValue: '',
+      frequencyValue: '2',
       frequencyUnit: 'per-week',
-      careTimelineStart: '',
-      careTimelineEnd: '',
+      careTimelineStart: '2025-03-10',
+      careTimelineEnd: '2025-04-21',
     },
-  },
-  other: {
-    visits: {},
-    billing: {},
-    fax: {},
   },
   notarize: {
     notarize: {
@@ -292,7 +318,7 @@ export const DEFAULT_VISIT_NOTE_DATA: VisitNoteData = {
       faxDocumentType: 'Plan of Care PDF',
       requestSignatureFromReferring: false,
       includeFacesheet: false,
-      signStatus: 'signed',
+      signStatus: 'unsigned',
     },
   },
 };

@@ -3,10 +3,9 @@ import {
   Box,
   Typography,
   Button,
+  IconButton,
   Link,
   SvgIcon,
-  ToggleButton,
-  ToggleButtonGroup,
   Collapse,
   TextField,
   Slider,
@@ -33,12 +32,16 @@ import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutl
 import KeyboardArrowRightOutlined from '@mui/icons-material/KeyboardArrowRightOutlined';
 import EditOutlined from '@mui/icons-material/EditOutlined';
 import VisibilityOutlined from '@mui/icons-material/VisibilityOutlined';
+import ContentCopyOutlined from '@mui/icons-material/ContentCopyOutlined';
+import LinkOutlined from '@mui/icons-material/LinkOutlined';
 import ShowChartOutlined from '@mui/icons-material/ShowChartOutlined';
 import PersonOutlined from '@mui/icons-material/PersonOutlined';
 import AssignmentOutlined from '@mui/icons-material/AssignmentOutlined';
 import CheckCircleOutlined from '@mui/icons-material/CheckCircleOutlined';
 import AutoAwesomeOutlined from '@mui/icons-material/AutoAwesomeOutlined';
+import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
 import type { Appointment } from '../../data/mockAppointments';
+import hoverAnimationData from '../../assets/hover.json';
 import {
   VISIT_NOTE_SECTIONS,
   DEFAULT_VISIT_NOTE_DATA,
@@ -60,9 +63,104 @@ function SignatureAltIcon(props: React.ComponentProps<typeof SvgIcon>) {
   );
 }
 
+const SOAP_READ_SECTION_IDS = ['subjective', 'objective', 'assessment', 'plan'] as const;
+const SOAP_READ_SECTION_LABELS: Record<(typeof SOAP_READ_SECTION_IDS)[number], string> = {
+  subjective: 'Subjective',
+  objective: 'Objective',
+  assessment: 'Assessment',
+  plan: 'Plan',
+};
+
+function ReadViewSectionBlock({
+  sectionId,
+  title,
+  content,
+  onEdit,
+}: {
+  sectionId: string;
+  title: string;
+  content: string;
+  onEdit: () => void;
+}) {
+  const blockId = `read-${sectionId}`;
+
+  const handleCopy = () => {
+    void navigator.clipboard.writeText(content);
+  };
+
+  const handleCopyLink = () => {
+    const url = `${window.location.pathname}${window.location.search}#${blockId}`;
+    void navigator.clipboard.writeText(url);
+  };
+
+  return (
+    <Box
+      id={blockId}
+      sx={{
+        mb: 3,
+        scrollMarginTop: 24,
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 2,
+        overflow: 'hidden',
+        bgcolor: 'background.paper',
+      }}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 1,
+          px: 2,
+          py: 1.5,
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          bgcolor: 'grey.50',
+        }}
+      >
+        <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: 18 }}>
+          {title}
+        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+          <IconButton size="small" onClick={handleCopy} aria-label="Copy" title="Copy">
+            <ContentCopyOutlined sx={{ fontSize: 18 }} />
+          </IconButton>
+          <IconButton size="small" onClick={onEdit} aria-label="Edit" title="Edit">
+            <EditOutlined sx={{ fontSize: 18 }} />
+          </IconButton>
+          <IconButton size="small" onClick={handleCopyLink} aria-label="Copy link" title="Copy link">
+            <LinkOutlined sx={{ fontSize: 18 }} />
+          </IconButton>
+        </Box>
+      </Box>
+      <Box sx={{ px: 2, py: 2 }}>
+        <Typography
+          component="pre"
+          sx={{
+            fontFamily: 'inherit',
+            fontSize: 14,
+            lineHeight: 1.6,
+            color: 'text.primary',
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-word',
+            m: 0,
+          }}
+        >
+          {content}
+        </Typography>
+      </Box>
+    </Box>
+  );
+}
+
 export interface VisitNoteContentProps {
   noteId: string;
   appointment: Appointment;
+  /** When provided, the AI Check button opens/closes the secondary content panel. */
+  onAICheckClick?: () => void;
+  /** When true, the AI Check button shows active state (panel open). */
+  isAIPanelOpen?: boolean;
 }
 
 const NAV_SECTION_LABEL = {
@@ -88,11 +186,47 @@ const NAV_LINK = {
 
 const NAV_LINK_ACTIVE = {
   ...NAV_LINK,
-  fontWeight: 600,
+  fontWeight: 500,
   color: 'primary.dark',
   bgcolor: 'primary.light',
   borderRadius: '4px',
 } as const;
+
+/** SOAP narrative content for Read view (concise formatted summary). */
+const SOAP_READ_VIEW_CONTENT: Record<string, string> = {
+  subjective:
+    'Patient presents with low back stiffness and pain, reported as worse than typical, with associated pain during bed mobility and sit-to-stand transitions. Patient reports significant discomfort when getting up from bed each morning, describing stiffness during the transition from lying to sitting to standing. Morning stiffness persists throughout the day, easing slightly with light movement. Symptoms negatively impact daily activities and contribute to increased fatigue by end of day.\n\n' +
+    'Onset date 03/04/2025, following a weekend of yard work and prolonged driving. No prior lumbar surgery. Patient denies radicular symptoms, numbness, or weakness in the lower extremities. Condition is currently maintaining bilaterally.\n\n' +
+    'Pain rating: 5/10\n\n' +
+    'Exacerbating factors: prolonged sitting, bending forward, lifting heavy objects, long car rides, inactivity, and morning hours.\n' +
+    'Alleviating factors: short walks, heat application, frequent position changes, avoiding prolonged sitting, and rest in a supported reclined position.',
+  objective:
+    'Patient performs adequately on lumbar measurements but has shown little improvement from previous visits.\n' +
+    'Lumbar Mobility:\n\n' +
+    'Lumbar Flexion: L 48° (prev. 52°) / R 45° (prev. 48°)\n' +
+    'Lumbar Extension: L 18° (prev. 22°) / R 16° (prev. 20°)\n' +
+    'Lumbar Side Bend Left: 24° (prev. 28°)\n' +
+    'Lumbar Side Bend Right: 22° (prev. 26°)\n\n' +
+    'Thoracic Measurements:\n\n' +
+    'Thoracic Rotation Left: 34° (prev. 38°)\n' +
+    'Thoracic Rotation Right: 32° (prev. 35°)\n' +
+    'Thoracic Extension: L 16° (prev. 18°) / R 15° (prev. 18°)\n' +
+    'Thoracic Side Bend: L 20° (prev. 24°) / R 19° (prev. 22°)\n\n' +
+    'General Upright Range of Motion:\n\n' +
+    'Standing Forward Reach: 26 cm (prev. 28 cm)\n' +
+    'Sit-to-Stand (30 sec): 9 reps (prev. 10)\n' +
+    'Single-Leg Stance Left: 10 sec (prev. 12 sec)\n' +
+    'Single-Leg Stance Right: 12 sec (prev. 14 sec)',
+  assessment:
+    'Low back pain with lumbar stiffness and limited mobility. Patient would benefit from continued therapeutic exercise and manual therapy to improve range of motion and function. Progress toward goals is gradual. Patient is engaged in treatment and compliant with home exercise program recommendations.\n' +
+    'Goal Progress:\n\n' +
+    'Improve lumbar flexion ROM (ST, target 04/15/2025): Lumbar flexion ~48° L / 45° R; mild improvement with warm-up. ~15% progress.\n' +
+    'Reduce pain with bed mobility (ST, target 04/15/2025): Pain 5/10 with bed mobility; improved with consistent HEP. ~20% progress.\n' +
+    'Independent HEP and activity modification (LT, target 05/30/2025): Performing HEP 4–5x/week; using lumbar support when driving. ~40% progress.\n' +
+    'Return to prior level of activity (LT, target 06/15/2025): Able to drive 30 min with minimal discomfort; not yet ready for prolonged yard work. ~25% progress.',
+  plan:
+    'Therapeutic exercise (97110): lumbar ROM, core stabilization, and hip flexor stretching 2x/week. Manual therapy (97140): soft tissue mobilization and joint mobilization to lumbar and thoracic segments as indicated. Patient to continue home exercise program (lumbar stretches, cat-cow, supported bridge) daily. Care to continue addressing ongoing lumbar stiffness and pain, maintaining mobility gains, and supporting the patient\'s ability to perform daily activities and bed mobility with less discomfort. Reassess in 2 weeks for progress toward goals.',
+};
 
 const SECTION_HEADER = {
   display: 'flex',
@@ -128,12 +262,16 @@ const NOTE_TEMPLATE_OPTIONS = [
 
 const CLINICAL_STAGE_OPTIONS = ['Initial Evaluation', 'Progress Note', 'Follow-up'];
 
-export function VisitNoteContent({ noteId: _noteId, appointment }: VisitNoteContentProps) {
+const CHECK_NOTE_LOTTIE_SIZE = 22;
+
+export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick, isAIPanelOpen }: VisitNoteContentProps) {
   const [mode, setMode] = useState<'edit' | 'read'>('edit');
+  const checkNoteLottieRef = useRef<LottieRefCurrentProps | null>(null);
   const [data, setData] = useState<VisitNoteData>(DEFAULT_VISIT_NOTE_DATA);
   const [noteTemplate, setNoteTemplate] = useState(appointment.template);
   const [clinicalStage, setClinicalStage] = useState(appointment.clinicalStage);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const [collapsedSubsections, setCollapsedSubsections] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     setNoteTemplate(appointment.template);
@@ -146,11 +284,16 @@ export function VisitNoteContent({ noteId: _noteId, appointment }: VisitNoteCont
     const container = scrollContainerRef.current;
     if (!container) return;
 
+    const anchorIds =
+      mode === 'read'
+        ? SOAP_READ_SECTION_IDS.map((id) => `read-${id}`)
+        : ALL_ANCHOR_IDS;
+
     const updateActive = () => {
       const containerRect = container.getBoundingClientRect();
       const topOffset = 120;
       let current: string | null = null;
-      for (const anchorId of ALL_ANCHOR_IDS) {
+      for (const anchorId of anchorIds) {
         const el = document.getElementById(anchorId);
         if (!el) continue;
         const rect = el.getBoundingClientRect();
@@ -164,13 +307,22 @@ export function VisitNoteContent({ noteId: _noteId, appointment }: VisitNoteCont
     updateActive();
     container.addEventListener('scroll', updateActive, { passive: true });
     return () => container.removeEventListener('scroll', updateActive);
-  }, []);
+  }, [mode]);
 
   const toggleSection = useCallback((sectionId: string) => {
     setCollapsedSections((prev) => {
       const next = new Set(prev);
       if (next.has(sectionId)) next.delete(sectionId);
       else next.add(sectionId);
+      return next;
+    });
+  }, []);
+
+  const toggleSubsection = useCallback((subsectionKey: string) => {
+    setCollapsedSubsections((prev) => {
+      const next = new Set(prev);
+      if (next.has(subsectionKey)) next.delete(subsectionKey);
+      else next.add(subsectionKey);
       return next;
     });
   }, []);
@@ -510,22 +662,6 @@ export function VisitNoteContent({ noteId: _noteId, appointment }: VisitNoteCont
                 showLabel={false}
               />
             </Box>
-            <ToggleButtonGroup
-              value={mode}
-              exclusive
-              onChange={(_, v) => v != null && setMode(v)}
-              size="small"
-              sx={{ '& .MuiToggleButton-root': { py: 0.25, px: 1 } }}
-            >
-              <ToggleButton value="edit" aria-label="Edit note">
-                <EditOutlined sx={{ fontSize: 16, mr: 0.5 }} />
-                Edit
-              </ToggleButton>
-              <ToggleButton value="read" aria-label="Read view">
-                <VisibilityOutlined sx={{ fontSize: 16, mr: 0.5 }} />
-                Read
-              </ToggleButton>
-            </ToggleButtonGroup>
           </Box>
         </Box>
       </Box>
@@ -542,24 +678,45 @@ export function VisitNoteContent({ noteId: _noteId, appointment }: VisitNoteCont
             pr: 1,
           }}
         >
-          {VISIT_NOTE_SECTIONS.map((section) => (
-            <Box key={section.id} sx={{ mb: 1.5 }}>
-              <Typography sx={NAV_SECTION_LABEL}>{section.label}</Typography>
-              {section.subsections.map((sub) => (
-                <Link
-                  key={sub.id}
-                  href={`#${sub.anchorId}`}
-                  sx={sub.anchorId === activeAnchorId ? NAV_LINK_ACTIVE : NAV_LINK}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    document.getElementById(sub.anchorId)?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                >
-                  {sub.label}
-                </Link>
-              ))}
-            </Box>
-          ))}
+          {mode === 'read' ? (
+            SOAP_READ_SECTION_IDS.map((sectionId) => {
+              const blockId = `read-${sectionId}`;
+              const isActive = activeAnchorId === blockId;
+              return (
+                <Box key={sectionId} sx={{ mb: 1.5 }}>
+                  <Link
+                    href={`#${blockId}`}
+                    sx={isActive ? NAV_LINK_ACTIVE : NAV_LINK}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      document.getElementById(blockId)?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                  >
+                    {SOAP_READ_SECTION_LABELS[sectionId]}
+                  </Link>
+                </Box>
+              );
+            })
+          ) : (
+            VISIT_NOTE_SECTIONS.map((section) => (
+              <Box key={section.id} sx={{ mb: 1.5 }}>
+                <Typography sx={NAV_SECTION_LABEL}>{section.label}</Typography>
+                {section.subsections.map((sub) => (
+                  <Link
+                    key={sub.id}
+                    href={`#${sub.anchorId}`}
+                    sx={sub.anchorId === activeAnchorId ? NAV_LINK_ACTIVE : NAV_LINK}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      document.getElementById(sub.anchorId)?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                  >
+                    {sub.label}
+                  </Link>
+                ))}
+              </Box>
+            ))
+          )}
         </Box>
 
         {/* Main content: sections and subsections */}
@@ -570,13 +727,140 @@ export function VisitNoteContent({ noteId: _noteId, appointment }: VisitNoteCont
             flex: 1,
             minWidth: 0,
             overflow: 'auto',
-            py: 2,
+            pt: 7,
+            pb: 2,
             px: 2,
             bgcolor: 'background.paper',
+            position: 'relative',
           }}
         >
+          <Box
+            sx={{
+              position: 'absolute',
+              top: 1.5,
+              right: 1.5,
+              left: 'auto',
+              width: 'fit-content',
+              zIndex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'flex-end',
+              gap: 1.5,
+              pt: 0.5,
+              pb: 0.5,
+              bgcolor: 'background.paper',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+              <IconButton
+              size="small"
+              onClick={() => setMode('edit')}
+              aria-label="Edit note"
+              title="Edit"
+              sx={{
+                width: 28,
+                height: 28,
+                borderRadius: '8px',
+                ...(mode === 'edit' && {
+                  bgcolor: 'action.selected',
+                  color: 'primary.main',
+                  '&:hover': { bgcolor: 'action.selected' },
+                }),
+              }}
+            >
+              <EditOutlined sx={{ fontSize: 18 }} />
+            </IconButton>
+            <IconButton
+              size="small"
+              onClick={() => setMode('read')}
+              aria-label="Read view"
+              title="Read"
+              sx={{
+                width: 28,
+                height: 28,
+                borderRadius: '8px',
+                ...(mode === 'read' && {
+                  bgcolor: 'action.selected',
+                  color: 'primary.main',
+                  '&:hover': { bgcolor: 'action.selected' },
+                }),
+              }}
+            >
+              <VisibilityOutlined sx={{ fontSize: 18 }} />
+            </IconButton>
+            </Box>
+            <Button
+              variant="text"
+              size="small"
+              onClick={onAICheckClick}
+              startIcon={
+                <Box
+                  component="span"
+                  sx={{
+                    width: CHECK_NOTE_LOTTIE_SIZE,
+                    height: CHECK_NOTE_LOTTIE_SIZE,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    '& > div': { width: CHECK_NOTE_LOTTIE_SIZE, height: CHECK_NOTE_LOTTIE_SIZE },
+                  }}
+                >
+                  <Lottie
+                    lottieRef={checkNoteLottieRef}
+                    animationData={hoverAnimationData}
+                    loop={false}
+                    autoplay={false}
+                    onDOMLoaded={() => {
+                      checkNoteLottieRef.current?.goToAndStop(0, true);
+                    }}
+                    style={{ width: CHECK_NOTE_LOTTIE_SIZE, height: CHECK_NOTE_LOTTIE_SIZE }}
+                    rendererSettings={{ preserveAspectRatio: 'xMidYMid meet' }}
+                  />
+                </Box>
+              }
+              onMouseEnter={() => {
+                checkNoteLottieRef.current?.setDirection(1);
+                checkNoteLottieRef.current?.play();
+              }}
+              onMouseLeave={() => {
+                checkNoteLottieRef.current?.setDirection(-1);
+                checkNoteLottieRef.current?.play();
+              }}
+              sx={{
+                py: 0.25,
+                px: 1,
+                borderRadius: '9px',
+                bgcolor: isAIPanelOpen ? 'action.selected' : 'rgba(0, 102, 70, 0.1)',
+                border: '1px solid',
+                borderColor: isAIPanelOpen ? 'action.selected' : 'rgba(0, 102, 70, 0.1)',
+                color: 'primary.main',
+                fontSize: 14,
+                fontWeight: 500,
+                textTransform: 'none',
+                '&:hover': {
+                  bgcolor: isAIPanelOpen ? 'action.selected' : 'rgba(0, 102, 70, 0.15)',
+                  borderColor: isAIPanelOpen ? 'action.selected' : 'rgba(0, 102, 70, 0.2)',
+                },
+              }}
+            >
+              AI Check
+            </Button>
+          </Box>
           <Box sx={{ width: '100%', maxWidth: 1000, mx: 'auto' }}>
-            {VISIT_NOTE_SECTIONS.map((section) => {
+            {mode === 'read' ? (
+              <>
+                {SOAP_READ_SECTION_IDS.map((sectionId) => (
+                  <ReadViewSectionBlock
+                    key={sectionId}
+                    sectionId={sectionId}
+                    title={SOAP_READ_SECTION_LABELS[sectionId]}
+                    content={SOAP_READ_VIEW_CONTENT[sectionId] ?? ''}
+                    onEdit={() => setMode('edit')}
+                  />
+                ))}
+              </>
+            ) : (
+            VISIT_NOTE_SECTIONS.map((section) => {
             const isCollapsed = collapsedSections.has(section.id);
             return (
               <Box key={section.id} sx={{ mb: 3 }}>
@@ -606,23 +890,38 @@ export function VisitNoteContent({ noteId: _noteId, appointment }: VisitNoteCont
                 </Box>
 
                 <Collapse in={!isCollapsed}>
-                  {section.subsections.map((sub) => (
+                  {section.subsections.map((sub) => {
+                    const isSubCollapsed = collapsedSubsections.has(sub.anchorId);
+                    return (
                     <Box
                       key={sub.id}
                       id={sub.anchorId}
                       sx={{
                         mb: 2,
                         scrollMarginTop: 24,
-                        p: 2,
+                        pt: 1,
+                        pb: 1,
+                        px: 2,
                       }}
                     >
-                      <Box sx={SUBSECTION_HEADER}>
-                        <KeyboardArrowDownOutlined sx={{ fontSize: 20, color: 'text.secondary' }} />
+                      <Box
+                        sx={{
+                          ...SUBSECTION_HEADER,
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => toggleSubsection(sub.anchorId)}
+                      >
+                        {isSubCollapsed ? (
+                          <KeyboardArrowRightOutlined sx={{ fontSize: 20, color: 'text.secondary' }} />
+                        ) : (
+                          <KeyboardArrowDownOutlined sx={{ fontSize: 20, color: 'text.secondary' }} />
+                        )}
                         <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: 24 }}>
                           {sub.label}
                         </Typography>
                       </Box>
 
+                      <Collapse in={!isSubCollapsed}>
                       {section.id === 'subjective' && sub.id === 'chief-complaint' && (
                         <>
                           {mode === 'edit' ? (
@@ -1082,12 +1381,15 @@ export function VisitNoteContent({ noteId: _noteId, appointment }: VisitNoteCont
                           —
                         </Typography>
                       )}
+                      </Collapse>
                     </Box>
-                  ))}
+                    );
+                  })}
                 </Collapse>
               </Box>
             );
-          })}
+          })
+            )}
           </Box>
         </Box>
       </Box>
@@ -1269,18 +1571,21 @@ function NotarizeSectionContent({
           mt: 2,
           p: 3,
           borderRadius: 4,
-          bgcolor: '#EDF5F3',
+          bgcolor: data.signStatus === 'signed' ? '#EDF5F3' : 'grey.200',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           gap: 2,
+          height: '160px',
         }}
       >
         <Button
           variant="contained"
           color="primary"
           startIcon={<SignatureAltIcon />}
+          disabled={data.signStatus === 'signed'}
+          onClick={() => data.signStatus === 'unsigned' && onUpdate('signStatus', 'signed')}
           sx={{
             textTransform: 'none',
             fontWeight: 600,
@@ -1293,9 +1598,33 @@ function NotarizeSectionContent({
         >
           {data.signStatus === 'signed' ? 'Signed' : 'Sign Note'}
         </Button>
-        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
-          Please ensure all chart validations have been met.
-        </Typography>
+        {data.signStatus === 'signed' ? (
+          <Typography
+            component="button"
+            type="button"
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              textAlign: 'center',
+              cursor: 'pointer',
+              border: 'none',
+              background: 'none',
+              padding: 0,
+              font: 'inherit',
+              textDecoration: 'underline',
+              fontSize: '14px',
+              lineHeight: '22px',
+              '&:hover': { color: 'primary.main' },
+            }}
+            onClick={() => onUpdate('signStatus', 'unsigned')}
+          >
+            Unsign Note
+          </Typography>
+        ) : (
+          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+            Please ensure all chart validations have been met.
+          </Typography>
+        )}
       </Box>
     </Box>
   );

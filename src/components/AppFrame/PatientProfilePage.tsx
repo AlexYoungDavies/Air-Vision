@@ -72,7 +72,7 @@ export type PrimaryTabId = (typeof PRIMARY_TABS)[number]['id'];
 export type MoreTabId = (typeof MORE_TAB_OPTIONS)[number]['id'];
 export type ProfileTabId = PrimaryTabId | MoreTabId;
 
-export type SecondaryPanelMode = 'pin' | 'chat' | 'tasks' | 'history';
+export type SecondaryPanelMode = 'pin' | 'chat' | 'tasks' | 'history' | 'ai';
 
 export interface OpenVisitNote {
   id: string;
@@ -126,8 +126,16 @@ export function PatientProfilePage({
   }, [secondaryPanelMode]);
 
   const setSecondaryPanelMode = (mode: SecondaryPanelMode | null) => {
-    if (!isControlled) setInternalPanelMode(mode);
-    onSecondaryPanelModeChange?.(mode);
+    const isOpening = secondaryPanelMode === null && mode !== null;
+    const apply = () => {
+      if (!isControlled) setInternalPanelMode(mode);
+      onSecondaryPanelModeChange?.(mode);
+    };
+    if (isOpening) {
+      requestAnimationFrame(apply);
+    } else {
+      apply();
+    }
   };
 
   const handleSecondaryIconClick = (mode: SecondaryPanelMode) => {
@@ -568,7 +576,12 @@ export function PatientProfilePage({
           }}
         >
           {activeVisitNote ? (
-            <VisitNoteContent noteId={activeVisitNote.id} appointment={activeVisitNote.appointment} />
+            <VisitNoteContent
+              noteId={activeVisitNote.id}
+              appointment={activeVisitNote.appointment}
+              onAICheckClick={() => setSecondaryPanelMode(secondaryPanelMode === 'ai' ? null : 'ai')}
+              isAIPanelOpen={secondaryPanelMode === 'ai'}
+            />
           ) : activeTab === 'appointments' ? (
             <AppointmentsTabContent patientId={patient.id} onOpenNote={handleOpenNote} />
           ) : activeTab === 'billing' ? (
@@ -601,6 +614,7 @@ export function PatientProfilePage({
         <Box
           sx={{
             width: secondaryPanelOpen ? 360 : 0,
+            minWidth: 0,
             flexShrink: 0,
             overflow: 'hidden',
             transition: 'width 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -618,6 +632,7 @@ export function PatientProfilePage({
               bgcolor: 'background.paper',
               transform: secondaryPanelOpen ? 'translateX(0)' : 'translateX(100%)',
               transition: 'transform 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
+              willChange: secondaryPanelOpen ? 'auto' : 'transform',
             }}
           >
             <Box
@@ -634,6 +649,7 @@ export function PatientProfilePage({
                 {(secondaryPanelMode ?? lastPanelModeRef.current) === 'chat' && 'Chat content'}
                 {(secondaryPanelMode ?? lastPanelModeRef.current) === 'tasks' && 'Tasks content'}
                 {(secondaryPanelMode ?? lastPanelModeRef.current) === 'history' && 'History content'}
+                {(secondaryPanelMode ?? lastPanelModeRef.current) === 'ai' && 'AI Check content'}
               </Typography>
             </Box>
           </Box>
