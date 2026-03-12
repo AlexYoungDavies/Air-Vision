@@ -19,7 +19,7 @@ import ImageOutlined from '@mui/icons-material/ImageOutlined';
 import ContentPasteOutlined from '@mui/icons-material/ContentPasteOutlined';
 import PersonOutlined from '@mui/icons-material/PersonOutlined';
 import TaskAltOutlined from '@mui/icons-material/TaskAltOutlined';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { MOCK_PATIENTS, TODAYS_PATIENTS, type Patient } from '../../data/mockPatients';
 import { getPatientVisitPanelData } from '../../data/mockPatientVisitPanel';
 import { MOCK_CHATS, getChatById, getMessagesForChat } from '../../data/mockChats';
@@ -135,6 +135,7 @@ function PatientsListPanel({
   selectedId: string | null;
   onSelect: (id: string) => void;
 }) {
+  const navigate = useNavigate();
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', borderRadius: '16px 0 16px 0' }}>
       <Box
@@ -203,7 +204,7 @@ function PatientsListPanel({
                   aria-label="Open note"
                   onClick={(e) => {
                     e.stopPropagation();
-                    // TODO: open note for this patient/visit
+                    navigate(`/patients/${p.id}?openNote=1`);
                   }}
                   sx={{
                     position: 'absolute',
@@ -474,6 +475,7 @@ const PANEL_SUB_LABEL = { fontSize: 11, fontWeight: 600, color: 'text.secondary'
 const PANEL_BODY = { fontSize: 12, color: 'text.primary', lineHeight: 1.5 };
 
 function PatientVisitDetailPanel({ patient }: { patient: Patient | null }) {
+  const navigate = useNavigate();
   if (!patient) {
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'text.secondary', fontSize: 13 }}>
@@ -517,9 +519,7 @@ function PatientVisitDetailPanel({ patient }: { patient: Patient | null }) {
             variant="outlined"
             size="small"
             startIcon={<ContentPasteOutlined sx={{ fontSize: 18, color: 'primary.main' }} />}
-            onClick={() => {
-              // TODO: open note for this patient/visit
-            }}
+            onClick={() => navigate(`/patients/${patient.id}?openNote=1`)}
             sx={{ textTransform: 'none', fontWeight: 500 }}
           >
             Open Note
@@ -944,7 +944,7 @@ export function HomePageContent() {
               flexDirection: 'column',
               borderRadius: 2,
               overflow: 'hidden',
-              boxShadow: '8px 4px 52px 0px rgba(0,0,0,0.12)',
+              boxShadow: 'none',
               zIndex: 10,
               bgcolor: 'background.paper',
             }}

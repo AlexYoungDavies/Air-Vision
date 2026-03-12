@@ -24,11 +24,13 @@ export function AppCanvas({ children }: AppCanvasProps) {
         sx={{
           flex: 1,
           minHeight: 0,
+          display: 'flex',
+          flexDirection: 'column',
           bgcolor: 'background.paper',
           border: '1px solid',
           borderColor: 'divider',
           borderRadius: '9px',
-          overflow: 'auto',
+          overflow: 'hidden',
         }}
       >
         {children ?? (

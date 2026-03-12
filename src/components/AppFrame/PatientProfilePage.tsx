@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -21,7 +22,7 @@ import QuestionAnswerOutlined from '@mui/icons-material/QuestionAnswerOutlined';
 import TaskAltOutlined from '@mui/icons-material/TaskAltOutlined';
 import HistoryOutlined from '@mui/icons-material/HistoryOutlined';
 import type { Patient } from '../../data/mockPatients';
-import type { Appointment } from '../../data/mockAppointments';
+import { getAppointmentsForPatient, type Appointment } from '../../data/mockAppointments';
 import { AppointmentsTabContent } from './AppointmentsTabContent';
 import { AttachmentsTabContent } from './AttachmentsTabContent';
 import { BillingTabContent } from './BillingTabContent';
@@ -102,6 +103,8 @@ export function PatientProfilePage({
   secondaryPanelMode: controlledPanelMode,
   onSecondaryPanelModeChange,
 }: PatientProfilePageProps) {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<ProfileTabId>('overview');
   const [internalPanelMode, setInternalPanelMode] = useState<SecondaryPanelMode | null>(null);
   const [moreMenuAnchor, setMoreMenuAnchor] = useState<null | HTMLElement>(null);
@@ -184,14 +187,32 @@ export function PatientProfilePage({
     const frame = requestAnimationFrame(() => setOverflowTabFadeIn(false));
     return () => cancelAnimationFrame(frame);
   }, [overflowTabVisible, overflowTabFadeIn]);
+
+  // When navigated from home page "Open Note" (e.g. ?openNote=1), open this patient's visit note
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('openNote') !== '1') return;
+    const appointments = getAppointmentsForPatient(patient.id);
+    const toOpen = appointments.find((a) => a.status === 'Complete') ?? appointments[0];
+    if (toOpen) {
+      navigate(location.pathname, { replace: true });
+      const id = `visit-note-${toOpen.id}-${Date.now()}`;
+      setOpenVisitNotes((prev) => [...prev, { id, appointment: toOpen }]);
+      setActiveVisitNoteId(id);
+      setLastOpenedNoteId(id);
+      if (openNoteAnimationTimerRef.current) clearTimeout(openNoteAnimationTimerRef.current);
+      openNoteAnimationTimerRef.current = setTimeout(() => setLastOpenedNoteId(null), 220);
+    }
+  }, [location.search, location.pathname, patient.id, navigate]);
+
   const secondaryPanelOpen = secondaryPanelMode !== null;
   const activeVisitNote = openVisitNotes.find((n) => n.id === activeVisitNoteId);
 
   return (
     <Box
       sx={{
-        width: '100%',
-        height: '100%',
+        flex: 1,
+        minHeight: 0,
         display: 'flex',
         flexDirection: 'column',
         bgcolor: 'background.paper',
@@ -539,6 +560,7 @@ export function PatientProfilePage({
           sx={{
             flex: 1,
             minWidth: 0,
+            minHeight: 0,
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
