@@ -7,6 +7,7 @@ import {
   ListItemIcon,
   ListItemText,
   Collapse,
+  Tooltip,
 } from '@mui/material';
 import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined';
 import ChevronRightOutlined from '@mui/icons-material/ChevronRightOutlined';
@@ -401,15 +402,51 @@ function NavItem({
     },
   };
 
-  if (path) {
+  const button = path ? (
+    <ListItemButton component={Link} to={path} sx={sx}>
+      {content}
+    </ListItemButton>
+  ) : (
+    <ListItemButton sx={sx}>{content}</ListItemButton>
+  );
+
+  if (collapsed) {
     return (
-      <ListItemButton component={Link} to={path} sx={sx}>
-        {content}
-      </ListItemButton>
+      <Tooltip
+        title={label}
+        placement="right"
+        enterDelay={200}
+        leaveDelay={0}
+        arrow
+        slotProps={{
+          tooltip: {
+            sx: {
+              bgcolor: '#fff',
+              color: 'text.primary',
+              border: '1px solid rgba(0, 0, 0, 0.1)',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+              fontSize: 12,
+              fontWeight: 500,
+            },
+          },
+          arrow: {
+            sx: {
+              color: '#fff',
+              '&::before': {
+                border: '1px solid rgba(0, 0, 0, 0.1)',
+                backgroundColor: '#fff',
+                boxSizing: 'border-box',
+              },
+            },
+          },
+        }}
+      >
+        {button}
+      </Tooltip>
     );
   }
 
-  return <ListItemButton sx={sx}>{content}</ListItemButton>;
+  return button;
 }
 
 function SectionHeaderButton({

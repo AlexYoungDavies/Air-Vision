@@ -12,7 +12,14 @@ import {
 import { Link, useParams, Outlet } from 'react-router-dom';
 import SearchOutlined from '@mui/icons-material/SearchOutlined';
 import PersonAddOutlined from '@mui/icons-material/PersonAddOutlined';
-import { MOCK_PATIENTS } from '../../data/mockPatients';
+import { MOCK_PATIENTS, type Patient } from '../../data/mockPatients';
+
+const APPOINTMENT_TYPE_COLORS: Record<NonNullable<Patient['appointmentType']>, string> = {
+  'Initial Eval': '#1976d2',
+  'Follow up': '#2e7d32',
+  'Progress Note': '#ed6c02',
+};
+const DEFAULT_APPOINTMENT_BORDER_COLOR = 'rgba(0, 0, 0, 0.2)';
 
 export function PatientsPage() {
   const [search, setSearch] = useState('');
@@ -116,36 +123,55 @@ export function PatientsPage() {
                 py: 0,
               }}
             >
-              {filteredPatients.map((patient) => (
-                <ListItemButton
-                  key={patient.id}
-                  component={Link}
-                  to={`/patients/${patient.id}`}
-                  selected={patientId === patient.id}
-                  sx={{
-                    py: 0.5,
-                    px: 2,
-                    flexDirection: 'column',
-                    alignItems: 'stretch',
-                  }}
-                >
-                  <ListItemText
-                    primary={patient.fullName}
-                    primaryTypographyProps={{ fontWeight: 500, fontSize: 14 }}
-                    secondary={
-                      <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: '4px', mt: 0.25 }}>
-                        <span>MRN: {patient.mrn}</span>
-                        <span>•</span>
-                        <span>{patient.dateOfBirth}</span>
-                      </Box>
-                    }
-                    secondaryTypographyProps={{
-                      fontSize: 12,
-                      color: 'text.secondary',
+              {filteredPatients.map((patient) => {
+                const blockColor =
+                  patient.appointmentType != null
+                    ? APPOINTMENT_TYPE_COLORS[patient.appointmentType]
+                    : DEFAULT_APPOINTMENT_BORDER_COLOR;
+                return (
+                  <ListItemButton
+                    key={patient.id}
+                    component={Link}
+                    to={`/patients/${patient.id}`}
+                    selected={patientId === patient.id}
+                    sx={{
+                      position: 'relative',
+                      minHeight: 0,
+                      padding: 0,
+                      flexDirection: 'row',
+                      alignItems: 'stretch',
                     }}
-                  />
-                </ListItemButton>
-              ))}
+                  >
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: 3,
+                        bgcolor: blockColor,
+                      }}
+                    />
+                    <Box sx={{ flex: 1, minWidth: 0, py: 0.75, pl: 2, pr: 2, ml: '3px' }}>
+                      <ListItemText
+                        primary={patient.fullName}
+                        primaryTypographyProps={{ fontWeight: 500, fontSize: 14 }}
+                        secondary={
+                          <Box component="span" sx={{ display: 'flex', alignItems: 'center', gap: '4px', mt: 0.25 }}>
+                            <span>MRN: {patient.mrn}</span>
+                            <span>•</span>
+                            <span>{patient.dateOfBirth}</span>
+                          </Box>
+                        }
+                        secondaryTypographyProps={{
+                          fontSize: 12,
+                          color: 'text.secondary',
+                        }}
+                      />
+                    </Box>
+                  </ListItemButton>
+                );
+              })}
             </List>
           </Box>
         )}

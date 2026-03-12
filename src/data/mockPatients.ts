@@ -37,6 +37,12 @@ export interface Patient {
   reasonForVisit?: string;
   /** Appointment time for schedule display */
   appointmentTime?: string;
+  /** Appointment type for list display: Initial Eval, Follow up, or Progress Note */
+  appointmentType?: 'Initial Eval' | 'Follow up' | 'Progress Note';
+  /** Patient has new labs to review (show labs icon on list item) */
+  hasNewLabs?: boolean;
+  /** Patient has new imaging to review (show imaging icon on list item) */
+  hasNewImaging?: boolean;
 }
 
 export const MOCK_PATIENTS: Patient[] = [
@@ -342,21 +348,20 @@ export const MOCK_PATIENTS: Patient[] = [
   },
 ];
 
-/** Subset of patients with today's schedule (reason + time) for "Today's Patients" view */
+/** Subset of patients with today's schedule for "Today's Patients" view */
 export const TODAYS_PATIENTS = ((): Patient[] => {
   const byId = (id: string) => MOCK_PATIENTS.find((p) => p.id === id)!;
   return [
-    { ...byId('1'), reasonForVisit: 'Annual physical', appointmentTime: '7:00 AM' },
-    { ...byId('2'), reasonForVisit: 'Follow-up', appointmentTime: '7:30 AM' },
-    { ...byId('3'), reasonForVisit: 'Consultation', appointmentTime: '8:00 AM' },
-    { ...byId('4'), reasonForVisit: 'Consultation', appointmentTime: '9:00 AM' },
-    { ...byId('5'), reasonForVisit: 'Lab review', appointmentTime: '9:30 AM' },
-    { ...byId('6'), reasonForVisit: 'Follow-up', appointmentTime: '10:00 AM' },
-    { ...byId('7'), reasonForVisit: 'Annual physical', appointmentTime: '11:00 AM' },
-    { ...byId('8'), reasonForVisit: 'Consultation', appointmentTime: '12:00 PM' },
-    { ...byId('9'), reasonForVisit: 'Follow-up', appointmentTime: '12:30 PM' },
-    { ...byId('10'), reasonForVisit: 'Lab review', appointmentTime: '1:00 PM' },
-    { ...byId('11'), reasonForVisit: 'Consultation', appointmentTime: '2:00 PM' },
-    { ...byId('12'), reasonForVisit: 'Follow-up', appointmentTime: '2:30 PM' },
+    { ...byId('1'), reasonForVisit: 'Annual physical', appointmentTime: '7:00 AM', appointmentType: 'Initial Eval' },
+    { ...byId('2'), reasonForVisit: 'Knee sprain', appointmentTime: '7:30 AM', appointmentType: 'Follow up', hasNewLabs: true },
+    { ...byId('3'), reasonForVisit: 'Hypertension follow-up', appointmentTime: '8:00 AM', appointmentType: 'Progress Note', hasNewImaging: true },
+    { ...byId('4'), reasonForVisit: 'Consultation', appointmentTime: '9:00 AM', appointmentType: 'Initial Eval', hasNewLabs: true, hasNewImaging: true },
+    { ...byId('5'), reasonForVisit: 'Lab review', appointmentTime: '9:30 AM', appointmentType: 'Follow up' },
+    { ...byId('7'), reasonForVisit: 'Annual physical', appointmentTime: '11:00 AM', appointmentType: 'Progress Note' },
+    { ...byId('8'), reasonForVisit: 'Consultation', appointmentTime: '12:00 PM', appointmentType: 'Initial Eval' },
+    { ...byId('9'), reasonForVisit: 'Follow-up', appointmentTime: '12:30 PM', appointmentType: 'Follow up', hasNewLabs: true },
+    { ...byId('10'), reasonForVisit: 'Lab review', appointmentTime: '1:00 PM', appointmentType: 'Progress Note' },
+    { ...byId('11'), reasonForVisit: 'Consultation', appointmentTime: '2:00 PM', appointmentType: 'Follow up' },
+    { ...byId('12'), reasonForVisit: 'Follow-up', appointmentTime: '2:30 PM', appointmentType: 'Progress Note', hasNewLabs: true, hasNewImaging: true },
   ];
 })();
