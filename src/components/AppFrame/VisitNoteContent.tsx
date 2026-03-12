@@ -33,12 +33,12 @@ import KeyboardArrowRightOutlined from '@mui/icons-material/KeyboardArrowRightOu
 import EditOutlined from '@mui/icons-material/EditOutlined';
 import VisibilityOutlined from '@mui/icons-material/VisibilityOutlined';
 import ContentCopyOutlined from '@mui/icons-material/ContentCopyOutlined';
+import SaveOutlined from '@mui/icons-material/SaveOutlined';
 import LinkOutlined from '@mui/icons-material/LinkOutlined';
 import ShowChartOutlined from '@mui/icons-material/ShowChartOutlined';
 import PersonOutlined from '@mui/icons-material/PersonOutlined';
 import AssignmentOutlined from '@mui/icons-material/AssignmentOutlined';
 import CheckCircleOutlined from '@mui/icons-material/CheckCircleOutlined';
-import AutoAwesomeOutlined from '@mui/icons-material/AutoAwesomeOutlined';
 import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
 import type { Appointment } from '../../data/mockAppointments';
 import hoverAnimationData from '../../assets/hover.json';
@@ -47,6 +47,8 @@ import {
   DEFAULT_VISIT_NOTE_DATA,
   CPT_CODE_OPTIONS,
   type VisitNoteData,
+  type SectionDef,
+  type SubsectionDef,
 } from '../../data/visitNoteSections';
 
 // Signature icon (same as Notes tab on home page)
@@ -93,17 +95,20 @@ function ReadViewSectionBlock({
     void navigator.clipboard.writeText(url);
   };
 
+  const iconButtonSx = {
+    width: 28,
+    height: 28,
+    borderRadius: '8px',
+    color: 'primary.main',
+    '&:hover': { bgcolor: 'action.hover' },
+  } as const;
+
   return (
     <Box
       id={blockId}
       sx={{
         mb: 3,
         scrollMarginTop: 24,
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 2,
-        overflow: 'hidden',
-        bgcolor: 'background.paper',
       }}
     >
       <Box
@@ -112,29 +117,26 @@ function ReadViewSectionBlock({
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: 1,
-          px: 2,
-          py: 1.5,
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-          bgcolor: 'grey.50',
+          py: 0.5,
+          mb: 1,
         }}
       >
-        <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: 18 }}>
+        <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: 24 }}>
           {title}
         </Typography>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
-          <IconButton size="small" onClick={handleCopy} aria-label="Copy" title="Copy">
+          <IconButton size="small" onClick={handleCopy} aria-label="Copy" title="Copy" sx={iconButtonSx}>
             <ContentCopyOutlined sx={{ fontSize: 18 }} />
           </IconButton>
-          <IconButton size="small" onClick={onEdit} aria-label="Edit" title="Edit">
+          <IconButton size="small" onClick={onEdit} aria-label="Edit" title="Edit" sx={iconButtonSx}>
             <EditOutlined sx={{ fontSize: 18 }} />
           </IconButton>
-          <IconButton size="small" onClick={handleCopyLink} aria-label="Copy link" title="Copy link">
+          <IconButton size="small" onClick={handleCopyLink} aria-label="Copy link" title="Copy link" sx={iconButtonSx}>
             <LinkOutlined sx={{ fontSize: 18 }} />
           </IconButton>
         </Box>
       </Box>
-      <Box sx={{ px: 2, py: 2 }}>
+      <Box>
         <Typography
           component="pre"
           sx={{
@@ -264,8 +266,11 @@ const CLINICAL_STAGE_OPTIONS = ['Initial Evaluation', 'Progress Note', 'Follow-u
 
 const CHECK_NOTE_LOTTIE_SIZE = 22;
 
+type EditingReadSectionId = (typeof SOAP_READ_SECTION_IDS)[number] | null;
+
 export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick, isAIPanelOpen }: VisitNoteContentProps) {
-  const [mode, setMode] = useState<'edit' | 'read'>('edit');
+  const [mode, setMode] = useState<'edit' | 'read'>('read');
+  const [editingReadSectionId, setEditingReadSectionId] = useState<EditingReadSectionId>(null);
   const checkNoteLottieRef = useRef<LottieRefCurrentProps | null>(null);
   const [data, setData] = useState<VisitNoteData>(DEFAULT_VISIT_NOTE_DATA);
   const [noteTemplate, setNoteTemplate] = useState(appointment.template);
@@ -646,7 +651,7 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
                 label="Note template"
                 options={NOTE_TEMPLATE_OPTIONS.map((t) => ({ value: t, label: t }))}
                 value={noteTemplate}
-                onChange={(e) => setNoteTemplate(e.target.value)}
+                onChange={(e) => setNoteTemplate(String(e.target.value))}
                 placeholder="Select template"
                 showLabel={false}
               />
@@ -657,7 +662,7 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
                 label="Clinical stage"
                 options={CLINICAL_STAGE_OPTIONS.map((s) => ({ value: s, label: s }))}
                 value={clinicalStage}
-                onChange={(e) => setClinicalStage(e.target.value)}
+                onChange={(e) => setClinicalStage(String(e.target.value))}
                 placeholder="Select stage"
                 showLabel={false}
               />
@@ -846,18 +851,77 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
               AI Check
             </Button>
           </Box>
-          <Box sx={{ width: '100%', maxWidth: 1000, mx: 'auto' }}>
+          <Box sx={{ width: '100%', maxWidth: 1000, mx: 'auto', display: 'flex', flexDirection: 'column', gap: 3 }}>
             {mode === 'read' ? (
               <>
-                {SOAP_READ_SECTION_IDS.map((sectionId) => (
-                  <ReadViewSectionBlock
-                    key={sectionId}
-                    sectionId={sectionId}
-                    title={SOAP_READ_SECTION_LABELS[sectionId]}
-                    content={SOAP_READ_VIEW_CONTENT[sectionId] ?? ''}
-                    onEdit={() => setMode('edit')}
-                  />
-                ))}
+                {SOAP_READ_SECTION_IDS.map((sectionId) => {
+                  if (sectionId === editingReadSectionId) {
+                    const section = VISIT_NOTE_SECTIONS.find((s) => s.id === sectionId);
+                    if (!section) return null;
+                    return (
+                      <Box
+                        id={`read-${sectionId}`}
+                        key={sectionId}
+                        sx={{ mb: 3, scrollMarginTop: 24 }}
+                      >
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: 1,
+                            py: 0.5,
+                            mb: 1,
+                          }}
+                        >
+                          <Typography variant="subtitle1" sx={{ fontWeight: 700, fontSize: 24 }}>
+                            {SOAP_READ_SECTION_LABELS[sectionId]}
+                          </Typography>
+                          <Button
+                            variant="contained"
+                            size="small"
+                            startIcon={<SaveOutlined />}
+                            onClick={() => setEditingReadSectionId(null)}
+                            sx={{ textTransform: 'none' }}
+                          >
+                            Save
+                          </Button>
+                        </Box>
+                        <SingleSectionEditForm
+                          section={section}
+                          data={data}
+                          mode="edit"
+                          planOfCareVisitCount={planOfCareVisitCount}
+                          updateChiefComplaintContent={updateChiefComplaintContent}
+                          updateChiefComplaintDetailedExplanation={updateChiefComplaintDetailedExplanation}
+                          updateChiefComplaintDateOfOnset={updateChiefComplaintDateOfOnset}
+                          updateChiefComplaintPainRating={updateChiefComplaintPainRating}
+                          updateHistoryOfPresentIllness={updateHistoryOfPresentIllness}
+                          updateExacerbatingFactors={updateExacerbatingFactors}
+                          updateObjectiveComments={updateObjectiveComments}
+                          updateMeasurementCell={updateMeasurementCell}
+                          updateDiagnosisSummaryCptCodes={updateDiagnosisSummaryCptCodes}
+                          updateDiagnosisSummarySummary={updateDiagnosisSummarySummary}
+                          updateContinuedCare={updateContinuedCare}
+                          updateAdditionalNotes={updateAdditionalNotes}
+                          updateTreatmentPlanContent={updateTreatmentPlanContent}
+                          updatePlanGoal={updatePlanGoal}
+                          updatePlanOfCare={updatePlanOfCare}
+                          updateNotarize={updateNotarize}
+                        />
+                      </Box>
+                    );
+                  }
+                  return (
+                    <ReadViewSectionBlock
+                      key={sectionId}
+                      sectionId={sectionId}
+                      title={SOAP_READ_SECTION_LABELS[sectionId]}
+                      content={SOAP_READ_VIEW_CONTENT[sectionId] ?? ''}
+                      onEdit={() => setEditingReadSectionId(sectionId)}
+                    />
+                  );
+                })}
               </>
             ) : (
             VISIT_NOTE_SECTIONS.map((section) => {
@@ -932,7 +996,7 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
                                 minRows={4}
                                 value={data.subjective['chief-complaint'].content}
                                 onChange={(e) => updateChiefComplaintContent(e.target.value)}
-                                sx={{ maxWidth: 600 }}
+                                sx={{ width: '100%' }}
                               />
                               <VisitNoteTextArea
                                 label="Patient Comments"
@@ -940,13 +1004,13 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
                                 minRows={3}
                                 value={data.subjective['chief-complaint'].detailedExplanation}
                                 onChange={(e) => updateChiefComplaintDetailedExplanation(e.target.value)}
-                                sx={{ maxWidth: 600 }}
+                                sx={{ width: '100%' }}
                               />
                               <VisitNoteDateField
                                 label="Date of onset"
                                 value={data.subjective['chief-complaint'].dateOfOnset}
                                 onChange={(e) => updateChiefComplaintDateOfOnset(e.target.value)}
-                                sx={{ maxWidth: 600 }}
+                                sx={{ width: '100%' }}
                               />
                               <VisitNoteRadioSelect
                                 label="Pain rating"
@@ -956,7 +1020,7 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
                                 }))}
                                 value={data.subjective['chief-complaint'].painRating}
                                 onChange={updateChiefComplaintPainRating}
-                                sx={{ maxWidth: 600 }}
+                                sx={{ width: '100%' }}
                               />
                             </Box>
                           ) : (
@@ -989,7 +1053,7 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
                                 ]}
                                 value={data.subjective['history-of-present-illness'].stateOfCondition}
                                 onChange={(v) => updateHistoryOfPresentIllness('stateOfCondition', v)}
-                                sx={{ maxWidth: 600 }}
+                                sx={{ width: '100%' }}
                               />
                               <VisitNoteRadioSelect
                                 label="Side of Issue"
@@ -1000,7 +1064,7 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
                                 ]}
                                 value={data.subjective['history-of-present-illness'].sideOfIssue}
                                 onChange={(v) => updateHistoryOfPresentIllness('sideOfIssue', v)}
-                                sx={{ maxWidth: 600 }}
+                                sx={{ width: '100%' }}
                               />
                               <VisitNoteTextArea
                                 label="History of Condition"
@@ -1008,7 +1072,7 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
                                 minRows={3}
                                 value={data.subjective['history-of-present-illness'].historyOfCondition}
                                 onChange={(e) => updateHistoryOfPresentIllness('historyOfCondition', e.target.value)}
-                                sx={{ maxWidth: 600 }}
+                                sx={{ width: '100%' }}
                               />
                             </Box>
                           ) : (
@@ -1027,7 +1091,7 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
                                 minRows={3}
                                 value={data.subjective['exacerbating-factors'].exacerbatingFactors}
                                 onChange={(e) => updateExacerbatingFactors('exacerbatingFactors', e.target.value)}
-                                sx={{ maxWidth: 600 }}
+                                sx={{ width: '100%' }}
                               />
                               <VisitNoteTextArea
                                 label="Alleviating Factors"
@@ -1035,7 +1099,7 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
                                 minRows={3}
                                 value={data.subjective['exacerbating-factors'].alleviatingFactors}
                                 onChange={(e) => updateExacerbatingFactors('alleviatingFactors', e.target.value)}
-                                sx={{ maxWidth: 600 }}
+                                sx={{ width: '100%' }}
                               />
                             </Box>
                           ) : (
@@ -1054,7 +1118,7 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
                                 minRows={3}
                                 value={data.objective['objective-comments'].comments}
                                 onChange={(e) => updateObjectiveComments(e.target.value)}
-                                sx={{ maxWidth: 600 }}
+                                sx={{ width: '100%' }}
                               />
                             </Box>
                           ) : (
@@ -1079,8 +1143,8 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
                               { measurementName: 'Lumbar Side Bend Right (degrees)', previousValues: ['', '26'] },
                             ]}
                             values={data.objective.measurements['lumbar-mobility']}
-                            onCellChange={mode === 'edit' ? (ri, ci, v) => updateMeasurementCell('lumbar-mobility', ri, ci, v) : undefined}
-                            readOnly={mode === 'read'}
+                            onCellChange={(ri, ci, v) => updateMeasurementCell('lumbar-mobility', ri, ci, v)}
+                            readOnly={false}
                           />
                           <VisitNoteMeasurementsTable
                             title="Thoracic Measurements"
@@ -1092,8 +1156,8 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
                               { measurementName: 'Thoracic Side Bend (degrees)', previousValues: ['24', '22'] },
                             ]}
                             values={data.objective.measurements.thoracic}
-                            onCellChange={mode === 'edit' ? (ri, ci, v) => updateMeasurementCell('thoracic', ri, ci, v) : undefined}
-                            readOnly={mode === 'read'}
+                            onCellChange={(ri, ci, v) => updateMeasurementCell('thoracic', ri, ci, v)}
+                            readOnly={false}
                           />
                           <VisitNoteMeasurementsTable
                             title="General Upright Range of Motion"
@@ -1105,8 +1169,8 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
                               { measurementName: 'Single-Leg Stance Time – Right (sec)', previousValues: ['14'] },
                             ]}
                             values={data.objective.measurements['general-upright']}
-                            onCellChange={mode === 'edit' ? (ri, ci, v) => updateMeasurementCell('general-upright', ri, ci, v) : undefined}
-                            readOnly={mode === 'read'}
+                            onCellChange={(ri, ci, v) => updateMeasurementCell('general-upright', ri, ci, v)}
+                            readOnly={false}
                           />
                         </Box>
                       )}
@@ -1122,7 +1186,7 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
                                 onChange={updateDiagnosisSummaryCptCodes}
                                 placeholder="Add CPT codes"
                                 searchPlaceholder="Search CPT codes..."
-                                sx={{ maxWidth: 500 }}
+                                sx={{ width: '100%' }}
                               />
                               <VisitNoteTextArea
                                 label="Summary"
@@ -1130,7 +1194,7 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
                                 minRows={4}
                                 value={data.assessment['diagnosis-summary'].summary}
                                 onChange={(e) => updateDiagnosisSummarySummary(e.target.value)}
-                                sx={{ maxWidth: 600 }}
+                                sx={{ width: '100%' }}
                               />
                             </Box>
                           ) : (
@@ -1158,7 +1222,7 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
                                 minRows={4}
                                 value={data.assessment['continued-care'].content}
                                 onChange={(e) => updateContinuedCare(e.target.value)}
-                                sx={{ maxWidth: 600 }}
+                                sx={{ width: '100%' }}
                               />
                             </Box>
                           ) : (
@@ -1181,7 +1245,7 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
                                 minRows={3}
                                 value={data.assessment['additional-notes'].content}
                                 onChange={(e) => updateAdditionalNotes(e.target.value)}
-                                sx={{ maxWidth: 600 }}
+                                sx={{ width: '100%' }}
                               />
                             </Box>
                           ) : (
@@ -1204,7 +1268,7 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
                                 minRows={4}
                                 value={data.plan['treatment-plan'].content}
                                 onChange={(e) => updateTreatmentPlanContent(e.target.value)}
-                                sx={{ maxWidth: 600 }}
+                                sx={{ width: '100%' }}
                               />
                             </Box>
                           ) : (
@@ -1232,7 +1296,7 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
                       )}
 
                       {section.id === 'plan' && sub.id === 'plan-of-care' && (
-                        <Box sx={{ pl: 3, display: 'flex', flexDirection: 'column', gap: 2, maxWidth: 600 }}>
+                        <Box sx={{ pl: 3, display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                             <VisitNoteFieldWrapper label="Duration">
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
@@ -1358,29 +1422,11 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
                             label=""
                             placeholder="Add content..."
                             minRows={2}
-                            sx={{ maxWidth: 500 }}
+                            sx={{ width: '100%' }}
                           />
                         </Box>
                       )}
 
-                      {((section.id !== 'subjective' ||
-                        (sub.id !== 'chief-complaint' &&
-                          sub.id !== 'history-of-present-illness' &&
-                          sub.id !== 'exacerbating-factors')) &&
-                        (section.id !== 'objective' ||
-                          (sub.id !== 'objective-comments' && sub.id !== 'measurements')) &&
-                        (section.id !== 'assessment' ||
-                          (sub.id !== 'diagnosis-summary' &&
-                            sub.id !== 'continued-care' &&
-                            sub.id !== 'additional-notes')) &&
-                        (section.id !== 'plan' ||
-                          (sub.id !== 'treatment-plan' && sub.id !== 'goals' && sub.id !== 'plan-of-care')) &&
-                        (section.id !== 'notarize' || sub.id !== 'notarize') &&
-                        mode === 'read') && (
-                        <Typography variant="body2" color="text.secondary" sx={{ pl: 3 }}>
-                          —
-                        </Typography>
-                      )}
                       </Collapse>
                     </Box>
                     );
@@ -1417,7 +1463,7 @@ function NotarizeSectionContent({
   const primaryProvider = primaryProviderId ? NOTARIZE_DEMO_PROVIDERS[primaryProviderId] : null;
 
   return (
-    <Box sx={{ pl: 3, display: 'flex', flexDirection: 'column', gap: 2, maxWidth: 640 }}>
+    <Box sx={{ pl: 3, display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }}>
       {/* 1. Provider selection */}
       <VisitNoteFieldWrapper label="Provider(s)">
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
@@ -1961,4 +2007,563 @@ function ReadOnlyExacerbatingFactors({
       )}
     </Box>
   );
+}
+
+/** Renders one section's edit form (all subsections). Used when editing a single section from read view. */
+function SingleSectionEditForm({
+  section,
+  data,
+  mode,
+  planOfCareVisitCount,
+  updateChiefComplaintContent,
+  updateChiefComplaintDetailedExplanation,
+  updateChiefComplaintDateOfOnset,
+  updateChiefComplaintPainRating,
+  updateHistoryOfPresentIllness,
+  updateExacerbatingFactors,
+  updateObjectiveComments,
+  updateMeasurementCell,
+  updateDiagnosisSummaryCptCodes,
+  updateDiagnosisSummarySummary,
+  updateContinuedCare,
+  updateAdditionalNotes,
+  updateTreatmentPlanContent,
+  updatePlanGoal,
+  updatePlanOfCare,
+  updateNotarize,
+}: {
+  section: SectionDef;
+  data: VisitNoteData;
+  mode: 'edit' | 'read';
+  planOfCareVisitCount: number;
+  updateChiefComplaintContent: (v: string) => void;
+  updateChiefComplaintDetailedExplanation: (v: string) => void;
+  updateChiefComplaintDateOfOnset: (v: string) => void;
+  updateChiefComplaintPainRating: (v: string | null) => void;
+  updateHistoryOfPresentIllness: (
+    field: keyof VisitNoteData['subjective']['history-of-present-illness'],
+    value: string | null
+  ) => void;
+  updateExacerbatingFactors: (field: 'exacerbatingFactors' | 'alleviatingFactors', value: string) => void;
+  updateObjectiveComments: (v: string) => void;
+  updateMeasurementCell: (
+    tableId: keyof VisitNoteData['objective']['measurements'],
+    rowIndex: number,
+    colIndex: number,
+    value: string
+  ) => void;
+  updateDiagnosisSummaryCptCodes: (v: string[]) => void;
+  updateDiagnosisSummarySummary: (v: string) => void;
+  updateContinuedCare: (v: string) => void;
+  updateAdditionalNotes: (v: string) => void;
+  updateTreatmentPlanContent: (v: string) => void;
+  updatePlanGoal: (goalIndex: number, field: keyof VisitNoteData['plan']['goals']['goals'][0], value: string | number) => void;
+  updatePlanOfCare: (
+    field: keyof VisitNoteData['plan']['plan-of-care'],
+    value: string | number
+  ) => void;
+  updateNotarize: (
+    field: keyof VisitNoteData['notarize']['notarize'],
+    value: string | boolean | string[]
+  ) => void;
+}) {
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {section.subsections.map((sub) => (
+        <Box
+          key={sub.id}
+          id={sub.anchorId}
+          sx={{
+            mb: 2,
+            scrollMarginTop: 24,
+            pt: 1,
+            pb: 1,
+            px: 2,
+          }}
+        >
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: 24, mb: 1 }}>
+            {sub.label}
+          </Typography>
+          <SubsectionFormContent
+            section={section}
+            sub={sub}
+            data={data}
+            mode={mode}
+            planOfCareVisitCount={planOfCareVisitCount}
+            updateChiefComplaintContent={updateChiefComplaintContent}
+            updateChiefComplaintDetailedExplanation={updateChiefComplaintDetailedExplanation}
+            updateChiefComplaintDateOfOnset={updateChiefComplaintDateOfOnset}
+            updateChiefComplaintPainRating={updateChiefComplaintPainRating}
+            updateHistoryOfPresentIllness={updateHistoryOfPresentIllness}
+            updateExacerbatingFactors={updateExacerbatingFactors}
+            updateObjectiveComments={updateObjectiveComments}
+            updateMeasurementCell={updateMeasurementCell}
+            updateDiagnosisSummaryCptCodes={updateDiagnosisSummaryCptCodes}
+            updateDiagnosisSummarySummary={updateDiagnosisSummarySummary}
+            updateContinuedCare={updateContinuedCare}
+            updateAdditionalNotes={updateAdditionalNotes}
+            updateTreatmentPlanContent={updateTreatmentPlanContent}
+            updatePlanGoal={updatePlanGoal}
+            updatePlanOfCare={updatePlanOfCare}
+            updateNotarize={updateNotarize}
+          />
+        </Box>
+      ))}
+    </Box>
+  );
+}
+
+/** Renders form or read-only content for one subsection. Shared by full edit view and inline section edit. */
+function SubsectionFormContent({
+  section,
+  sub,
+  data,
+  mode,
+  planOfCareVisitCount,
+  updateChiefComplaintContent,
+  updateChiefComplaintDetailedExplanation,
+  updateChiefComplaintDateOfOnset,
+  updateChiefComplaintPainRating,
+  updateHistoryOfPresentIllness,
+  updateExacerbatingFactors,
+  updateObjectiveComments,
+  updateMeasurementCell,
+  updateDiagnosisSummaryCptCodes,
+  updateDiagnosisSummarySummary,
+  updateContinuedCare,
+  updateAdditionalNotes,
+  updateTreatmentPlanContent,
+  updatePlanGoal,
+  updatePlanOfCare,
+  updateNotarize,
+}: {
+  section: SectionDef;
+  sub: SubsectionDef;
+  data: VisitNoteData;
+  mode: 'edit' | 'read';
+  planOfCareVisitCount: number;
+  updateChiefComplaintContent: (v: string) => void;
+  updateChiefComplaintDetailedExplanation: (v: string) => void;
+  updateChiefComplaintDateOfOnset: (v: string) => void;
+  updateChiefComplaintPainRating: (v: string | null) => void;
+  updateHistoryOfPresentIllness: (
+    field: keyof VisitNoteData['subjective']['history-of-present-illness'],
+    value: string | null
+  ) => void;
+  updateExacerbatingFactors: (field: 'exacerbatingFactors' | 'alleviatingFactors', value: string) => void;
+  updateObjectiveComments: (v: string) => void;
+  updateMeasurementCell: (
+    tableId: keyof VisitNoteData['objective']['measurements'],
+    rowIndex: number,
+    colIndex: number,
+    value: string
+  ) => void;
+  updateDiagnosisSummaryCptCodes: (v: string[]) => void;
+  updateDiagnosisSummarySummary: (v: string) => void;
+  updateContinuedCare: (v: string) => void;
+  updateAdditionalNotes: (v: string) => void;
+  updateTreatmentPlanContent: (v: string) => void;
+  updatePlanGoal: (goalIndex: number, field: keyof VisitNoteData['plan']['goals']['goals'][0], value: string | number) => void;
+  updatePlanOfCare: (
+    field: keyof VisitNoteData['plan']['plan-of-care'],
+    value: string | number
+  ) => void;
+  updateNotarize: (
+    field: keyof VisitNoteData['notarize']['notarize'],
+    value: string | boolean | string[]
+  ) => void;
+}) {
+  if (section.id === 'subjective' && sub.id === 'chief-complaint') {
+    return mode === 'edit' ? (
+      <Box sx={{ pl: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <VisitNoteTextArea
+          label="Chief Complaint"
+          placeholder="Add here"
+          minRows={4}
+          value={data.subjective['chief-complaint'].content}
+          onChange={(e) => updateChiefComplaintContent(e.target.value)}
+          sx={{ width: '100%' }}
+        />
+        <VisitNoteTextArea
+          label="Patient Comments"
+          placeholder="Add details about morning stiffness, getting up from bed, and impact on the day..."
+          minRows={3}
+          value={data.subjective['chief-complaint'].detailedExplanation}
+          onChange={(e) => updateChiefComplaintDetailedExplanation(e.target.value)}
+          sx={{ width: '100%' }}
+        />
+        <VisitNoteDateField
+          label="Date of onset"
+          value={data.subjective['chief-complaint'].dateOfOnset}
+          onChange={(e) => updateChiefComplaintDateOfOnset(e.target.value)}
+          sx={{ width: '100%' }}
+        />
+        <VisitNoteRadioSelect
+          label="Pain rating"
+          options={Array.from({ length: 10 }, (_, i) => ({ value: String(i + 1), label: String(i + 1) }))}
+          value={data.subjective['chief-complaint'].painRating}
+          onChange={updateChiefComplaintPainRating}
+          sx={{ width: '100%' }}
+        />
+      </Box>
+    ) : (
+      <ReadOnlyChiefComplaint data={data.subjective['chief-complaint']} />
+    );
+  }
+  if (section.id === 'subjective' && sub.id === 'history-of-present-illness') {
+    return mode === 'edit' ? (
+      <Box sx={{ pl: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <VisitNoteDateField
+          label="Date of Onset"
+          value={data.subjective['history-of-present-illness'].dateOfOnset}
+          onChange={(e) => updateHistoryOfPresentIllness('dateOfOnset', e.target.value)}
+        />
+        <VisitNoteDateField
+          label="Date of Surgery (If Applicable)"
+          value={data.subjective['history-of-present-illness'].dateOfSurgery}
+          onChange={(e) => updateHistoryOfPresentIllness('dateOfSurgery', e.target.value)}
+        />
+        <VisitNoteRadioSelect
+          label="State of Condition"
+          options={[
+            { value: 'improving', label: 'Improving' },
+            { value: 'maintaining', label: 'Maintaining' },
+            { value: 'worsening', label: 'Worsening' },
+            { value: 'insidious', label: 'Insidious' },
+          ]}
+          value={data.subjective['history-of-present-illness'].stateOfCondition}
+          onChange={(v) => updateHistoryOfPresentIllness('stateOfCondition', v)}
+          sx={{ width: '100%' }}
+        />
+        <VisitNoteRadioSelect
+          label="Side of Issue"
+          options={[
+            { value: 'left', label: 'Left' },
+            { value: 'right', label: 'Right' },
+            { value: 'bilateral', label: 'Bilateral' },
+          ]}
+          value={data.subjective['history-of-present-illness'].sideOfIssue}
+          onChange={(v) => updateHistoryOfPresentIllness('sideOfIssue', v)}
+          sx={{ width: '100%' }}
+        />
+        <VisitNoteTextArea
+          label="History of Condition"
+          placeholder="Add here"
+          minRows={3}
+          value={data.subjective['history-of-present-illness'].historyOfCondition}
+          onChange={(e) => updateHistoryOfPresentIllness('historyOfCondition', e.target.value)}
+          sx={{ width: '100%' }}
+        />
+      </Box>
+    ) : (
+      <ReadOnlyHistoryOfPresentIllness data={data.subjective['history-of-present-illness']} />
+    );
+  }
+  if (section.id === 'subjective' && sub.id === 'exacerbating-factors') {
+    return mode === 'edit' ? (
+      <Box sx={{ pl: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <VisitNoteTextArea
+          label="Exacerbating Factors"
+          placeholder="Add here"
+          minRows={3}
+          value={data.subjective['exacerbating-factors'].exacerbatingFactors}
+          onChange={(e) => updateExacerbatingFactors('exacerbatingFactors', e.target.value)}
+          sx={{ width: '100%' }}
+        />
+        <VisitNoteTextArea
+          label="Alleviating Factors"
+          placeholder="Add here"
+          minRows={3}
+          value={data.subjective['exacerbating-factors'].alleviatingFactors}
+          onChange={(e) => updateExacerbatingFactors('alleviatingFactors', e.target.value)}
+          sx={{ width: '100%' }}
+        />
+      </Box>
+    ) : (
+      <ReadOnlyExacerbatingFactors data={data.subjective['exacerbating-factors']} />
+    );
+  }
+  if (section.id === 'objective' && sub.id === 'objective-comments') {
+    return mode === 'edit' ? (
+      <Box sx={{ pl: 3 }}>
+        <VisitNoteTextArea
+          label="Comments"
+          placeholder="Add here"
+          minRows={3}
+          value={data.objective['objective-comments'].comments}
+          onChange={(e) => updateObjectiveComments(e.target.value)}
+          sx={{ width: '100%' }}
+        />
+      </Box>
+    ) : (
+      <Box sx={{ pl: 3 }}>
+        <Typography variant="body2" component="div" sx={{ whiteSpace: 'pre-wrap' }}>
+          {data.objective['objective-comments'].comments || '—'}
+        </Typography>
+      </Box>
+    );
+  }
+  if (section.id === 'objective' && sub.id === 'measurements') {
+    return (
+      <Box sx={{ pl: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <VisitNoteMeasurementsTable
+          title="Lumbar Mobility"
+          columnLabels={['Left', 'Right']}
+          rows={[
+            { measurementName: 'Lumbar Flexion (degrees)', previousValues: ['52', '48'] },
+            { measurementName: 'Lumbar Extension (degrees)', previousValues: ['22', '20'] },
+            { measurementName: 'Lumbar Side Bend Left (degrees)', previousValues: ['28', ''] },
+            { measurementName: 'Lumbar Side Bend Right (degrees)', previousValues: ['', '26'] },
+          ]}
+          values={data.objective.measurements['lumbar-mobility']}
+          onCellChange={mode === 'edit' ? (ri, ci, v) => updateMeasurementCell('lumbar-mobility', ri, ci, v) : undefined}
+          readOnly={mode === 'read'}
+        />
+        <VisitNoteMeasurementsTable
+          title="Thoracic Measurements"
+          columnLabels={['Left', 'Right']}
+          rows={[
+            { measurementName: 'Thoracic Rotation Left (degrees)', previousValues: ['38', ''] },
+            { measurementName: 'Thoracic Rotation Right (degrees)', previousValues: ['', '35'] },
+            { measurementName: 'Thoracic Extension (degrees)', previousValues: ['18', '18'] },
+            { measurementName: 'Thoracic Side Bend (degrees)', previousValues: ['24', '22'] },
+          ]}
+          values={data.objective.measurements.thoracic}
+          onCellChange={mode === 'edit' ? (ri, ci, v) => updateMeasurementCell('thoracic', ri, ci, v) : undefined}
+          readOnly={mode === 'read'}
+        />
+        <VisitNoteMeasurementsTable
+          title="General Upright Range of Motion"
+          columnLabels={['Value']}
+          rows={[
+            { measurementName: 'Standing Forward Reach (cm)', previousValues: ['28'] },
+            { measurementName: 'Sit-to-Stand (reps in 30 sec)', previousValues: ['10'] },
+            { measurementName: 'Single-Leg Stance Time – Left (sec)', previousValues: ['12'] },
+            { measurementName: 'Single-Leg Stance Time – Right (sec)', previousValues: ['14'] },
+          ]}
+          values={data.objective.measurements['general-upright']}
+          onCellChange={mode === 'edit' ? (ri, ci, v) => updateMeasurementCell('general-upright', ri, ci, v) : undefined}
+          readOnly={mode === 'read'}
+        />
+      </Box>
+    );
+  }
+  if (section.id === 'assessment' && sub.id === 'diagnosis-summary') {
+    return mode === 'edit' ? (
+      <Box sx={{ pl: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <VisitNoteChipSelect
+          label="CPT codes"
+          options={CPT_CODE_OPTIONS}
+          value={data.assessment['diagnosis-summary'].cptCodes}
+          onChange={updateDiagnosisSummaryCptCodes}
+          placeholder="Add CPT codes"
+          searchPlaceholder="Search CPT codes..."
+          sx={{ width: '100%' }}
+        />
+        <VisitNoteTextArea
+          label="Summary"
+          placeholder="Describe the diagnoses the provider has selected..."
+          minRows={4}
+          value={data.assessment['diagnosis-summary'].summary}
+          onChange={(e) => updateDiagnosisSummarySummary(e.target.value)}
+          sx={{ width: '100%' }}
+        />
+      </Box>
+    ) : (
+      <Box sx={{ pl: 3 }}>
+        {data.assessment['diagnosis-summary'].cptCodes.length > 0 && (
+          <Typography variant="body2" sx={{ mb: 1 }}>
+            CPT codes: {data.assessment['diagnosis-summary'].cptCodes.join(', ')}
+          </Typography>
+        )}
+        <Typography variant="body2" component="div" sx={{ whiteSpace: 'pre-wrap' }}>
+          {data.assessment['diagnosis-summary'].summary || '—'}
+        </Typography>
+      </Box>
+    );
+  }
+  if (section.id === 'assessment' && sub.id === 'continued-care') {
+    return mode === 'edit' ? (
+      <Box sx={{ pl: 3 }}>
+        <VisitNoteTextArea
+          label="Continued care"
+          placeholder="Reasoning why care should be continued..."
+          minRows={4}
+          value={data.assessment['continued-care'].content}
+          onChange={(e) => updateContinuedCare(e.target.value)}
+          sx={{ width: '100%' }}
+        />
+      </Box>
+    ) : (
+      <Box sx={{ pl: 3 }}>
+        <Typography variant="body2" component="div" sx={{ whiteSpace: 'pre-wrap' }}>
+          {data.assessment['continued-care'].content || '—'}
+        </Typography>
+      </Box>
+    );
+  }
+  if (section.id === 'assessment' && sub.id === 'additional-notes') {
+    return mode === 'edit' ? (
+      <Box sx={{ pl: 3 }}>
+        <VisitNoteTextArea
+          label="Additional notes"
+          placeholder="Extra notes about the diagnosis..."
+          minRows={3}
+          value={data.assessment['additional-notes'].content}
+          onChange={(e) => updateAdditionalNotes(e.target.value)}
+          sx={{ width: '100%' }}
+        />
+      </Box>
+    ) : (
+      <Box sx={{ pl: 3 }}>
+        <Typography variant="body2" component="div" sx={{ whiteSpace: 'pre-wrap' }}>
+          {data.assessment['additional-notes'].content || '—'}
+        </Typography>
+      </Box>
+    );
+  }
+  if (section.id === 'plan' && sub.id === 'treatment-plan') {
+    return mode === 'edit' ? (
+      <Box sx={{ pl: 3 }}>
+        <VisitNoteTextArea
+          label="Treatment Plan"
+          placeholder="Add content..."
+          minRows={4}
+          value={data.plan['treatment-plan'].content}
+          onChange={(e) => updateTreatmentPlanContent(e.target.value)}
+          sx={{ width: '100%' }}
+        />
+      </Box>
+    ) : (
+      <Box sx={{ pl: 3 }}>
+        <Typography variant="body2" component="div" sx={{ whiteSpace: 'pre-wrap' }}>
+          {data.plan['treatment-plan'].content || '—'}
+        </Typography>
+      </Box>
+    );
+  }
+  if (section.id === 'plan' && sub.id === 'goals') {
+    return (
+      <Box sx={{ pl: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        {data.plan.goals.goals.map((goal, idx) => (
+          <PlanGoalCard
+            key={goal.id}
+            goal={goal}
+            goalIndex={idx}
+            mode={mode}
+            onUpdate={updatePlanGoal}
+          />
+        ))}
+      </Box>
+    );
+  }
+  if (section.id === 'plan' && sub.id === 'plan-of-care') {
+    return (
+      <Box sx={{ pl: 3, display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+          <VisitNoteFieldWrapper label="Duration">
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <TextField
+                size="small"
+                placeholder="0"
+                value={data.plan['plan-of-care'].durationValue}
+                onChange={(e) => updatePlanOfCare('durationValue', e.target.value)}
+                sx={{
+                  width: 72,
+                  '& .MuiInputBase-root': { ...baseInputSx, height: 28 },
+                  '& .MuiInputBase-input': { py: 0, px: 1.5, fontSize: 14, textAlign: 'center' },
+                }}
+              />
+              <Select
+                size="small"
+                value={data.plan['plan-of-care'].durationUnit}
+                onChange={(e) => updatePlanOfCare('durationUnit', e.target.value as VisitNoteData['plan']['plan-of-care']['durationUnit'])}
+                displayEmpty
+                IconComponent={KeyboardArrowDownOutlined}
+                sx={{
+                  ...baseInputSx,
+                  height: 28,
+                  minWidth: 100,
+                  '& .MuiSelect-select': { py: 0, px: 1.5, fontSize: 14 },
+                }}
+              >
+                <MenuItem value="days">Days</MenuItem>
+                <MenuItem value="weeks">Weeks</MenuItem>
+                <MenuItem value="months">Months</MenuItem>
+              </Select>
+            </Box>
+          </VisitNoteFieldWrapper>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+          <VisitNoteFieldWrapper label="Frequency">
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+              <TextField
+                size="small"
+                placeholder="0"
+                value={data.plan['plan-of-care'].frequencyValue}
+                onChange={(e) => updatePlanOfCare('frequencyValue', e.target.value)}
+                sx={{
+                  width: 72,
+                  '& .MuiInputBase-root': { ...baseInputSx, height: 28 },
+                  '& .MuiInputBase-input': { py: 0, px: 1.5, fontSize: 14, textAlign: 'center' },
+                }}
+              />
+              <Select
+                size="small"
+                value={data.plan['plan-of-care'].frequencyUnit}
+                onChange={(e) => updatePlanOfCare('frequencyUnit', e.target.value as VisitNoteData['plan']['plan-of-care']['frequencyUnit'])}
+                displayEmpty
+                IconComponent={KeyboardArrowDownOutlined}
+                sx={{
+                  ...baseInputSx,
+                  height: 28,
+                  minWidth: 110,
+                  '& .MuiSelect-select': { py: 0, px: 1.5, fontSize: 14 },
+                }}
+              >
+                <MenuItem value="per-week">Per Week</MenuItem>
+                <MenuItem value="per-month">Per Month</MenuItem>
+                <MenuItem value="per-year">Per Year</MenuItem>
+              </Select>
+            </Box>
+          </VisitNoteFieldWrapper>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+          <VisitNoteFieldWrapper label="Care Timeline">
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+              <VisitNoteDateField
+                label=""
+                value={data.plan['plan-of-care'].careTimelineStart}
+                onChange={(e) => updatePlanOfCare('careTimelineStart', e.target.value)}
+                placeholder="mm/dd/yyyy"
+              />
+              <Typography component="span" sx={{ color: 'text.secondary', fontWeight: 500 }}>→</Typography>
+              <VisitNoteDateField
+                label=""
+                value={data.plan['plan-of-care'].careTimelineEnd}
+                onChange={(e) => updatePlanOfCare('careTimelineEnd', e.target.value)}
+                placeholder="mm/dd/yyyy"
+              />
+            </Box>
+          </VisitNoteFieldWrapper>
+        </Box>
+        <VisitNoteFieldWrapper label="Visit Count" sublabel="Auto-calculated" disabled>
+          <TextField
+            size="small"
+            value={planOfCareVisitCount}
+            disabled
+            sx={{
+              width: 72,
+              '& .MuiInputBase-root': { ...baseInputSx, height: 28 },
+              '& .MuiInputBase-input': { py: 0, px: 1.5, fontSize: 14, textAlign: 'center' },
+            }}
+          />
+        </VisitNoteFieldWrapper>
+      </Box>
+    );
+  }
+  if (section.id === 'notarize' && sub.id === 'notarize') {
+    return <NotarizeSectionContent data={data.notarize.notarize} onUpdate={updateNotarize} />;
+  }
+  return null;
 }

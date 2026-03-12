@@ -474,14 +474,116 @@ const PANEL_SUBSECTION = {
 const PANEL_SUB_LABEL = { fontSize: 11, fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5, mb: 0.5 };
 const PANEL_BODY = { fontSize: 12, color: 'text.primary', lineHeight: 1.5 };
 
+/** Day summary stats when no patient is selected. Derived from mock data. */
+function getDaySummaryStats() {
+  const patientsToday = TODAYS_PATIENTS.length;
+  const newLabsImages = TODAYS_PATIENTS.reduce(
+    (sum, p) => sum + (p.hasNewLabs ? 1 : 0) + (p.hasNewImaging ? 1 : 0),
+    0
+  );
+  const messagesUnread = MOCK_CHATS.filter((c) => c.unread).length;
+  return {
+    patientsToday,
+    notesToSign: 6,
+    newLabsImages,
+    tasksOutstanding: 4,
+    messagesUnread,
+  };
+}
+
+function DaySummaryPanel() {
+  const stats = getDaySummaryStats();
+  return (
+    <Box
+      sx={{
+        p: 3,
+        height: '100%',
+        overflow: 'auto',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 3,
+        justifyContent: 'center',
+        alignItems: 'center',
+      }}
+    >
+      <Typography variant="h2" sx={{ fontSize: 18, fontWeight: 600, color: 'text.primary', mb: 0.5 }}>
+        Today’s summary
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ fontSize: 13, mb: 1 }}>
+        Your day at a glance
+      </Typography>
+
+      {/* Main callouts: big number, small title underneath */}
+      <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, alignItems: 'center', textAlign: 'center' }}>
+          <Typography
+            component="span"
+            sx={{
+              fontSize: 80,
+              fontWeight: 700,
+              lineHeight: 1.1,
+              color: 'primary.main',
+            }}
+          >
+            {stats.patientsToday}
+          </Typography>
+          <Typography sx={{ fontSize: 12, fontWeight: 500, color: 'text.secondary' }}>
+            Patients today
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, alignItems: 'center', textAlign: 'center' }}>
+          <Typography
+            component="span"
+            sx={{
+              fontSize: 80,
+              fontWeight: 700,
+              lineHeight: 1.1,
+              color: 'primary.main',
+            }}
+          >
+            {stats.notesToSign}
+          </Typography>
+          <Typography sx={{ fontSize: 12, fontWeight: 500, color: 'text.secondary' }}>
+            Notes to sign
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* Secondary: smaller numbers with labels below, accent color on number only */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1, alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, alignItems: 'center', textAlign: 'center' }}>
+          <Typography sx={{ fontSize: 20, fontWeight: 700, lineHeight: 1.2, color: 'primary.main' }}>
+            {stats.newLabsImages}
+          </Typography>
+          <Typography sx={{ fontSize: 12, fontWeight: 500, color: 'text.secondary' }}>
+            New Documents
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, alignItems: 'center', textAlign: 'center' }}>
+          <Typography sx={{ fontSize: 20, fontWeight: 700, lineHeight: 1.2, color: 'primary.main' }}>
+            {stats.tasksOutstanding}
+          </Typography>
+          <Typography sx={{ fontSize: 12, fontWeight: 500, color: 'text.secondary' }}>
+            Tasks
+          </Typography>
+        </Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, alignItems: 'center', textAlign: 'center' }}>
+          <Typography sx={{ fontSize: 20, fontWeight: 700, lineHeight: 1.2, color: 'primary.main' }}>
+            {stats.messagesUnread}
+          </Typography>
+          <Typography sx={{ fontSize: 12, fontWeight: 500, color: 'text.secondary' }}>
+            Messages
+          </Typography>
+        </Box>
+      </Box>
+    </Box>
+  );
+}
+
 function PatientVisitDetailPanel({ patient }: { patient: Patient | null }) {
   const navigate = useNavigate();
   if (!patient) {
-    return (
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'text.secondary', fontSize: 13 }}>
-        Select a patient to view visit information
-      </Box>
-    );
+    return <DaySummaryPanel />;
   }
   const data = getPatientVisitPanelData(patient);
   return (

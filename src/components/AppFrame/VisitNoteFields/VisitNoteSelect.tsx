@@ -37,8 +37,8 @@ export function VisitNoteSelect({
       >
         <Select
           displayEmpty
-          renderValue={(v) => {
-            if (v === '' || v == null) return <span className="visit-note-select-placeholder">{placeholder}</span>;
+          renderValue={(v: unknown) => {
+            if (v === '' || v === undefined || v === null) return <span className="visit-note-select-placeholder">{placeholder}</span>;
             return options.find((o) => o.value === v)?.label ?? String(v);
           }}
           IconComponent={KeyboardArrowDownOutlined}
