@@ -37,7 +37,10 @@ export function AppFrame({ children }: AppFrameProps) {
             bgcolor: 'background.default',
           }}
         >
-          <HeaderBar />
+          <HeaderBar
+            navCollapsed={navCollapsed}
+            onToggleNav={() => setNavCollapsed((c) => !c)}
+          />
           <AppCanvas>{children ?? <Outlet />}</AppCanvas>
         </Box>
       </Box>
