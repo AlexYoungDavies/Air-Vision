@@ -534,6 +534,8 @@ export function SideNav({ collapsed, onToggle }: SideNavProps) {
             flexDirection: 'column',
             gap: 0.5,
             minHeight: 0,
+            overflow: 'hidden',
+            overflowY: 'auto',
           }}
         >
           {/* Universal (no heading) */}

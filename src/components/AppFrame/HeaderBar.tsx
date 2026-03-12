@@ -3,8 +3,11 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Box, IconButton, TextField, Avatar, Button, SvgIcon } from '@mui/material';
 import SearchOutlined from '@mui/icons-material/SearchOutlined';
 import SmartToyOutlined from '@mui/icons-material/SmartToyOutlined';
+import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
+import hoverAnimationData from '../../assets/hover.json';
 
 const ICON_SIZE = 20;
+const LOTTIE_SIZE = 22;
 
 function ArrowLeftIcon(props: React.ComponentProps<typeof SvgIcon>) {
   return (
@@ -56,6 +59,7 @@ export function HeaderBar({ navCollapsed = false, onToggleNav }: HeaderBarProps 
   const navigate = useNavigate();
   const location = useLocation();
   const cameFromBackRef = useRef(false);
+  const askAthelasLottieRef = useRef<LottieRefCurrentProps | null>(null);
   const [canGoForward, setCanGoForward] = useState(false);
 
   useEffect(() => {
@@ -82,8 +86,8 @@ export function HeaderBar({ navCollapsed = false, onToggleNav }: HeaderBarProps 
       sx={{
         width: '100%',
         height: 'fit-content',
-        pl: 2,
-        pr: 2,
+        pl: 1,
+        pr: 1,
         pt: 0.5,
         pb: 0.5,
         display: 'flex',
@@ -197,7 +201,39 @@ export function HeaderBar({ navCollapsed = false, onToggleNav }: HeaderBarProps 
         </Avatar>
         <Button
           variant="text"
-          startIcon={<SmartToyOutlined sx={{ fontSize: ICON_SIZE }} />}
+          startIcon={
+            <Box
+              component="span"
+              sx={{
+                width: LOTTIE_SIZE,
+                height: LOTTIE_SIZE,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                '& > div': { width: LOTTIE_SIZE, height: LOTTIE_SIZE },
+              }}
+            >
+              <Lottie
+                lottieRef={askAthelasLottieRef}
+                animationData={hoverAnimationData}
+                loop={false}
+                autoplay={false}
+                onDOMLoaded={() => {
+                  askAthelasLottieRef.current?.goToAndStop(0, true);
+                }}
+                style={{ width: LOTTIE_SIZE, height: LOTTIE_SIZE }}
+                rendererSettings={{ preserveAspectRatio: 'xMidYMid meet' }}
+              />
+            </Box>
+          }
+          onMouseEnter={() => {
+            askAthelasLottieRef.current?.setDirection(1);
+            askAthelasLottieRef.current?.play();
+          }}
+          onMouseLeave={() => {
+            askAthelasLottieRef.current?.setDirection(-1);
+            askAthelasLottieRef.current?.play();
+          }}
           sx={{
             height: 28,
             px: 1.25,
