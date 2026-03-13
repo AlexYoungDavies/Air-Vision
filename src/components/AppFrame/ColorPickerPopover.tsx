@@ -34,7 +34,7 @@ export function ColorPickerPopover({
         paper: {
           sx: {
             mt: 1,
-            borderRadius: 2,
+            borderRadius: '12px',
           },
         },
       }}
@@ -79,7 +79,7 @@ export function ColorPickerPopover({
                 sx={{
                   width: 40,
                   height: 40,
-                  borderRadius: 2,
+                  borderRadius: '10px',
                   border: '2px solid',
                   borderColor: isSelected ? 'primary.main' : 'divider',
                   bgcolor: swatch,

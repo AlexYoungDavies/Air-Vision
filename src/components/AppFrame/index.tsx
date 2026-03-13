@@ -21,7 +21,7 @@ export function AppFrame({ children }: AppFrameProps) {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'l') {
+      if (e.shiftKey && e.key === 'R') {
         e.preventDefault();
         setColorPickerOpen((open) => !open);
       }
