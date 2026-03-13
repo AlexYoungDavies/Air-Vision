@@ -11,7 +11,6 @@ import {
   ListItemIcon,
   ListItemText,
   Tooltip,
-  Paper,
 } from '@mui/material';
 import ChevronLeftOutlined from '@mui/icons-material/ChevronLeftOutlined';
 import ChevronRightOutlined from '@mui/icons-material/ChevronRightOutlined';

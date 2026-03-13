@@ -1,4 +1,4 @@
-import { Box, Paper, Typography } from '@mui/material';
+import { Paper, Typography } from '@mui/material';
 
 const CALLOUT_BASE = {
   bgcolor: 'primary.light',
