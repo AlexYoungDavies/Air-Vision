@@ -1,10 +1,16 @@
 import { useRef, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Box, IconButton, Avatar, Button, SvgIcon, Popover, List, ListItemButton, Typography } from '@mui/material';
+import { keyframes } from '@mui/system';
 import SearchOutlined from '@mui/icons-material/SearchOutlined';
 import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
 import hoverAnimationData from '../../assets/hover.json';
 import { MOCK_PATIENTS } from '../../data/mockPatients';
+
+const lottieSlowSpin = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
 
 const ICON_SIZE = 20;
 const LOTTIE_SIZE = 22;
@@ -328,6 +334,7 @@ export function HeaderBar({ navCollapsed = false, onToggleNav, onAskAthelasClick
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                animation: `${lottieSlowSpin} 20s linear infinite`,
                 '& > div': { width: LOTTIE_SIZE, height: LOTTIE_SIZE },
               }}
             >

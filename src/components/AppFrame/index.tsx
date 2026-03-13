@@ -84,7 +84,15 @@ export function AppFrame({ children }: AppFrameProps) {
           <AppCanvas>{children ?? <Outlet />}</AppCanvas>
         </Box>
         {aiAssistantOpen && (
-          <AIAssistantPanel onClose={() => setAiAssistantOpen(false)} />
+          <Box
+            sx={{
+              width: 280,
+              flexShrink: 0,
+              overflow: 'hidden',
+            }}
+          >
+            <AIAssistantPanel onClose={() => setAiAssistantOpen(false)} />
+          </Box>
         )}
       </Box>
       <ColorPickerPopover

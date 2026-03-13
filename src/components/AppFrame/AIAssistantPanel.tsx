@@ -1,11 +1,26 @@
-import { useState } from 'react';
-import { Box, TextField } from '@mui/material';
+import { useState, useRef, useEffect } from 'react';
+import { Box, TextField, Typography } from '@mui/material';
+import { keyframes } from '@mui/system';
 import CloseOutlined from '@mui/icons-material/CloseOutlined';
 import AttachFileOutlined from '@mui/icons-material/AttachFileOutlined';
 import SendOutlined from '@mui/icons-material/SendOutlined';
+import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
+import hoverAnimationData from '../../assets/hover.json';
 import { AppIconButton } from '../AppIconButton';
 
 const PANEL_WIDTH = 280;
+
+const lottieSlowSpin = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
+
+const greetingEntrance = keyframes`
+  0% { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+`;
+/** Hover.json is ~80.56 frames @ 29.97fps ≈ 2.69s. Speed factor to get 2s per half. */
+const GREETING_LOTTIE_SPEED = (80.56 / 29.97) / 2;
 
 export interface AIAssistantPanelProps {
   onClose: () => void;
@@ -13,6 +28,24 @@ export interface AIAssistantPanelProps {
 
 export function AIAssistantPanel({ onClose }: AIAssistantPanelProps) {
   const [inputValue, setInputValue] = useState('');
+  const greetingLottieRef = useRef<LottieRefCurrentProps | null>(null);
+  const directionRef = useRef(1);
+
+  useEffect(() => {
+    const lottie = greetingLottieRef.current;
+    if (!lottie) return;
+    lottie.setSpeed(GREETING_LOTTIE_SPEED);
+    lottie.setDirection(1);
+    directionRef.current = 1;
+    lottie.play();
+  }, []);
+
+  const handleGreetingLottieComplete = () => {
+    const nextDir = (directionRef.current === 1 ? -1 : 1) as 1 | -1;
+    directionRef.current = nextDir;
+    greetingLottieRef.current?.setDirection(nextDir);
+    greetingLottieRef.current?.play();
+  };
 
   const handleSend = () => {
     if (!inputValue.trim()) return;
@@ -53,14 +86,47 @@ export function AIAssistantPanel({ onClose }: AIAssistantPanelProps) {
         </AppIconButton>
       </Box>
 
-      {/* Chat content area - empty */}
+      {/* Chat content area: greeting when empty */}
       <Box
         sx={{
           flex: 1,
           minHeight: 0,
           overflow: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          px: 2,
         }}
-      />
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 1.5,
+            animation: `${greetingEntrance} 0.4s ease-out forwards`,
+          }}
+        >
+          <Box sx={{ width: 80, height: 80, animation: `${lottieSlowSpin} 20s linear infinite` }}>
+            <Lottie
+              lottieRef={greetingLottieRef}
+              animationData={hoverAnimationData}
+              loop={false}
+              onComplete={handleGreetingLottieComplete}
+              style={{ width: 80, height: 80 }}
+              rendererSettings={{ preserveAspectRatio: 'xMidYMid meet' }}
+            />
+          </Box>
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            sx={{ textAlign: 'center', fontWeight: 500 }}
+          >
+            How can I help you?
+          </Typography>
+        </Box>
+      </Box>
 
       {/* Composer: text on top (grows with wrap), bottom row = Attach + Send */}
       <Box
