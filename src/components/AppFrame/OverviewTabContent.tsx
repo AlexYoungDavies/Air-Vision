@@ -831,7 +831,7 @@ export function OverviewTabContent({ patient, onSecondaryPanelMode, onNavigateTo
       >
         {/* Container: patient name + LabelValue row (always visible) */}
         <Box sx={{ flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: 2, flexWrap: 'nowrap' }}>
             <Typography sx={{ fontSize: 32, fontWeight: 700 }}>
               {patient.fullName}
             </Typography>
