@@ -62,7 +62,7 @@ export function createAppTheme(accentKey: AccentKey) {
         default: background.default,
         gradientStart: background.gradientStart,
         gradientEnd: background.gradientEnd,
-      },
+      } as typeof BASE_OPTIONS.palette.background,
     },
   });
 }

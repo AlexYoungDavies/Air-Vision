@@ -276,7 +276,7 @@ function ReadViewSectionFormatted({
       );
     } else {
       nodes.push(
-        <Box key={segIdx} component="ul" sx={{ mb: 1, ...listSx }}>
+        <Box key={segIdx} component="ul" sx={{ ...listSx, mb: 1 }}>
           {lines.map((line, i) => (
             <Typography key={i} component="li" variant="body2" sx={typographySx}>
               {line}
@@ -318,7 +318,7 @@ export function CitationPanelContent({
   /** Called when a citation card is clicked; use to highlight the corresponding citation in the note. */
   onCitationCardClick?: (citationNumber: number) => void;
 } = {}) {
-  const cardRefs = useRef<Map<number, HTMLDivElement | null>>(new Map());
+  const cardRefs = useRef<Map<number, HTMLButtonElement | null>>(new Map());
 
   useEffect(() => {
     if (highlightedCitationNumber == null) return;
@@ -493,20 +493,6 @@ const CARRY_FORWARD_SOURCES: Partial<Record<string, string>> = {
   'plan-of-care': 'Initial Eval, Mar 4th 2026',
 };
 
-/** Unique source labels in display order; citation number = 1-based index (one number per source). */
-const UNIQUE_SOURCE_LABELS: string[] = [
-  'Initial Eval, Mar 4th 2026',
-  'Follow-up, Mar 7th 2026',
-  'Progress Note, Mar 9th',
-  'previous note, Mar 9th 2026',
-];
-
-/** Source label → citation number (1-based). Subsections that share a source share the same number. */
-function getSourceCitationNumber(sourceLabel: string): number {
-  const idx = UNIQUE_SOURCE_LABELS.indexOf(sourceLabel);
-  return idx === -1 ? 0 : idx + 1;
-}
-
 /** Citation numbers to show per read-view section (source numbers; same source = same number). */
 const SECTION_CITATION_NUMBERS: Record<string, number[]> = {
   subjective: [1, 1, 1],   // chief-complaint, HPI, exacerbating all from source 1
@@ -579,13 +565,13 @@ function CitationBadge({
       component="span"
       role={isClickable ? 'button' : undefined}
       tabIndex={isClickable ? 0 : undefined}
-      onClick={isClickable ? () => onClick(number) : undefined}
+      onClick={isClickable ? () => onClick?.(number) : undefined}
       onKeyDown={
         isClickable
           ? (e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                onClick(number);
+                onClick?.(number);
               }
             }
           : undefined

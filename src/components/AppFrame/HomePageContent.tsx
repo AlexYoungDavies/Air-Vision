@@ -906,8 +906,10 @@ export function HomePageContent() {
       sx={{
         width: '100%',
         minHeight: '100%',
-        background: (theme) =>
-          `linear-gradient(to bottom, ${theme.palette.background.gradientStart ?? theme.palette.background.default} 0%, ${theme.palette.background.gradientEnd ?? theme.palette.background.default} 100%)`,
+        background: (theme) => {
+          const bg = theme.palette.background as { default?: string; gradientStart?: string; gradientEnd?: string };
+          return `linear-gradient(to bottom, ${bg.gradientStart ?? bg.default} 0%, ${bg.gradientEnd ?? bg.default} 100%)`;
+        },
         display: 'flex',
         flexDirection: 'column',
         gap: 3,

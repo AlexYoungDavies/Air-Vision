@@ -9,7 +9,7 @@ import {
   Collapse,
   Tooltip,
 } from '@mui/material';
-import { alpha } from '@mui/material/styles';
+import { alpha, type Theme } from '@mui/material/styles';
 import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined';
 import ChevronRightOutlined from '@mui/icons-material/ChevronRightOutlined';
 import ChevronLeftOutlined from '@mui/icons-material/ChevronLeftOutlined';
@@ -397,10 +397,10 @@ function NavItem({
     gap: 0.75,
     borderRadius: 1,
     justifyContent: collapsed ? 'center' : 'flex-start',
-    bgcolor: active ? (theme) => alpha(theme.palette.primary.main, 0.2) : 'transparent',
+    bgcolor: active ? (theme: Theme) => alpha(theme.palette.primary.main, 0.2) : 'transparent',
     '&:hover': {
       bgcolor: active
-        ? (theme) => alpha(theme.palette.primary.main, 0.25)
+        ? (theme: Theme) => alpha(theme.palette.primary.main, 0.25)
         : 'action.hover',
     },
   };
