@@ -6,6 +6,7 @@ import { HeaderBar } from './HeaderBar';
 import { AppCanvas } from './AppCanvas';
 import { AIAssistantPanel } from './AIAssistantPanel';
 import { ColorPickerPopover } from './ColorPickerPopover';
+import { SpotlightSearch } from './SpotlightSearch';
 import { useAccent } from '../../theme/AppThemeProvider';
 
 export interface AppFrameProps {
@@ -16,6 +17,8 @@ export function AppFrame({ children }: AppFrameProps) {
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [aiAssistantOpen, setAiAssistantOpen] = useState(false);
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
+  const [spotlightOpen, setSpotlightOpen] = useState(false);
+  const [spotlightQuery, setSpotlightQuery] = useState('');
   const colorPickerAnchorRef = useRef<HTMLDivElement>(null);
   const { accentKey, setAccentKey } = useAccent();
 
@@ -24,6 +27,10 @@ export function AppFrame({ children }: AppFrameProps) {
       if (e.shiftKey && e.key === 'R') {
         e.preventDefault();
         setColorPickerOpen((open) => !open);
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setSpotlightOpen((open) => !open);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -72,6 +79,7 @@ export function AppFrame({ children }: AppFrameProps) {
             navCollapsed={navCollapsed}
             onToggleNav={() => setNavCollapsed((c) => !c)}
             onAskAthelasClick={() => setAiAssistantOpen((o) => !o)}
+            onSearchClick={() => setSpotlightOpen(true)}
           />
           <AppCanvas>{children ?? <Outlet />}</AppCanvas>
         </Box>
@@ -85,6 +93,12 @@ export function AppFrame({ children }: AppFrameProps) {
         onClose={() => setColorPickerOpen(false)}
         selectedAccentKey={accentKey}
         onSelectAccent={setAccentKey}
+      />
+      <SpotlightSearch
+        open={spotlightOpen}
+        onClose={() => setSpotlightOpen(false)}
+        query={spotlightQuery}
+        onQueryChange={setSpotlightQuery}
       />
     </Box>
   );

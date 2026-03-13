@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Box, IconButton, TextField, Avatar, Button, SvgIcon, Popover, List, ListItemButton, Typography } from '@mui/material';
+import { Box, IconButton, Avatar, Button, SvgIcon, Popover, List, ListItemButton, Typography } from '@mui/material';
 import SearchOutlined from '@mui/icons-material/SearchOutlined';
 import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
 import hoverAnimationData from '../../assets/hover.json';
@@ -86,11 +86,13 @@ export interface HeaderBarProps {
   onToggleNav?: () => void;
   /** Called when the user clicks "Ask Athelas" (toggles AI Assistant panel). */
   onAskAthelasClick?: () => void;
+  /** Called when the user clicks the search bar (opens spotlight search). */
+  onSearchClick?: () => void;
 }
 
 export type NavHistoryEntry = { pathname: string; search: string; label: string };
 
-export function HeaderBar({ navCollapsed = false, onToggleNav, onAskAthelasClick }: HeaderBarProps = {}) {
+export function HeaderBar({ navCollapsed = false, onToggleNav, onAskAthelasClick, onSearchClick }: HeaderBarProps = {}) {
   const navigate = useNavigate();
   const location = useLocation();
   const cameFromBackRef = useRef(false);
@@ -264,30 +266,40 @@ export function HeaderBar({ navCollapsed = false, onToggleNav, onAskAthelasClick
       </Popover>
 
       <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', minWidth: 0 }}>
-        <TextField
-          placeholder="Search for anything"
-          size="small"
-          variant="outlined"
-          hiddenLabel
+        <Box
+          component="button"
+          type="button"
+          onClick={onSearchClick}
+          aria-label="Search"
           sx={{
             width: 360,
-            '& .MuiOutlinedInput-root': {
-              height: 28,
-              bgcolor: 'rgba(0, 0, 0, 0.08)',
-              borderRadius: 1,
-              fontSize: 14,
-              '& fieldset': { border: 'none' },
-              '&:hover fieldset': { border: 'none' },
+            height: 28,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            px: 1.5,
+            borderRadius: 1,
+            border: 'none',
+            bgcolor: 'rgba(0, 0, 0, 0.08)',
+            cursor: 'pointer',
+            textAlign: 'left',
+            color: 'text.secondary',
+            fontSize: 14,
+            '&:hover': {
+              bgcolor: 'rgba(0, 0, 0, 0.12)',
+            },
+            '&:focus-visible': {
+              outline: '2px solid',
+              outlineOffset: 2,
+              outlineColor: 'primary.main',
             },
           }}
-          InputProps={{
-          startAdornment: (
-            <Box component="span" sx={{ mr: 1, display: 'flex', color: 'text.disabled' }}>
-              <SearchOutlined sx={{ fontSize: ICON_SIZE }} />
-            </Box>
-          ),
-        }}
-      />
+        >
+          <SearchOutlined sx={{ fontSize: ICON_SIZE, color: 'text.disabled', flexShrink: 0 }} />
+          <Box component="span" sx={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            Search for anything
+          </Box>
+        </Box>
       </Box>
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
