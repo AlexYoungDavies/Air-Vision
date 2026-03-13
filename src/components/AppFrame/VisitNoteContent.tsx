@@ -373,13 +373,13 @@ const SUBSECTION_HEADER = {
 
 /** Carry-forward source text shown beside subsection headings in edit view (mock values). */
 const CARRY_FORWARD_SOURCES: Partial<Record<string, string>> = {
-  'chief-complaint': 'From Initial Eval, Mar 4th 2026',
-  'history-of-present-illness': 'From Initial Eval, Mar 4th 2026',
-  'exacerbating-factors': 'From Initial Eval, Mar 4th 2026',
-  'diagnosis-summary': 'From Follow-up, Mar 7th 2026',
-  'treatment-plan': 'From Progress Note, Mar 9th',
-  goals: 'From previous note, Mar 9th 2026',
-  'plan-of-care': 'From Initial Eval, Mar 4th 2026',
+  'chief-complaint': 'Initial Eval, Mar 4th 2026',
+  'history-of-present-illness': 'Initial Eval, Mar 4th 2026',
+  'exacerbating-factors': 'Initial Eval, Mar 4th 2026',
+  'diagnosis-summary': 'Follow-up, Mar 7th 2026',
+  'treatment-plan': 'Progress Note, Mar 9th',
+  goals: 'previous note, Mar 9th 2026',
+  'plan-of-care': 'Initial Eval, Mar 4th 2026',
 };
 
 function CarryForwardSourceTag({ source }: { source: string }) {
