@@ -52,9 +52,11 @@ function LeftPanelIcon(props: React.ComponentProps<typeof SvgIcon>) {
 export interface HeaderBarProps {
   navCollapsed?: boolean;
   onToggleNav?: () => void;
+  /** Called when the user clicks "Ask Athelas" (toggles AI Assistant panel). */
+  onAskAthelasClick?: () => void;
 }
 
-export function HeaderBar({ navCollapsed = false, onToggleNav }: HeaderBarProps = {}) {
+export function HeaderBar({ navCollapsed = false, onToggleNav, onAskAthelasClick }: HeaderBarProps = {}) {
   const navigate = useNavigate();
   const location = useLocation();
   const cameFromBackRef = useRef(false);
@@ -200,6 +202,7 @@ export function HeaderBar({ navCollapsed = false, onToggleNav }: HeaderBarProps 
         </Avatar>
         <Button
           variant="text"
+          onClick={onAskAthelasClick}
           startIcon={
             <Box
               component="span"

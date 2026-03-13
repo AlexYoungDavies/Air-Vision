@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, useParams, Navigate } from 'react-router-dom'
 import { AppFrame } from './components/AppFrame'
+import { EmptyDemoPage } from './components/AppFrame/EmptyDemoPage'
 import { HomePageContent } from './components/AppFrame/HomePageContent'
 import { PatientsPage } from './components/AppFrame/PatientsPage'
 import { PatientProfilePage } from './components/AppFrame/PatientProfilePage'
@@ -20,10 +21,25 @@ function App() {
       <Routes>
         <Route path="/" element={<AppFrame />}>
           <Route index element={<HomePageContent />} />
+          <Route path="visits" element={<EmptyDemoPage />} />
+          <Route path="messages" element={<EmptyDemoPage />} />
           <Route path="patients" element={<PatientsPage />}>
             <Route index element={<TodayPatientsContent />} />
             <Route path=":patientId" element={<PatientProfileRoute />} />
           </Route>
+          <Route path="orders" element={<EmptyDemoPage />} />
+          <Route path="pharmacies" element={<EmptyDemoPage />} />
+          <Route path="overview" element={<EmptyDemoPage />} />
+          <Route path="lead-management" element={<EmptyDemoPage />} />
+          <Route path="outreach" element={<EmptyDemoPage />} />
+          <Route path="reports" element={<EmptyDemoPage />} />
+          <Route path="encounters" element={<EmptyDemoPage />} />
+          <Route path="claims" element={<EmptyDemoPage />} />
+          <Route path="remittances" element={<EmptyDemoPage />} />
+          <Route path="eobs" element={<EmptyDemoPage />} />
+          <Route path="payments" element={<EmptyDemoPage />} />
+          <Route path="statements" element={<EmptyDemoPage />} />
+          <Route path="preferences" element={<EmptyDemoPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

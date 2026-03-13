@@ -125,6 +125,18 @@ const SIDE_TABS: { id: HomeViewTab; label: string; Icon: typeof PatientsNavIcon 
   { id: 'messages', label: 'Messages', Icon: MessagesNavIcon },
 ];
 
+const MOCK_NOTES = [
+  { id: 'n1', patient: 'Sarah Johnson', date: 'Aug 8', template: 'Office Visit' },
+  { id: 'n2', patient: 'Michael Chen', date: 'Aug 8', template: 'Follow-up' },
+  { id: 'n3', patient: 'Emily Davis', date: 'Aug 7', template: 'Annual Physical' },
+];
+
+const MOCK_TASKS = [
+  { id: 't1', title: 'Review lab results', due: 'Today' },
+  { id: 't2', title: 'Call patient re: medication', due: 'Today' },
+  { id: 't3', title: 'Sign off on referral', due: 'Tomorrow' },
+];
+
 // Background for side tab: white at 50% opacity
 const SIDE_TAB_BG = 'rgba(255, 255, 255, 0.5)';
 
@@ -297,21 +309,16 @@ function NotesListPanel({
   selectedId: string | null;
   onSelect: (id: string) => void;
 }) {
-  const notes = [
-    { id: 'n1', patient: 'Sarah Johnson', date: 'Aug 8', template: 'Office Visit' },
-    { id: 'n2', patient: 'Michael Chen', date: 'Aug 8', template: 'Follow-up' },
-    { id: 'n3', patient: 'Emily Davis', date: 'Aug 7', template: 'Annual Physical' },
-  ];
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', borderRadius: '16px 0 16px 0' }}>
       <Box sx={{ px: 1.5, py: 1, borderBottom: 1, borderColor: 'divider' }}>
         <Typography sx={{ fontSize: 12, fontWeight: 600, color: 'text.primary' }}>
           Outstanding visit notes
         </Typography>
-        <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.25 }}>{notes.length} to sign</Typography>
+        <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.25 }}>{MOCK_NOTES.length} to sign</Typography>
       </Box>
       <List dense disablePadding sx={{ flex: 1, overflow: 'auto', py: 0.5 }}>
-        {notes.map((n) => (
+        {MOCK_NOTES.map((n) => (
           <ListItemButton
             key={n.id}
             selected={selectedId === n.id}
@@ -338,21 +345,16 @@ function TasksListPanel({
   selectedId: string | null;
   onSelect: (id: string) => void;
 }) {
-  const tasks = [
-    { id: 't1', title: 'Review lab results', due: 'Today' },
-    { id: 't2', title: 'Call patient re: medication', due: 'Today' },
-    { id: 't3', title: 'Sign off on referral', due: 'Tomorrow' },
-  ];
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', borderRadius: '16px 0 16px 0' }}>
       <Box sx={{ px: 1.5, py: 1, borderBottom: 1, borderColor: 'divider' }}>
         <Typography sx={{ fontSize: 12, fontWeight: 600, color: 'text.primary' }}>
           Outstanding tasks
         </Typography>
-        <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.25 }}>{tasks.length} assigned to you</Typography>
+        <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.25 }}>{MOCK_TASKS.length} assigned to you</Typography>
       </Box>
       <List dense disablePadding sx={{ flex: 1, overflow: 'auto', py: 0.5 }}>
-        {tasks.map((t) => (
+        {MOCK_TASKS.map((t) => (
           <ListItemButton
             key={t.id}
             selected={selectedId === t.id}
@@ -486,9 +488,9 @@ function getDaySummaryStats() {
   const messagesUnread = MOCK_CHATS.filter((c) => c.unread).length;
   return {
     patientsToday,
-    notesToSign: 6,
+    notesToSign: MOCK_NOTES.length,
     newLabsImages,
-    tasksOutstanding: 4,
+    tasksOutstanding: MOCK_TASKS.length,
     messagesUnread,
   };
 }
@@ -897,13 +899,15 @@ export function HomePageContent() {
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
 
   const selectedPatient = selectedPatientId ? TODAYS_PATIENTS.find((p) => p.id === selectedPatientId) ?? null : null;
+  const stats = getDaySummaryStats();
 
   return (
     <Box
       sx={{
         width: '100%',
         minHeight: '100%',
-        background: 'linear-gradient(to bottom, #f3faf8 0%, #d7f1ea 100%)',
+        background: (theme) =>
+          `linear-gradient(to bottom, ${theme.palette.background.gradientStart ?? theme.palette.background.default} 0%, ${theme.palette.background.gradientEnd ?? theme.palette.background.default} 100%)`,
         display: 'flex',
         flexDirection: 'column',
         gap: 3,
@@ -920,7 +924,7 @@ export function HomePageContent() {
           Morning, Dr. Garcia.
         </Typography>
         <Typography sx={{ fontSize: 14, lineHeight: 22 / 14, color: 'text.primary' }}>
-          Today you have 23 patients. You also have 6 notes to sign and 4 outstanding tasks.
+          Today you have {stats.patientsToday} patients. You also have {stats.notesToSign} notes to sign and {stats.tasksOutstanding} outstanding tasks.
         </Typography>
       </Box>
 

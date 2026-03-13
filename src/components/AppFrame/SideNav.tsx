@@ -9,6 +9,7 @@ import {
   Collapse,
   Tooltip,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined';
 import ChevronRightOutlined from '@mui/icons-material/ChevronRightOutlined';
 import ChevronLeftOutlined from '@mui/icons-material/ChevronLeftOutlined';
@@ -310,34 +311,34 @@ type NavItemConfig = {
 
 const topNavItems: NavItemConfig[] = [
   { id: 'home', label: 'Home', icon: 'home', path: '/' },
-  { id: 'visits', label: 'Visits', icon: 'calendar_month' },
-  { id: 'messages', label: 'Message & Tasks', icon: 'chat' },
+  { id: 'visits', label: 'Visits', icon: 'calendar_month', path: '/visits' },
+  { id: 'messages', label: 'Message & Tasks', icon: 'chat', path: '/messages' },
 ];
 
 const medicalRecordsItems: NavItemConfig[] = [
   { id: 'patients', label: 'Patients', icon: 'person', fill: true, path: '/patients' },
-  { id: 'orders', label: 'Orders', icon: 'featured_play_list' },
-  { id: 'pharmacies', label: 'Pharmacies', icon: 'medication' },
+  { id: 'orders', label: 'Orders', icon: 'featured_play_list', path: '/orders' },
+  { id: 'pharmacies', label: 'Pharmacies', icon: 'medication', path: '/pharmacies' },
 ];
 
 const businessItems: NavItemConfig[] = [
-  { id: 'overview', label: 'Overview', icon: 'bar_chart' },
-  { id: 'lead-management', label: 'Lead Management', icon: 'flag' },
-  { id: 'outreach', label: 'Outreach', icon: 'how_to_reg' },
-  { id: 'reports', label: 'Reports', icon: 'show_chart' },
+  { id: 'overview', label: 'Overview', icon: 'bar_chart', path: '/overview' },
+  { id: 'lead-management', label: 'Lead Management', icon: 'flag', path: '/lead-management' },
+  { id: 'outreach', label: 'Outreach', icon: 'how_to_reg', path: '/outreach' },
+  { id: 'reports', label: 'Reports', icon: 'show_chart', path: '/reports' },
 ];
 
 const revenueCycleItems: NavItemConfig[] = [
-  { id: 'encounters', label: 'Encounters', icon: 'inbox' },
-  { id: 'claims', label: 'Claims', icon: 'assignment' },
-  { id: 'remittances', label: 'Remittances', icon: 'receipt_long' },
-  { id: 'eobs', label: 'EoBs', icon: 'description' },
-  { id: 'payments', label: 'Payments', icon: 'credit_card' },
-  { id: 'statements', label: 'Statements', icon: 'request_quote' },
+  { id: 'encounters', label: 'Encounters', icon: 'inbox', path: '/encounters' },
+  { id: 'claims', label: 'Claims', icon: 'assignment', path: '/claims' },
+  { id: 'remittances', label: 'Remittances', icon: 'receipt_long', path: '/remittances' },
+  { id: 'eobs', label: 'EoBs', icon: 'description', path: '/eobs' },
+  { id: 'payments', label: 'Payments', icon: 'credit_card', path: '/payments' },
+  { id: 'statements', label: 'Statements', icon: 'request_quote', path: '/statements' },
 ];
 
 const bottomNavItems: NavItemConfig[] = [
-  { id: 'preferences', label: 'Preferences', icon: 'settings' },
+  { id: 'preferences', label: 'Preferences', icon: 'settings', path: '/preferences' },
   { id: 'logout', label: 'Log Out', icon: 'logout' },
 ];
 
@@ -396,9 +397,11 @@ function NavItem({
     gap: 0.75,
     borderRadius: 1,
     justifyContent: collapsed ? 'center' : 'flex-start',
-    bgcolor: active ? 'rgba(0, 102, 70, 0.2)' : 'transparent',
+    bgcolor: active ? (theme) => alpha(theme.palette.primary.main, 0.2) : 'transparent',
     '&:hover': {
-      bgcolor: active ? 'rgba(0, 102, 70, 0.25)' : 'action.hover',
+      bgcolor: active
+        ? (theme) => alpha(theme.palette.primary.main, 0.25)
+        : 'action.hover',
     },
   };
 

@@ -17,6 +17,7 @@ import {
   FormControlLabel,
   Paper,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import {
   VisitNoteTextArea,
   VisitNoteTextField,
@@ -1279,16 +1280,16 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
                 py: 0.25,
                 px: 1,
                 borderRadius: '9px',
-                bgcolor: isAIPanelOpen ? 'action.selected' : 'rgba(0, 102, 70, 0.1)',
+                bgcolor: isAIPanelOpen ? 'action.selected' : 'primary.light',
                 border: '1px solid',
-                borderColor: isAIPanelOpen ? 'action.selected' : 'rgba(0, 102, 70, 0.1)',
+                borderColor: isAIPanelOpen ? 'action.selected' : 'primary.light',
                 color: 'primary.main',
                 fontSize: 14,
                 fontWeight: 500,
                 textTransform: 'none',
                 '&:hover': {
-                  bgcolor: isAIPanelOpen ? 'action.selected' : 'rgba(0, 102, 70, 0.15)',
-                  borderColor: isAIPanelOpen ? 'action.selected' : 'rgba(0, 102, 70, 0.2)',
+                  bgcolor: isAIPanelOpen ? 'action.selected' : (theme) => alpha(theme.palette.primary.main, 0.15),
+                  borderColor: isAIPanelOpen ? 'action.selected' : (theme) => alpha(theme.palette.primary.main, 0.2),
                 },
               }}
             >

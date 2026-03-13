@@ -13,6 +13,7 @@ import {
   Tabs,
   Tab,
   Paper,
+  TextField,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { keyframes } from '@mui/system';
@@ -135,26 +136,72 @@ const MOCK_THREAD_MESSAGES = [
 
 function ChatPanelContent() {
   return (
-    <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-      {MOCK_THREAD_MESSAGES.map((msg) => (
-        <Box
-          key={msg.id}
+    <Box
+      sx={{
+        flex: 1,
+        minHeight: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}
+    >
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          overflow: 'auto',
+          p: 2,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 1.5,
+        }}
+      >
+        {MOCK_THREAD_MESSAGES.map((msg) => (
+          <Box
+            key={msg.id}
+            sx={{
+              alignSelf: msg.isCurrentUser ? 'flex-end' : 'flex-start',
+              maxWidth: '90%',
+              px: 1.5,
+              py: 1,
+              borderRadius: 1,
+              bgcolor: msg.isCurrentUser ? 'primary.main' : 'action.hover',
+              color: msg.isCurrentUser ? 'primary.contrastText' : 'text.primary',
+            }}
+          >
+            <Typography variant="caption" sx={{ opacity: 0.9, display: 'block' }}>
+              {msg.author} · {msg.role} — {msg.time}
+            </Typography>
+            <Typography variant="body2" sx={{ fontSize: 13, mt: 0.25 }}>{msg.text}</Typography>
+          </Box>
+        ))}
+      </Box>
+      <Box
+        sx={{
+          flexShrink: 0,
+          borderTop: 1,
+          borderColor: 'divider',
+          p: 1.5,
+        }}
+      >
+        <TextField
+          fullWidth
+          size="small"
+          placeholder="Type a message…"
+          variant="outlined"
           sx={{
-            alignSelf: msg.isCurrentUser ? 'flex-end' : 'flex-start',
-            maxWidth: '90%',
-            px: 1.5,
-            py: 1,
-            borderRadius: 1,
-            bgcolor: msg.isCurrentUser ? 'primary.main' : 'action.hover',
-            color: msg.isCurrentUser ? 'primary.contrastText' : 'text.primary',
+            '& .MuiOutlinedInput-root': {
+              bgcolor: 'background.default',
+              fontSize: 14,
+            },
           }}
-        >
-          <Typography variant="caption" sx={{ opacity: 0.9, display: 'block' }}>
-            {msg.author} · {msg.role} — {msg.time}
-          </Typography>
-          <Typography variant="body2" sx={{ fontSize: 13, mt: 0.25 }}>{msg.text}</Typography>
-        </Box>
-      ))}
+          slotProps={{
+            input: {
+              'aria-label': 'Message composer',
+            },
+          }}
+        />
+      </Box>
     </Box>
   );
 }
@@ -849,23 +896,28 @@ export function PatientProfilePage({
                         <CloseOutlined sx={{ fontSize: 20 }} />
                       </IconButton>
                     </Box>
-                    <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-                      {currentMode === 'pin' && <PinPanelContent patient={patient} />}
-                      {currentMode === 'chat' && <ChatPanelContent />}
-                      {currentMode === 'tasks' && <TasksPanelContent />}
-                      {currentMode === 'history' && <HistoryPanelContent />}
-                      {currentMode === 'ai' && (
-                        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          <Typography variant="body1" color="text.secondary">AI Check content</Typography>
-                        </Box>
-                      )}
-                      {currentMode === 'citations' && (
-                        <CitationPanelContent
-                          highlightedCitationNumber={highlightedCitationNumber}
-                          onCitationCardClick={(num) => setHighlightedCitationNumber(num)}
-                        />
-                      )}
-                    </Box>
+                    {currentMode === 'chat' ? (
+                      <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                        <ChatPanelContent />
+                      </Box>
+                    ) : (
+                      <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+                        {currentMode === 'pin' && <PinPanelContent patient={patient} />}
+                        {currentMode === 'tasks' && <TasksPanelContent />}
+                        {currentMode === 'history' && <HistoryPanelContent />}
+                        {currentMode === 'ai' && (
+                          <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Typography variant="body1" color="text.secondary">AI Check content</Typography>
+                          </Box>
+                        )}
+                        {currentMode === 'citations' && (
+                          <CitationPanelContent
+                            highlightedCitationNumber={highlightedCitationNumber}
+                            onCitationCardClick={(num) => setHighlightedCitationNumber(num)}
+                          />
+                        )}
+                      </Box>
+                    )}
                   </>
                 );
               })()}
