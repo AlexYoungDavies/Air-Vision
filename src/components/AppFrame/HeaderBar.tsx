@@ -1,12 +1,44 @@
 import { useRef, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Box, IconButton, TextField, Avatar, Button, SvgIcon } from '@mui/material';
+import { Box, IconButton, TextField, Avatar, Button, SvgIcon, Popover, List, ListItemButton, Typography } from '@mui/material';
 import SearchOutlined from '@mui/icons-material/SearchOutlined';
 import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
 import hoverAnimationData from '../../assets/hover.json';
+import { MOCK_PATIENTS } from '../../data/mockPatients';
 
 const ICON_SIZE = 20;
 const LOTTIE_SIZE = 22;
+const MAX_HISTORY = 10;
+
+const PATH_LABELS: Record<string, string> = {
+  '/': 'Home',
+  '/visits': 'Visits',
+  '/messages': 'Messages',
+  '/patients': 'Patients',
+  '/orders': 'Orders',
+  '/pharmacies': 'Pharmacies',
+  '/overview': 'Overview',
+  '/lead-management': 'Lead Management',
+  '/outreach': 'Outreach',
+  '/reports': 'Reports',
+  '/encounters': 'Encounters',
+  '/claims': 'Claims',
+  '/remittances': 'Remittances',
+  '/eobs': 'EoBs',
+  '/payments': 'Payments',
+  '/statements': 'Statements',
+  '/preferences': 'Preferences',
+};
+
+function getLabelForLocation(pathname: string, search: string): string {
+  const patientMatch = pathname.match(/^\/patients\/([^/]+)$/);
+  if (patientMatch) {
+    const patient = MOCK_PATIENTS.find((p) => p.id === patientMatch[1]);
+    const name = patient?.fullName ?? 'Patient profile';
+    return search.includes('openNote=1') ? `${name} (Visit note)` : name;
+  }
+  return PATH_LABELS[pathname] ?? (pathname || 'Home');
+}
 
 function ArrowLeftIcon(props: React.ComponentProps<typeof SvgIcon>) {
   return (
@@ -56,12 +88,27 @@ export interface HeaderBarProps {
   onAskAthelasClick?: () => void;
 }
 
+export type NavHistoryEntry = { pathname: string; search: string; label: string };
+
 export function HeaderBar({ navCollapsed = false, onToggleNav, onAskAthelasClick }: HeaderBarProps = {}) {
   const navigate = useNavigate();
   const location = useLocation();
   const cameFromBackRef = useRef(false);
   const askAthelasLottieRef = useRef<LottieRefCurrentProps | null>(null);
+  const historyButtonRef = useRef<HTMLButtonElement>(null);
   const [canGoForward, setCanGoForward] = useState(false);
+  const [navHistory, setNavHistory] = useState<NavHistoryEntry[]>([]);
+  const [historyOpen, setHistoryOpen] = useState(false);
+
+  useEffect(() => {
+    const key = location.pathname + location.search;
+    const label = getLabelForLocation(location.pathname, location.search);
+    setNavHistory((prev) => {
+      const filtered = prev.filter((e) => e.pathname + e.search !== key);
+      const next = [...filtered, { pathname: location.pathname, search: location.search, label }];
+      return next.slice(-MAX_HISTORY);
+    });
+  }, [location.pathname, location.search]);
 
   useEffect(() => {
     if (cameFromBackRef.current) {
@@ -79,6 +126,11 @@ export function HeaderBar({ navCollapsed = false, onToggleNav, onAskAthelasClick
 
   const handleForward = () => {
     navigate(1);
+  };
+
+  const handleHistoryItemClick = (pathname: string, search: string) => {
+    navigate(pathname + search);
+    setHistoryOpen(false);
   };
 
   return (
@@ -146,8 +198,12 @@ export function HeaderBar({ navCollapsed = false, onToggleNav, onAskAthelasClick
           <ArrowRightIcon sx={{ fontSize: ICON_SIZE }} />
         </IconButton>
         <IconButton
+          ref={historyButtonRef}
           size="small"
           aria-label="History"
+          aria-haspopup="listbox"
+          aria-expanded={historyOpen}
+          onClick={() => setHistoryOpen((open) => !open)}
           sx={{
             color: 'text.secondary',
             width: 28,
@@ -158,6 +214,54 @@ export function HeaderBar({ navCollapsed = false, onToggleNav, onAskAthelasClick
           <HistoryIcon sx={{ fontSize: ICON_SIZE }} />
         </IconButton>
       </Box>
+      <Popover
+        open={historyOpen}
+        anchorEl={historyButtonRef.current}
+        onClose={() => setHistoryOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        slotProps={{
+          paper: {
+            sx: { mt: 1, borderRadius: 2, minWidth: 260, maxWidth: 360 },
+          },
+        }}
+      >
+        <Box sx={{ py: 1 }}>
+          <Typography
+            variant="caption"
+            sx={{
+              display: 'block',
+              px: 2,
+              py: 0.5,
+              fontWeight: 700,
+              color: 'text.secondary',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+            }}
+          >
+            Recent places
+          </Typography>
+          {navHistory.length === 0 ? (
+            <Typography variant="body2" color="text.secondary" sx={{ px: 2, py: 2 }}>
+              No history yet. Navigate around the app to see recent places here.
+            </Typography>
+          ) : (
+            <List dense disablePadding sx={{ maxHeight: 320, overflow: 'auto' }}>
+              {[...navHistory].reverse().map((entry) => (
+                <ListItemButton
+                  key={`${entry.pathname}${entry.search}`}
+                  onClick={() => handleHistoryItemClick(entry.pathname, entry.search)}
+                  sx={{ py: 0.75 }}
+                >
+                  <Typography variant="body2" noWrap sx={{ flex: 1 }}>
+                    {entry.label}
+                  </Typography>
+                </ListItemButton>
+              ))}
+            </List>
+          )}
+        </Box>
+      </Popover>
 
       <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', minWidth: 0 }}>
         <TextField
@@ -176,7 +280,7 @@ export function HeaderBar({ navCollapsed = false, onToggleNav, onAskAthelasClick
               '&:hover fieldset': { border: 'none' },
             },
           }}
-        InputProps={{
+          InputProps={{
           startAdornment: (
             <Box component="span" sx={{ mr: 1, display: 'flex', color: 'text.disabled' }}>
               <SearchOutlined sx={{ fontSize: ICON_SIZE }} />
