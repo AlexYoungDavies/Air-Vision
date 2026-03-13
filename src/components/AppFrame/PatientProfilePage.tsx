@@ -233,7 +233,7 @@ function HistoryPanelContent() {
             borderRadius: 1,
           }}
         />
-        {MOCK_ACTIVITY.map((item, i) => (
+        {[...MOCK_ACTIVITY].reverse().map((item, i) => (
           <Box
             key={item.id}
             sx={{
