@@ -22,6 +22,7 @@ import PersonOutlined from '@mui/icons-material/PersonOutlined';
 import TaskAltOutlined from '@mui/icons-material/TaskAltOutlined';
 import { Link, useNavigate } from 'react-router-dom';
 import { MOCK_PATIENTS, TODAYS_PATIENTS, type Patient } from '../../data/mockPatients';
+import { Callout } from './Callout';
 import { LabelValue } from './LabelValue';
 import { getPatientVisitPanelData } from '../../data/mockPatientVisitPanel';
 import { MOCK_CHATS, getChatById, getMessagesForChat } from '../../data/mockChats';
@@ -499,14 +500,6 @@ function getDaySummaryStats() {
   };
 }
 
-const SUMMARY_CARD = {
-  bgcolor: 'primary.light',
-  borderRadius: 2,
-  p: 2,
-  boxShadow: 'none',
-  border: 'none',
-} as const;
-
 function DaySummaryPanel() {
   const stats = getDaySummaryStats();
   return (
@@ -526,63 +519,17 @@ function DaySummaryPanel() {
         </Typography>
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          {/* Top row: 2 larger cards */}
+          {/* Top row: 2 large callouts */}
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
-            <Paper variant="outlined" sx={{ ...SUMMARY_CARD, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 100 }}>
-              <Typography sx={{ fontSize: 42, fontWeight: 700, lineHeight: 1.1, color: 'primary.main' }}>
-                {stats.patientsToday}
-              </Typography>
-              <Typography sx={{ fontSize: 40, fontWeight: 400, color: 'text.secondary', mt: 0.5 }}>
-                Patients Today
-              </Typography>
-            </Paper>
-            <Paper
-              variant="outlined"
-              sx={{
-                ...SUMMARY_CARD,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-start',
-                justifyContent: 'flex-end',
-                minHeight: 100,
-                p: 2.5,
-              }}
-            >
-              <Typography sx={{ fontSize: 42, fontWeight: 700, lineHeight: 1.1, color: 'primary.main' }}>
-                {stats.notesToSign}
-              </Typography>
-              <Typography sx={{ fontSize: 13, fontWeight: 400, color: 'text.secondary', mt: 0.5 }}>
-                Notes to close
-              </Typography>
-            </Paper>
+            <Callout variant="large" value={stats.patientsToday} label="Patients Today" />
+            <Callout variant="large" value={stats.notesToSign} label="Notes to Close" />
           </Box>
 
-          {/* Bottom row: 3 smaller cards */}
+          {/* Bottom row: 3 small callouts */}
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
-            <Paper variant="outlined" sx={{ ...SUMMARY_CARD, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 88 }}>
-              <Typography sx={{ fontSize: 28, fontWeight: 700, lineHeight: 1.2, color: 'primary.main' }}>
-                {stats.tasksOutstanding}
-              </Typography>
-              <Typography sx={{ fontSize: 12, fontWeight: 400, color: 'text.secondary', mt: 0.5 }}>
-                Pending Tasks
-              </Typography>
-            </Paper>
-            <Paper variant="outlined" sx={{ ...SUMMARY_CARD, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 88 }}>
-              <Typography sx={{ fontSize: 28, fontWeight: 700, lineHeight: 1.2, color: 'primary.main' }}>
-                {stats.messagesUnread}
-              </Typography>
-              <Typography sx={{ fontSize: 12, fontWeight: 400, color: 'text.secondary', mt: 0.5 }}>
-                New Messages
-              </Typography>
-            </Paper>
-            <Paper variant="outlined" sx={{ ...SUMMARY_CARD, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 88 }}>
-              <Typography sx={{ fontSize: 28, fontWeight: 700, lineHeight: 1.2, color: 'primary.main' }}>
-                {stats.newLabsImages}
-              </Typography>
-              <Typography sx={{ fontSize: 12, fontWeight: 400, color: 'text.secondary', mt: 0.5 }}>
-                New Documents
-              </Typography>
-            </Paper>
+            <Callout variant="small" value={stats.tasksOutstanding} label="Pending Tasks" />
+            <Callout variant="small" value={stats.messagesUnread} label="New Messages" />
+            <Callout variant="small" value={stats.newLabsImages} label="New Documents" />
           </Box>
         </Box>
       </Box>
