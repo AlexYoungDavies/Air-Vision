@@ -43,6 +43,10 @@ export interface Patient {
   hasNewLabs?: boolean;
   /** Patient has new imaging to review (show imaging icon on list item) */
   hasNewImaging?: boolean;
+  /** Preferred language */
+  language?: string;
+  /** Date patient first registered */
+  patientSince?: string;
 }
 
 export const MOCK_PATIENTS: Patient[] = [
@@ -60,6 +64,8 @@ export const MOCK_PATIENTS: Patient[] = [
     case: 'Annual physical',
     homeAddress: { line1: '124 Oak Lane', city: 'Portland', state: 'OR', zip: '97201' },
     emergencyContact: { name: 'John Johnson', relationship: 'Spouse', phone: '(555) 201-3402' },
+    language: 'English',
+    patientSince: 'Jan 2020',
   },
   {
     id: '2',

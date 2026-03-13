@@ -21,6 +21,7 @@ import PersonOutlined from '@mui/icons-material/PersonOutlined';
 import TaskAltOutlined from '@mui/icons-material/TaskAltOutlined';
 import { Link, useNavigate } from 'react-router-dom';
 import { MOCK_PATIENTS, TODAYS_PATIENTS, type Patient } from '../../data/mockPatients';
+import { LabelValue } from './LabelValue';
 import { getPatientVisitPanelData } from '../../data/mockPatientVisitPanel';
 import { MOCK_CHATS, getChatById, getMessagesForChat } from '../../data/mockChats';
 
@@ -638,10 +639,7 @@ function PatientVisitDetailPanel({ patient }: { patient: Patient | null }) {
           <Typography sx={PANEL_SUB_LABEL}>Detailed demo</Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
             {data.demographics.map((d) => (
-              <Typography key={d.label} sx={PANEL_BODY}>
-                <Box component="span" sx={{ color: 'text.secondary', mr: 0.5 }}>{d.label}:</Box>
-                {d.value}
-              </Typography>
+              <LabelValue key={d.label} label={d.label} value={d.value} />
             ))}
           </Box>
         </Box>

@@ -5,12 +5,14 @@ import {
   Typography,
   Avatar,
   Button,
+  Chip,
   Divider,
   IconButton,
   Menu,
   MenuItem,
   Tabs,
   Tab,
+  Paper,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { keyframes } from '@mui/system';
@@ -26,6 +28,7 @@ import { getAppointmentsForPatient, type Appointment } from '../../data/mockAppo
 import { AppointmentsTabContent } from './AppointmentsTabContent';
 import { AttachmentsTabContent } from './AttachmentsTabContent';
 import { BillingTabContent } from './BillingTabContent';
+import { OverviewTabContent } from './OverviewTabContent';
 import { VisitNoteContent } from './VisitNoteContent';
 import {
   MedicationsTabContent,
@@ -97,6 +100,178 @@ const SECONDARY_PANEL_ICONS: { mode: SecondaryPanelMode; title: string }[] = [
   { mode: 'tasks', title: 'Tasks' },
   { mode: 'history', title: 'History' },
 ];
+
+/** Pinned notes: front desk comment (payment) + severe allergy note (reflective of allergies page). */
+function PinPanelContent({ patient }: { patient: Patient }) {
+  return (
+    <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+        Pinned notes
+      </Typography>
+      <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'grey.50' }}>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+          Front desk
+        </Typography>
+        <Typography variant="body2" sx={{ fontSize: 13 }}>
+          Patient prefers to pay at time of service. Has had past issues with billing — please follow up on payment plan before next visit.
+        </Typography>
+      </Paper>
+      <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'grey.50', borderColor: 'warning.main' }}>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+          Allergy alert
+        </Typography>
+        <Typography variant="body2" sx={{ fontSize: 13 }}>
+          Severe allergy to Penicillin (anaphylaxis). Patient also has Sulfa drugs — Hives. Ensure allergies are flagged in chart and at check-in.
+        </Typography>
+      </Paper>
+    </Box>
+  );
+}
+
+const MOCK_THREAD_MESSAGES = [
+  { id: '1', author: 'Dr. Smith', role: 'Provider', time: 'Today, 9:42 AM', text: 'Can we move the follow-up to Thursday? Patient has conflict Wednesday.', isCurrentUser: false },
+  { id: '2', author: 'Maria L.', role: 'Front desk', time: 'Today, 9:58 AM', text: 'Done — moved to Thu 2:00 PM. I’ll send the confirmation.', isCurrentUser: false },
+  { id: '3', author: 'James K.', role: 'Billing', time: 'Today, 10:15 AM', text: 'Prior auth for PT visits came through. Encounter can be processed.', isCurrentUser: false },
+  { id: '4', author: 'Dr. Smith', role: 'Provider', time: 'Today, 10:22 AM', text: 'Thanks both. I’ll complete the note after this block.', isCurrentUser: true },
+  { id: '5', author: 'Maria L.', role: 'Front desk', time: 'Today, 10:30 AM', text: 'Patient checked in. Ready when you are.', isCurrentUser: false },
+];
+
+function ChatPanelContent() {
+  return (
+    <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'text.primary', mb: 0.5 }}>
+        Care thread
+      </Typography>
+      {MOCK_THREAD_MESSAGES.map((msg) => (
+        <Box
+          key={msg.id}
+          sx={{
+            alignSelf: msg.isCurrentUser ? 'flex-end' : 'flex-start',
+            maxWidth: '90%',
+            px: 1.5,
+            py: 1,
+            borderRadius: 1,
+            bgcolor: msg.isCurrentUser ? 'primary.main' : 'action.hover',
+            color: msg.isCurrentUser ? 'primary.contrastText' : 'text.primary',
+          }}
+        >
+          <Typography variant="caption" sx={{ opacity: 0.9, display: 'block' }}>
+            {msg.author} · {msg.role} — {msg.time}
+          </Typography>
+          <Typography variant="body2" sx={{ fontSize: 13, mt: 0.25 }}>{msg.text}</Typography>
+        </Box>
+      ))}
+    </Box>
+  );
+}
+
+const MOCK_TASKS = [
+  { id: '1', name: 'Complete prior auth form', description: 'Submit PT prior auth for 12 visits to insurer.', assignedTo: 'Billing team', status: 'In progress' as const },
+  { id: '2', name: 'Schedule follow-up', description: 'Book 2-week follow-up after labs reviewed.', assignedTo: 'Maria L.', status: 'Done' as const },
+  { id: '3', name: 'Send patient summary', description: 'Email visit summary and home exercise instructions.', assignedTo: 'Dr. Smith', status: 'To do' as const },
+];
+
+function TasksPanelContent() {
+  const statusColor = (s: string) => (s === 'Done' ? 'success' : s === 'In progress' ? 'warning' : 'default');
+  return (
+    <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'text.primary', mb: 0.5 }}>
+        Tasks
+      </Typography>
+      {MOCK_TASKS.map((t) => (
+        <Paper key={t.id} variant="outlined" sx={{ p: 1.5 }}>
+          <Typography variant="body2" sx={{ fontWeight: 600, fontSize: 13 }}>{t.name}</Typography>
+          <Typography variant="body2" sx={{ fontSize: 12, color: 'text.secondary', mt: 0.25 }}>{t.description}</Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1, flexWrap: 'wrap', gap: 0.5 }}>
+            <Typography variant="caption" color="text.secondary">Assigned to {t.assignedTo}</Typography>
+            <Chip size="small" label={t.status} color={statusColor(t.status)} variant="outlined" sx={{ height: 20, fontSize: 11 }} />
+          </Box>
+        </Paper>
+      ))}
+    </Box>
+  );
+}
+
+const TIMELINE_LINE_OFFSET_PX = 11;
+const TIMELINE_ICON_SIZE = 12;
+const TIMELINE_LEFT_PADDING = 32;
+
+const MOCK_ACTIVITY = [
+  { id: '1', label: 'Patient profile created', date: 'Jan 15, 2024', time: '10:02 AM' },
+  { id: '2', label: 'Intake forms completed', date: 'Jan 16, 2024', time: '2:30 PM' },
+  { id: '3', label: 'Insurance added', date: 'Jan 16, 2024', time: '2:35 PM' },
+  { id: '4', label: 'First appointment scheduled', date: 'Jan 18, 2024', time: '9:00 AM' },
+  { id: '5', label: 'Appointment completed', date: 'Jan 25, 2024', time: '11:45 AM' },
+  { id: '6', label: 'Labs ordered', date: 'Jan 25, 2024', time: '12:00 PM' },
+  { id: '7', label: 'Authorizations added', date: 'Feb 1, 2024', time: '9:15 AM' },
+  { id: '8', label: 'Patient information updated', date: 'Feb 10, 2024', time: '3:20 PM' },
+  { id: '9', label: 'Appointment scheduled', date: 'Mar 5, 2025', time: '10:00 AM' },
+  { id: '10', label: 'Appointment completed', date: 'Mar 12, 2025', time: '2:00 PM' },
+];
+
+function HistoryPanelContent() {
+  return (
+    <Box sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
+      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'text.primary', mb: 1.5 }}>
+        Activity
+      </Typography>
+      <Box
+        sx={{
+          position: 'relative',
+          pl: `${TIMELINE_LEFT_PADDING}px`,
+        }}
+      >
+        {/* Vertical line running through icon centers */}
+        <Box
+          sx={{
+            position: 'absolute',
+            left: TIMELINE_LINE_OFFSET_PX,
+            top: TIMELINE_ICON_SIZE / 2,
+            bottom: TIMELINE_ICON_SIZE / 2,
+            width: 2,
+            bgcolor: 'divider',
+            borderRadius: 1,
+          }}
+        />
+        {MOCK_ACTIVITY.map((item, i) => (
+          <Box
+            key={item.id}
+            sx={{
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'flex-start',
+              pb: i < MOCK_ACTIVITY.length - 1 ? 2 : 0,
+            }}
+          >
+            {/* Icon centered on the vertical line at TIMELINE_LINE_OFFSET_PX */}
+            <Box
+              sx={{
+                position: 'absolute',
+                left: TIMELINE_LINE_OFFSET_PX - TIMELINE_ICON_SIZE / 2 - TIMELINE_LEFT_PADDING,
+                top: 2,
+                width: TIMELINE_ICON_SIZE,
+                height: TIMELINE_ICON_SIZE,
+                borderRadius: '50%',
+                bgcolor: 'primary.main',
+                border: '2px solid',
+                borderColor: 'background.paper',
+                boxSizing: 'border-box',
+              }}
+            />
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="body2" sx={{ fontSize: 13, fontWeight: 500 }}>
+                {item.label}
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                {item.date} · {item.time}
+              </Typography>
+            </Box>
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  );
+}
 
 export function PatientProfilePage({
   patient,
@@ -582,6 +757,12 @@ export function PatientProfilePage({
               onAICheckClick={() => setSecondaryPanelMode(secondaryPanelMode === 'ai' ? null : 'ai')}
               isAIPanelOpen={secondaryPanelMode === 'ai'}
             />
+          ) : activeTab === 'overview' ? (
+            <OverviewTabContent
+              patient={patient}
+              onSecondaryPanelMode={(mode) => setSecondaryPanelMode(mode)}
+              onNavigateToTab={(tabId) => setActiveTab(tabId as ProfileTabId)}
+            />
           ) : activeTab === 'appointments' ? (
             <AppointmentsTabContent patientId={patient.id} onOpenNote={handleOpenNote} />
           ) : activeTab === 'billing' ? (
@@ -605,7 +786,7 @@ export function PatientProfilePage({
           ) : (
             <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'auto' }}>
               <Typography variant="body1" color="text.secondary">
-                Primary Content — {activeTab}
+                {activeTab}
               </Typography>
             </Box>
           )}
@@ -635,22 +816,16 @@ export function PatientProfilePage({
               willChange: secondaryPanelOpen ? 'auto' : 'transform',
             }}
           >
-            <Box
-              sx={{
-                flex: 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                p: 2,
-              }}
-            >
-              <Typography variant="body1" color="text.secondary">
-                {(secondaryPanelMode ?? lastPanelModeRef.current) === 'pin' && 'Pin content'}
-                {(secondaryPanelMode ?? lastPanelModeRef.current) === 'chat' && 'Chat content'}
-                {(secondaryPanelMode ?? lastPanelModeRef.current) === 'tasks' && 'Tasks content'}
-                {(secondaryPanelMode ?? lastPanelModeRef.current) === 'history' && 'History content'}
-                {(secondaryPanelMode ?? lastPanelModeRef.current) === 'ai' && 'AI Check content'}
-              </Typography>
+            <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+              {(secondaryPanelMode ?? lastPanelModeRef.current) === 'pin' && <PinPanelContent patient={patient} />}
+              {(secondaryPanelMode ?? lastPanelModeRef.current) === 'chat' && <ChatPanelContent />}
+              {(secondaryPanelMode ?? lastPanelModeRef.current) === 'tasks' && <TasksPanelContent />}
+              {(secondaryPanelMode ?? lastPanelModeRef.current) === 'history' && <HistoryPanelContent />}
+              {(secondaryPanelMode ?? lastPanelModeRef.current) === 'ai' && (
+                <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Typography variant="body1" color="text.secondary">AI Check content</Typography>
+                </Box>
+              )}
             </Box>
           </Box>
         </Box>

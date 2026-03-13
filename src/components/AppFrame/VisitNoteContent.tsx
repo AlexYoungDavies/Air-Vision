@@ -851,7 +851,7 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
               AI Check
             </Button>
           </Box>
-          <Box sx={{ width: '100%', maxWidth: 1000, mx: 'auto', display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <Box sx={{ width: '100%', maxWidth: 820, mx: 'auto', display: 'flex', flexDirection: 'column', gap: 3 }}>
             {mode === 'read' ? (
               <>
                 {SOAP_READ_SECTION_IDS.map((sectionId) => {

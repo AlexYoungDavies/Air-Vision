@@ -1,0 +1,19 @@
+---
+description: Use the shared AppIconButton for all icon-only buttons
+globs: **/*.tsx
+alwaysApply: false
+---
+
+# Icon buttons
+
+Use the shared **AppIconButton** component for all icon-only actions in the app (e.g. table row actions, toolbar buttons, header actions).
+
+- **Import**: `import { AppIconButton } from '../AppIconButton';` (adjust path from the file you're in).
+- **Usage**: Pass the icon as `children` and use the `tooltip` prop for the hover label. Optionally pass `onClick`, `aria-label`, and other MUI IconButton props.
+- **Example**:
+  ```tsx
+  <AppIconButton tooltip="Download Note PDF" onClick={handleDownload} aria-label="Download Note PDF">
+    <DownloadOutlined fontSize="small" />
+  </AppIconButton>
+  ```
+- Do not use raw MUI `IconButton` + `Tooltip` for new icon buttons; use `AppIconButton` so styling and behavior stay consistent.
