@@ -766,6 +766,7 @@ function PatientVisitDetailPanel({ patient }: { patient: Patient | null }) {
 }
 
 function NotePreviewPanel({ noteId }: { noteId: string | null }) {
+  const navigate = useNavigate();
   if (!noteId) {
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'text.secondary', fontSize: 13 }}>
@@ -773,11 +774,68 @@ function NotePreviewPanel({ noteId }: { noteId: string | null }) {
       </Box>
     );
   }
+  const note = MOCK_NOTES.find((n) => n.id === noteId);
+  if (!note) {
+    return (
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'text.secondary', fontSize: 13 }}>
+        Note not found
+      </Box>
+    );
+  }
+  const patient = TODAYS_PATIENTS.find((p) => p.fullName === note.patient);
   return (
-    <Box sx={{ p: 2, overflow: 'auto' }}>
-      <Typography variant="body2" color="text.secondary">
-        Note preview (placeholder). Note ID: {noteId}
-      </Typography>
+    <Box sx={{ p: 2, overflow: 'auto', height: '100%' }}>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: 1.5,
+          mb: 2,
+        }}
+      >
+        <Box sx={{ minWidth: 0, flex: 1 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5, fontSize: 15 }}>
+            {note.patient}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>
+            {note.date} · {note.template}
+          </Typography>
+        </Box>
+        {patient && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexShrink: 0 }}>
+            <Button
+              component={Link}
+              to={`/patients/${patient.id}`}
+              variant="text"
+              size="small"
+              startIcon={<PersonOutlined sx={{ fontSize: 18 }} />}
+              sx={{ textTransform: 'none', fontWeight: 500 }}
+            >
+              Full Profile
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<ContentPasteOutlined sx={{ fontSize: 18, color: 'primary.main' }} />}
+              onClick={() => navigate(`/patients/${patient.id}?openNote=1`)}
+              sx={{ textTransform: 'none', fontWeight: 500 }}
+            >
+              Open Note
+            </Button>
+          </Box>
+        )}
+      </Box>
+      <Box sx={PANEL_SECTION}>
+        <Typography component="div" sx={PANEL_SECTION_HEADER}>
+          Visit note
+        </Typography>
+        <Box sx={{ ...PANEL_SUBSECTION, borderBottom: 'none' }}>
+          <Typography sx={PANEL_BODY}>
+            Visit note for {note.patient} ({note.template}, {note.date}). Content will load when you open the note.
+          </Typography>
+        </Box>
+      </Box>
     </Box>
   );
 }
@@ -975,22 +1033,23 @@ export function HomePageContent() {
         >
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SIDE_TAB_ITEM_GAP }}>
             {SIDE_TABS.map(({ id, label, Icon }) => (
-              <IconButton
-                key={id}
-                onClick={() => setActiveTab(id)}
-                aria-label={label}
-                sx={{
-                  width: SIDE_TAB_ICON_CONTAINER,
-                  height: SIDE_TAB_ICON_CONTAINER,
-                  color: activeTab === id ? 'primary.main' : 'text.primary',
-                  borderRadius: 1,
-                  '&:hover': {
-                    bgcolor: 'rgba(0, 0, 0, 0.04)',
-                  },
-                }}
-              >
-                <Icon sx={{ fontSize: SIDE_TAB_ICON_SIZE }} />
-              </IconButton>
+              <Tooltip key={id} title={label}>
+                <IconButton
+                  onClick={() => setActiveTab(id)}
+                  aria-label={label}
+                  sx={{
+                    width: SIDE_TAB_ICON_CONTAINER,
+                    height: SIDE_TAB_ICON_CONTAINER,
+                    color: activeTab === id ? 'primary.main' : 'text.primary',
+                    borderRadius: 1,
+                    '&:hover': {
+                      bgcolor: 'rgba(0, 0, 0, 0.04)',
+                    },
+                  }}
+                >
+                  <Icon sx={{ fontSize: SIDE_TAB_ICON_SIZE }} />
+                </IconButton>
+              </Tooltip>
             ))}
           </Box>
           <Box sx={{ flex: 1, minHeight: 16 }} />
