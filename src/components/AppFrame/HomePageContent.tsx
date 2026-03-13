@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -936,12 +936,31 @@ function OpenChatPanel({ chatId }: { chatId: string | null }) {
   );
 }
 
+function getFirstChatId(): string | null {
+  const sorted = [...MOCK_CHATS].sort((a, b) => {
+    if (a.unread && !b.unread) return -1;
+    if (!a.unread && b.unread) return 1;
+    return new Date(b.lastAt).getTime() - new Date(a.lastAt).getTime();
+  });
+  return sorted[0]?.id ?? null;
+}
+
 export function HomePageContent() {
   const [activeTab, setActiveTab] = useState<HomeViewTab>('patients');
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (activeTab === 'notes' && MOCK_NOTES.length > 0) {
+      setSelectedNoteId(MOCK_NOTES[0].id);
+    } else if (activeTab === 'tasks' && MOCK_TASKS.length > 0) {
+      setSelectedTaskId(MOCK_TASKS[0].id);
+    } else if (activeTab === 'messages') {
+      setSelectedChatId(getFirstChatId());
+    }
+  }, [activeTab]);
 
   const selectedPatient = selectedPatientId ? TODAYS_PATIENTS.find((p) => p.id === selectedPatientId) ?? null : null;
   const stats = getDaySummaryStats();
