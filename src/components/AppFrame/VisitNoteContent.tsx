@@ -28,6 +28,7 @@ import {
   baseInputSx,
 } from './VisitNoteFields';
 import AddOutlined from '@mui/icons-material/AddOutlined';
+import HistoryOutlined from '@mui/icons-material/HistoryOutlined';
 import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined';
 import KeyboardArrowRightOutlined from '@mui/icons-material/KeyboardArrowRightOutlined';
 import EditOutlined from '@mui/icons-material/EditOutlined';
@@ -369,6 +370,40 @@ const SUBSECTION_HEADER = {
   px: 1,
   mb: 1,
 } as const;
+
+/** Carry-forward source text shown beside subsection headings in edit view (mock values). */
+const CARRY_FORWARD_SOURCES: Partial<Record<string, string>> = {
+  'chief-complaint': 'From Initial Eval, Mar 4th 2026',
+  'history-of-present-illness': 'From Initial Eval, Mar 4th 2026',
+  'exacerbating-factors': 'From Initial Eval, Mar 4th 2026',
+  'diagnosis-summary': 'From Follow-up, Mar 7th 2026',
+  'treatment-plan': 'From Progress Note, Mar 9th',
+  goals: 'From previous note, Mar 9th 2026',
+  'plan-of-care': 'From Initial Eval, Mar 4th 2026',
+};
+
+function CarryForwardSourceTag({ source }: { source: string }) {
+  return (
+    <Box
+      component="span"
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 0.5,
+        color: 'text.secondary',
+      }}
+    >
+      <HistoryOutlined sx={{ fontSize: 16, color: 'grey.400' }} />
+      <Typography
+        component="span"
+        variant="caption"
+        sx={{ fontStyle: 'italic', fontWeight: 500, color: 'grey.400' }}
+      >
+        {source}
+      </Typography>
+    </Box>
+  );
+}
 
 /**
  * Visit note content: left TOC (anchor links) + main content (Subjective, Objective, Assessment, Plan, Other).
@@ -1108,9 +1143,14 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
                         ) : (
                           <KeyboardArrowDownOutlined sx={{ fontSize: 20, color: 'text.secondary' }} />
                         )}
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: 24 }}>
-                          {sub.label}
-                        </Typography>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                          <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: 24 }}>
+                            {sub.label}
+                          </Typography>
+                          {mode === 'edit' && CARRY_FORWARD_SOURCES[sub.id] && (
+                            <CarryForwardSourceTag source={CARRY_FORWARD_SOURCES[sub.id]!} />
+                          )}
+                        </Box>
                       </Box>
 
                       <Collapse in={!isSubCollapsed}>
@@ -2223,9 +2263,14 @@ function SingleSectionEditForm({
             px: 2,
           }}
         >
-          <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: 24, mb: 1 }}>
-            {sub.label}
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap', mb: 1 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: 24 }}>
+              {sub.label}
+            </Typography>
+            {mode === 'edit' && CARRY_FORWARD_SOURCES[sub.id] && (
+              <CarryForwardSourceTag source={CARRY_FORWARD_SOURCES[sub.id]!} />
+            )}
+          </Box>
           <SubsectionFormContent
             section={section}
             sub={sub}
