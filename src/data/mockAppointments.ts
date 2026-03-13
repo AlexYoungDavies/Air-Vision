@@ -53,8 +53,8 @@ function buildAppointmentsForPatient(patientId: string, patientIndex: number): A
 
   // Each patient has 10–14 appointments (at least 10, some more)
   const totalCount = 10 + (patientIndex % 5);
-  const pastCount = 3 + (patientIndex % 2); // 3 or 4 in the past
-  const futureCount = totalCount - pastCount - 1; // 1 is today, rest future
+  const futureCount = 2; // only 2 scheduled (future); rest are completed
+  const pastCount = totalCount - 1 - futureCount; // 1 is today, 2 future, rest in the past
 
   const dates: Date[] = [];
   for (let p = 0; p < pastCount; p++) {

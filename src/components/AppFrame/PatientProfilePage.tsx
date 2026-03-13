@@ -762,6 +762,7 @@ export function PatientProfilePage({
               patient={patient}
               onSecondaryPanelMode={(mode) => setSecondaryPanelMode(mode)}
               onNavigateToTab={(tabId) => setActiveTab(tabId as ProfileTabId)}
+              onOpenNote={handleOpenNote}
             />
           ) : activeTab === 'appointments' ? (
             <AppointmentsTabContent patientId={patient.id} onOpenNote={handleOpenNote} />

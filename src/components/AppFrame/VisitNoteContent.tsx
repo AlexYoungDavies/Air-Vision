@@ -137,21 +137,142 @@ function ReadViewSectionBlock({
         </Box>
       </Box>
       <Box>
-        <Typography
-          component="pre"
-          sx={{
-            fontFamily: 'inherit',
-            fontSize: 14,
-            lineHeight: 1.6,
-            color: 'text.primary',
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-word',
-            m: 0,
-          }}
-        >
-          {content}
-        </Typography>
+        {(sectionId === 'objective' || sectionId === 'assessment') ? (
+          <ReadViewSectionFormatted content={content} />
+        ) : (
+          <Typography
+            component="pre"
+            sx={{
+              fontFamily: 'inherit',
+              fontSize: 14,
+              lineHeight: 1.6,
+              color: 'text.primary',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+              m: 0,
+            }}
+          >
+            {content}
+          </Typography>
+        )}
       </Box>
+    </Box>
+  );
+}
+
+/** Renders objective/assessment read content with paragraphs and bulleted lists (measurements, goal progress). */
+function ReadViewSectionFormatted({ content }: { content: string }) {
+  const segments = content.split(/\n\n+/).filter(Boolean);
+  const nodes: React.ReactNode[] = [];
+  let segIdx = 0;
+  const typographySx = { fontSize: 14, lineHeight: 1.6 } as const;
+  const listSx = { mt: 0.5, mb: 1, pl: 2.5 } as const;
+
+  while (segIdx < segments.length) {
+    const segment = segments[segIdx];
+    const lines = segment.split(/\n/).filter(Boolean);
+    if (lines.length === 0) {
+      segIdx++;
+      continue;
+    }
+    const singleLine = lines.length === 1;
+    const firstEndsWithColon = lines[0].trimEnd().endsWith(':');
+
+    if (singleLine && firstEndsWithColon) {
+      // Heading; next segment is the bullet list
+      const nextSegment = segments[segIdx + 1];
+      const bulletLines = nextSegment ? nextSegment.split(/\n/).filter(Boolean) : [];
+      nodes.push(
+        <Box key={segIdx} sx={{ mb: 1 }}>
+          <Typography variant="body2" sx={{ fontWeight: 600, ...typographySx }}>
+            {lines[0]}
+          </Typography>
+          {bulletLines.length > 0 && (
+            <Box component="ul" sx={listSx}>
+              {bulletLines.map((line, i) => (
+                <Typography key={i} component="li" variant="body2" sx={typographySx}>
+                  {line}
+                </Typography>
+              ))}
+            </Box>
+          )}
+        </Box>
+      );
+      segIdx += bulletLines.length > 0 ? 2 : 1;
+      continue;
+    }
+
+    if (lines.length === 2 && lines[1].trimEnd().endsWith(':')) {
+      // Intro paragraph + heading; next segment is the bullet list (e.g. "Patient performs...\nLumbar Mobility:")
+      nodes.push(
+        <Typography key={segIdx} variant="body2" sx={{ mb: 1, ...typographySx }}>
+          {lines[0]}
+        </Typography>
+      );
+      const nextSegment = segments[segIdx + 1];
+      const bulletLines = nextSegment ? nextSegment.split(/\n/).filter(Boolean) : [];
+      nodes.push(
+        <Box key={`${segIdx}-list`} sx={{ mb: 1 }}>
+          <Typography variant="body2" sx={{ fontWeight: 600, ...typographySx }}>
+            {lines[1]}
+          </Typography>
+          {bulletLines.length > 0 && (
+            <Box component="ul" sx={listSx}>
+              {bulletLines.map((line, i) => (
+                <Typography key={i} component="li" variant="body2" sx={typographySx}>
+                  {line}
+                </Typography>
+              ))}
+            </Box>
+          )}
+        </Box>
+      );
+      segIdx += bulletLines.length > 0 ? 2 : 1;
+      continue;
+    }
+
+    if (singleLine) {
+      nodes.push(
+        <Typography key={segIdx} variant="body2" sx={{ mb: 1, ...typographySx }}>
+          {lines[0]}
+        </Typography>
+      );
+      segIdx++;
+      continue;
+    }
+
+    if (firstEndsWithColon) {
+      nodes.push(
+        <Box key={segIdx} sx={{ mb: 1 }}>
+          <Typography variant="body2" sx={{ fontWeight: 600, ...typographySx }}>
+            {lines[0]}
+          </Typography>
+          <Box component="ul" sx={listSx}>
+            {lines.slice(1).map((line, i) => (
+              <Typography key={i} component="li" variant="body2" sx={typographySx}>
+                {line}
+              </Typography>
+            ))}
+          </Box>
+        </Box>
+      );
+    } else {
+      nodes.push(
+        <Box key={segIdx} component="ul" sx={{ mb: 1, ...listSx }}>
+          {lines.map((line, i) => (
+            <Typography key={i} component="li" variant="body2" sx={typographySx}>
+              {line}
+            </Typography>
+          ))}
+        </Box>
+      );
+    }
+    segIdx++;
+  }
+
+  return (
+    <Box sx={{ '& ul': { '& li': { mb: 0.25 } } }}>
+      {nodes}
     </Box>
   );
 }
@@ -729,6 +850,7 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
           ref={scrollContainerRef}
           component="main"
           sx={{
+            position: 'relative',
             flex: 1,
             minWidth: 0,
             overflow: 'auto',
@@ -736,24 +858,24 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
             pb: 2,
             px: 2,
             bgcolor: 'background.paper',
-            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column',
           }}
         >
           <Box
             sx={{
               position: 'absolute',
-              top: 1.5,
-              right: 1.5,
-              left: 'auto',
-              width: 'fit-content',
+              top: '12px',
+              right: '12px',
               zIndex: 1,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'flex-end',
               gap: 1.5,
-              pt: 0.5,
-              pb: 0.5,
-              bgcolor: 'background.paper',
+              pt: 0,
+              pb: 0,
+              pr: 0,
+              bgcolor: 'transparent',
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
@@ -922,6 +1044,12 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
                     />
                   );
                 })}
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontSize: 14, lineHeight: 1.6 }}>
+                    Primary provider is Daniel McGuffie, PT, DPT, OCS. Referring provider on file is Lauren Chambers (fax: +1 (585) 784-7981). Plan of Care PDF to be faxed to referring provider upon signing.
+                  </Typography>
+                  <SignNoteBlock data={data.notarize.notarize} onUpdate={updateNotarize} />
+                </Box>
               </>
             ) : (
             VISIT_NOTE_SECTIONS.map((section) => {
@@ -1452,6 +1580,77 @@ const FAX_DOCUMENT_OPTIONS = ['Plan of Care PDF', 'Visit Note PDF', 'Facesheet']
 
 type NotarizeData = VisitNoteData['notarize']['notarize'];
 
+/** Big "Sign Note" / "Signed" block; used in both Notarize section (edit) and read view. */
+function SignNoteBlock({
+  data,
+  onUpdate,
+}: {
+  data: NotarizeData;
+  onUpdate: (field: keyof NotarizeData, value: string | boolean | string[]) => void;
+}) {
+  return (
+    <Box
+      sx={{
+        p: 3,
+        borderRadius: 4,
+        bgcolor: data.signStatus === 'signed' ? '#EDF5F3' : 'grey.200',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 2,
+        height: '160px',
+      }}
+    >
+      <Button
+        variant="contained"
+        color="primary"
+        startIcon={<SignatureAltIcon />}
+        disabled={data.signStatus === 'signed'}
+        onClick={() => data.signStatus === 'unsigned' && onUpdate('signStatus', 'signed')}
+        sx={{
+          textTransform: 'none',
+          fontWeight: 600,
+          fontSize: '1rem',
+          py: 1.5,
+          px: 4,
+          borderRadius: '9999px',
+          '&:hover': { bgcolor: 'primary.dark' },
+        }}
+      >
+        {data.signStatus === 'signed' ? 'Signed' : 'Sign Note'}
+      </Button>
+      {data.signStatus === 'signed' ? (
+        <Typography
+          component="button"
+          type="button"
+          variant="body2"
+          color="text.secondary"
+          sx={{
+            textAlign: 'center',
+            cursor: 'pointer',
+            border: 'none',
+            background: 'none',
+            padding: 0,
+            font: 'inherit',
+            textDecoration: 'underline',
+            fontSize: '14px',
+            lineHeight: '22px',
+            '&:hover': { color: 'primary.main' },
+          }}
+          onClick={() => onUpdate('signStatus', 'unsigned')}
+        >
+          Unsign Note
+        </Typography>
+      ) : (
+        <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+          Please ensure all chart validations have been met.
+        </Typography>
+      )}
+    </Box>
+  );
+}
+
 function NotarizeSectionContent({
   data,
   onUpdate,
@@ -1612,65 +1811,8 @@ function NotarizeSectionContent({
       </Box>
 
       {/* 7. Sign block and button */}
-      <Box
-        sx={{
-          mt: 2,
-          p: 3,
-          borderRadius: 4,
-          bgcolor: data.signStatus === 'signed' ? '#EDF5F3' : 'grey.200',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 2,
-          height: '160px',
-        }}
-      >
-        <Button
-          variant="contained"
-          color="primary"
-          startIcon={<SignatureAltIcon />}
-          disabled={data.signStatus === 'signed'}
-          onClick={() => data.signStatus === 'unsigned' && onUpdate('signStatus', 'signed')}
-          sx={{
-            textTransform: 'none',
-            fontWeight: 600,
-            fontSize: '1rem',
-            py: 1.5,
-            px: 4,
-            borderRadius: '9999px',
-            '&:hover': { bgcolor: 'primary.dark' },
-          }}
-        >
-          {data.signStatus === 'signed' ? 'Signed' : 'Sign Note'}
-        </Button>
-        {data.signStatus === 'signed' ? (
-          <Typography
-            component="button"
-            type="button"
-            variant="body2"
-            color="text.secondary"
-            sx={{
-              textAlign: 'center',
-              cursor: 'pointer',
-              border: 'none',
-              background: 'none',
-              padding: 0,
-              font: 'inherit',
-              textDecoration: 'underline',
-              fontSize: '14px',
-              lineHeight: '22px',
-              '&:hover': { color: 'primary.main' },
-            }}
-            onClick={() => onUpdate('signStatus', 'unsigned')}
-          >
-            Unsign Note
-          </Typography>
-        ) : (
-          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
-            Please ensure all chart validations have been met.
-          </Typography>
-        )}
+      <Box sx={{ mt: 2 }}>
+        <SignNoteBlock data={data} onUpdate={onUpdate} />
       </Box>
     </Box>
   );

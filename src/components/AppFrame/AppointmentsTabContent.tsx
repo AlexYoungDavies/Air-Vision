@@ -25,7 +25,7 @@ import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined';
 import EditOutlined from '@mui/icons-material/EditOutlined';
 import { getAppointmentsForPatient, type Appointment, type AppointmentStatus } from '../../data/mockAppointments';
 
-const STICKY_ACTIONS_CELL = {
+export const STICKY_ACTIONS_CELL = {
   position: 'sticky' as const,
   right: 0,
   minWidth: 140,
@@ -35,7 +35,10 @@ const STICKY_ACTIONS_CELL = {
   zIndex: 1,
   whiteSpace: 'nowrap' as const,
 };
-const STICKY_ACTIONS_HEADER = { ...STICKY_ACTIONS_CELL, bgcolor: 'grey.50', zIndex: 2 };
+export const STICKY_ACTIONS_HEADER = { ...STICKY_ACTIONS_CELL, bgcolor: 'grey.50', zIndex: 2 };
+
+export const COLUMN_HEADER_STYLE = { maxWidth: 240 };
+export const COLUMN_BODY_STYLE = { maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const };
 
 export interface AppointmentsTabContentProps {
   patientId: string;
@@ -43,7 +46,7 @@ export interface AppointmentsTabContentProps {
   onOpenNote?: (appointment: Appointment) => void;
 }
 
-const STATUS_CHIP_STYLES: Record<
+export const STATUS_CHIP_STYLES: Record<
   AppointmentStatus,
   { bgcolor: string; color: string }
 > = {
@@ -135,16 +138,16 @@ export function AppointmentsTabContent({ patientId, onOpenNote }: AppointmentsTa
         <Table size="small" stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Date</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Time</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Status</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Case</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Template</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Clinical stage</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Provider</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Insurance</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Facility</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Tags</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Date</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Time</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Status</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Case</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Template</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Clinical stage</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Provider</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Insurance</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Facility</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Tags</TableCell>
               <TableCell sx={{ fontWeight: 600, ...STICKY_ACTIONS_HEADER }} align="right">
                 Actions
               </TableCell>
@@ -167,34 +170,36 @@ export function AppointmentsTabContent({ patientId, onOpenNote }: AppointmentsTa
                     onDoubleClick={() => isComplete && onOpenNote?.(apt)}
                     sx={isComplete ? { cursor: 'pointer' } : undefined}
                   >
-                    <TableCell>{apt.date}</TableCell>
-                    <TableCell>{apt.time}</TableCell>
-                    <TableCell>
+                    <TableCell sx={COLUMN_BODY_STYLE}>{apt.date}</TableCell>
+                    <TableCell sx={COLUMN_BODY_STYLE}>{apt.time}</TableCell>
+                    <TableCell sx={COLUMN_BODY_STYLE}>
                       <Chip
                         label={apt.status}
                         size="small"
                         sx={{
                           fontWeight: 500,
                           fontSize: '0.75rem',
+                          maxWidth: '100%',
+                          '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' },
                           ...STATUS_CHIP_STYLES[apt.status],
                         }}
                       />
                     </TableCell>
-                    <TableCell>{`${apt.caseName} [${apt.caseId}]`}</TableCell>
-                    <TableCell>{apt.template}</TableCell>
-                    <TableCell>{apt.clinicalStage}</TableCell>
-                    <TableCell>{apt.provider}</TableCell>
-                    <TableCell>{apt.insurance}</TableCell>
-                    <TableCell>{apt.facility}</TableCell>
-                    <TableCell>
+                    <TableCell sx={COLUMN_BODY_STYLE} title={`${apt.caseName} [${apt.caseId}]`}>{`${apt.caseName} [${apt.caseId}]`}</TableCell>
+                    <TableCell sx={COLUMN_BODY_STYLE} title={apt.template}>{apt.template}</TableCell>
+                    <TableCell sx={COLUMN_BODY_STYLE} title={apt.clinicalStage}>{apt.clinicalStage}</TableCell>
+                    <TableCell sx={COLUMN_BODY_STYLE} title={apt.provider}>{apt.provider}</TableCell>
+                    <TableCell sx={COLUMN_BODY_STYLE} title={apt.insurance}>{apt.insurance}</TableCell>
+                    <TableCell sx={COLUMN_BODY_STYLE} title={apt.facility}>{apt.facility}</TableCell>
+                    <TableCell sx={{ ...COLUMN_BODY_STYLE, '& .MuiBox-root': { overflow: 'hidden', textOverflow: 'ellipsis' } }}>
                       {apt.tags && apt.tags.length > 0 ? (
-                        <Box component="span" sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                        <Box component="span" sx={{ display: 'flex', flexWrap: 'nowrap', gap: 0.5, overflow: 'hidden', minWidth: 0 }}>
                           {apt.tags.map((tag) => (
                             <Chip
                               key={tag}
                               label={tag}
                               size="small"
-                              sx={{ fontSize: '0.75rem', bgcolor: '#f5f5f5', color: '#616161' }}
+                              sx={{ fontSize: '0.75rem', bgcolor: '#f5f5f5', color: '#616161', flexShrink: 0 }}
                             />
                           ))}
                         </Box>

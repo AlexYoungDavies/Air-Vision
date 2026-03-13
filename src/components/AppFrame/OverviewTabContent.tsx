@@ -13,6 +13,10 @@ import {
   TableHead,
   TableRow,
   Paper,
+  Chip,
+  Button,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import { AppIconButton } from '../AppIconButton';
 import PushPinOutlined from '@mui/icons-material/PushPinOutlined';
@@ -26,9 +30,11 @@ import AttachMoney from '@mui/icons-material/AttachMoney';
 import WarningAmberOutlined from '@mui/icons-material/WarningAmberOutlined';
 import ImageOutlined from '@mui/icons-material/ImageOutlined';
 import DownloadOutlined from '@mui/icons-material/DownloadOutlined';
-import OpenInNewOutlined from '@mui/icons-material/OpenInNewOutlined';
+import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined';
+import EditOutlined from '@mui/icons-material/EditOutlined';
 import type { Patient } from '../../data/mockPatients';
 import { getAppointmentsForPatient, type Appointment } from '../../data/mockAppointments';
+import { STICKY_ACTIONS_CELL, STICKY_ACTIONS_HEADER, STATUS_CHIP_STYLES, COLUMN_HEADER_STYLE, COLUMN_BODY_STYLE } from './AppointmentsTabContent';
 import { getBillingSummary, formatCurrency } from '../../data/mockBilling';
 import {
   getActiveMedicationsForPatient,
@@ -52,6 +58,8 @@ export interface OverviewTabContentProps {
   onSecondaryPanelMode?: (mode: 'pin' | 'chat' | 'tasks' | 'history' | null) => void;
   /** Navigate to a main profile tab (e.g. appointments, billing, medications). */
   onNavigateToTab?: (tabId: string) => void;
+  /** Called when user clicks "Open Note" on a complete appointment. Opens a visit note tab. */
+  onOpenNote?: (appointment: Appointment) => void;
 }
 
 function SectionCard({
@@ -170,8 +178,10 @@ function SupportingLink({
 function SummaryView({
   patient,
   onNavigateToTab,
+  onOpenNote,
   onSetOverviewSubTab,
 }: OverviewTabContentProps & { onSetOverviewSubTab?: (subTab: OverviewSubTabId) => void }) {
+  const [moreAnchor, setMoreAnchor] = useState<{ el: HTMLElement; appointment: Appointment } | null>(null);
   const financialSummary = getBillingSummary(patient.id);
   const recentVisits = useMemo(
     () => getAppointmentsForPatient(patient.id).slice(0, RECENT_VISITS_LIMIT),
@@ -192,7 +202,7 @@ function SummaryView({
       sx={{
         display: 'grid',
         gridTemplateColumns: 'repeat(4, 1fr)',
-        gridTemplateRows: 'auto 240px 240px auto',
+        gridTemplateRows: 'auto 320px 240px auto',
         gap: '16px',
         minHeight: 0,
       }}
@@ -240,7 +250,7 @@ function SummaryView({
         </SectionCard>
       </Box>
 
-      {/* Row 2: Visits (3 cols) + Alerts (1 col) */}
+      {/* Row 2: Visits (3 cols) + Alerts (1 col) — same columns/actions as Appointments tab, capped at 5 */}
       <Box sx={{ gridColumn: 'span 3', minHeight: 0, height: '100%', display: 'flex', flexDirection: 'column' }}>
         <SectionCard
           title="Visits"
@@ -248,58 +258,148 @@ function SummaryView({
             onNavigateToTab ? (
               <>
                 Showing 5 most recent.{' '}
-                <SupportingLink onClick={() => onNavigateToTab('appointments')}>See All</SupportingLink>
+                <SupportingLink onClick={() => onNavigateToTab('appointments')}>View all</SupportingLink>
               </>
             ) : undefined
           }
           onAdd={() => {}}
         >
-          <TableContainer sx={{ overflow: 'auto', maxHeight: 240 }}>
+          <TableContainer sx={{ overflow: 'auto', maxHeight: 320 }}>
             <Table size="small" stickyHeader>
               <TableHead>
-                <TableRow sx={{ height: 28, minHeight: 28 }}>
-                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Date</TableCell>
-                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Time</TableCell>
-                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Template</TableCell>
-                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Provider</TableCell>
-                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2, width: 72, minWidth: 72, maxWidth: 72, position: 'sticky', right: 0, zIndex: 2, boxShadow: '-2px 0 4px -2px rgba(0,0,0,0.08)' }} />
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Date</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Time</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Status</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Case</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Template</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Clinical stage</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Provider</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Insurance</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Facility</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Tags</TableCell>
+                  <TableCell sx={{ fontWeight: 600, ...STICKY_ACTIONS_HEADER }} align="right">
+                    Actions
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
                 {recentVisits.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} sx={{ py: 2, color: 'text.secondary', fontSize: 13 }}>
+                    <TableCell colSpan={11} align="center" sx={{ py: 2, color: 'text.secondary', fontSize: 13 }}>
                       No visits yet
                     </TableCell>
                   </TableRow>
                 ) : (
-                  recentVisits.map((apt) => (
-                    <TableRow
-                      key={apt.id}
-                      hover
-                      sx={{ '&:hover .visit-row-actions': { opacity: 1 } }}
-                    >
-                      <TableCell sx={{ fontSize: 13 }}>{apt.date}</TableCell>
-                      <TableCell sx={{ fontSize: 13 }}>{apt.time}</TableCell>
-                      <TableCell sx={{ fontSize: 13 }}>{apt.status}</TableCell>
-                      <TableCell sx={{ fontSize: 13 }}>{apt.template}</TableCell>
-                      <TableCell sx={{ fontSize: 13 }}>{apt.provider}</TableCell>
-                      <TableCell sx={{ fontSize: 13, py: 0.25, width: 72, minWidth: 72, maxWidth: 72, whiteSpace: 'nowrap', position: 'sticky', right: 0, bgcolor: 'background.paper', zIndex: 1, boxShadow: '-2px 0 4px -2px rgba(0,0,0,0.08)' }}>
-                        <Box className="visit-row-actions" sx={{ display: 'flex', alignItems: 'center', gap: 0.25, opacity: 0, transition: 'opacity 0.15s ease', width: 'fit-content', pr: 1 }}>
-                          <AppIconButton tooltip="Download Note PDF" onClick={() => {}} aria-label="Download Note PDF">
-                            <DownloadOutlined fontSize="small" />
-                          </AppIconButton>
-                          <AppIconButton tooltip="Open Note" onClick={() => {}} aria-label="Open Note">
-                            <OpenInNewOutlined fontSize="small" />
-                          </AppIconButton>
-                        </Box>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                  recentVisits.map((apt) => {
+                    const isComplete = apt.status === 'Complete';
+                    return (
+                      <TableRow
+                        key={apt.id}
+                        hover
+                        onDoubleClick={() => isComplete && onOpenNote?.(apt)}
+                        sx={isComplete ? { cursor: 'pointer' } : undefined}
+                      >
+                        <TableCell sx={{ fontSize: 13, ...COLUMN_BODY_STYLE }} title={apt.date}>{apt.date}</TableCell>
+                        <TableCell sx={{ fontSize: 13, ...COLUMN_BODY_STYLE }} title={apt.time}>{apt.time}</TableCell>
+                        <TableCell sx={{ fontSize: 13, ...COLUMN_BODY_STYLE }}>
+                          <Chip
+                            label={apt.status}
+                            size="small"
+                            sx={{
+                              fontWeight: 500,
+                              fontSize: '0.75rem',
+                              maxWidth: '100%',
+                              '& .MuiChip-label': { overflow: 'hidden', textOverflow: 'ellipsis' },
+                              ...STATUS_CHIP_STYLES[apt.status],
+                            }}
+                          />
+                        </TableCell>
+                        <TableCell sx={{ fontSize: 13, ...COLUMN_BODY_STYLE }} title={`${apt.caseName} [${apt.caseId}]`}>{`${apt.caseName} [${apt.caseId}]`}</TableCell>
+                        <TableCell sx={{ fontSize: 13, ...COLUMN_BODY_STYLE }} title={apt.template}>{apt.template}</TableCell>
+                        <TableCell sx={{ fontSize: 13, ...COLUMN_BODY_STYLE }} title={apt.clinicalStage}>{apt.clinicalStage}</TableCell>
+                        <TableCell sx={{ fontSize: 13, ...COLUMN_BODY_STYLE }} title={apt.provider}>{apt.provider}</TableCell>
+                        <TableCell sx={{ fontSize: 13, ...COLUMN_BODY_STYLE }} title={apt.insurance}>{apt.insurance}</TableCell>
+                        <TableCell sx={{ fontSize: 13, ...COLUMN_BODY_STYLE }} title={apt.facility}>{apt.facility}</TableCell>
+                        <TableCell sx={{ fontSize: 13, ...COLUMN_BODY_STYLE, '& .MuiBox-root': { overflow: 'hidden', textOverflow: 'ellipsis' } }}>
+                          {apt.tags && apt.tags.length > 0 ? (
+                            <Box component="span" sx={{ display: 'flex', flexWrap: 'nowrap', gap: 0.5, overflow: 'hidden', minWidth: 0 }}>
+                              {apt.tags.map((tag) => (
+                                <Chip
+                                  key={tag}
+                                  label={tag}
+                                  size="small"
+                                  sx={{ fontSize: '0.75rem', bgcolor: '#f5f5f5', color: '#616161', flexShrink: 0 }}
+                                />
+                              ))}
+                            </Box>
+                          ) : (
+                            '—'
+                          )}
+                        </TableCell>
+                        <TableCell sx={STICKY_ACTIONS_CELL} align="right">
+                          <Box component="span" sx={{ display: 'inline-flex', alignItems: 'center', gap: 0, flexWrap: 'nowrap' }}>
+                            {isComplete ? (
+                              <>
+                                <Tooltip title="Download Note PDF">
+                                  <IconButton size="small" aria-label="Download Note PDF">
+                                    <DownloadOutlined fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                                <Tooltip title="More">
+                                  <IconButton
+                                    size="small"
+                                    aria-label="More actions"
+                                    onClick={(e) => setMoreAnchor({ el: e.currentTarget, appointment: apt })}
+                                  >
+                                    <MoreVertOutlined fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                                <Button
+                                  variant="text"
+                                  size="small"
+                                  onClick={() => onOpenNote?.(apt)}
+                                  sx={{ textTransform: 'none', fontWeight: 500, minWidth: 'auto', px: 0.5 }}
+                                >
+                                  Open Note
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <Tooltip title="Edit">
+                                  <IconButton size="small" aria-label="Edit">
+                                    <EditOutlined fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                                <Button
+                                  variant="text"
+                                  size="small"
+                                  href="#"
+                                  sx={{ textTransform: 'none', fontWeight: 500, minWidth: 'auto', px: 0.5 }}
+                                >
+                                  Pre-chart
+                                </Button>
+                              </>
+                            )}
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
+            <Menu
+              anchorEl={moreAnchor?.el}
+              open={Boolean(moreAnchor)}
+              onClose={() => setMoreAnchor(null)}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            >
+              <MenuItem onClick={() => setMoreAnchor(null)}>Appointment Changelog</MenuItem>
+              <MenuItem onClick={() => setMoreAnchor(null)}>Edit Visit Details</MenuItem>
+              <MenuItem onClick={() => setMoreAnchor(null)}>Add Addendum</MenuItem>
+            </Menu>
           </TableContainer>
         </SectionCard>
       </Box>
@@ -397,8 +497,7 @@ function SummaryView({
           supportingContent={
             onSetOverviewSubTab ? (
               <>
-                5 most recent.{' '}
-                <SupportingLink onClick={() => onSetOverviewSubTab('insurance')}>View all</SupportingLink>
+                Showing 5 most recent. <SupportingLink onClick={() => onSetOverviewSubTab('insurance')}>View all</SupportingLink>
               </>
             ) : undefined
           }
@@ -703,7 +802,7 @@ function ProfileView({ patient }: { patient: Patient }) {
   );
 }
 
-export function OverviewTabContent({ patient, onSecondaryPanelMode, onNavigateToTab }: OverviewTabContentProps) {
+export function OverviewTabContent({ patient, onSecondaryPanelMode, onNavigateToTab, onOpenNote }: OverviewTabContentProps) {
   const [subTab, setSubTab] = useState<OverviewSubTabId>('summary');
 
   return (
@@ -806,6 +905,7 @@ export function OverviewTabContent({ patient, onSecondaryPanelMode, onNavigateTo
               patient={patient}
               onSecondaryPanelMode={onSecondaryPanelMode}
               onNavigateToTab={onNavigateToTab}
+              onOpenNote={onOpenNote}
               onSetOverviewSubTab={setSubTab}
             />
           )}
