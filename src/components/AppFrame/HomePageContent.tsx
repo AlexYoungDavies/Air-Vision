@@ -11,6 +11,7 @@ import {
   ListItemIcon,
   ListItemText,
   Tooltip,
+  Paper,
 } from '@mui/material';
 import ChevronLeftOutlined from '@mui/icons-material/ChevronLeftOutlined';
 import ChevronRightOutlined from '@mui/icons-material/ChevronRightOutlined';
@@ -492,6 +493,15 @@ function getDaySummaryStats() {
   };
 }
 
+const SUMMARY_CARD = {
+  bgcolor: 'grey.50',
+  borderRadius: 2,
+  p: 2,
+  boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+  border: '1px solid',
+  borderColor: 'grey.200',
+} as const;
+
 function DaySummaryPanel() {
   const stats = getDaySummaryStats();
   return (
@@ -502,80 +512,60 @@ function DaySummaryPanel() {
         overflow: 'auto',
         display: 'flex',
         flexDirection: 'column',
-        gap: 3,
-        justifyContent: 'center',
-        alignItems: 'center',
+        gap: 2,
+        alignItems: 'stretch',
       }}
     >
-      <Typography variant="h2" sx={{ fontSize: 18, fontWeight: 600, color: 'text.primary', mb: 0.5 }}>
-        Today’s summary
-      </Typography>
-      <Typography variant="body2" color="text.secondary" sx={{ fontSize: 13, mb: 1 }}>
-        Your day at a glance
+      <Typography variant="h2" sx={{ fontSize: 20, fontWeight: 600, color: 'text.primary', mb: 0.5 }}>
+        Today’s Preview
       </Typography>
 
-      {/* Main callouts: big number, small title underneath */}
-      <Box sx={{ display: 'flex', gap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, alignItems: 'center', textAlign: 'center' }}>
-          <Typography
-            component="span"
-            sx={{
-              fontSize: 80,
-              fontWeight: 700,
-              lineHeight: 1.1,
-              color: 'primary.main',
-            }}
-          >
+      {/* Top row: 2 larger cards */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 2 }}>
+        <Paper variant="outlined" sx={{ ...SUMMARY_CARD, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 100 }}>
+          <Typography sx={{ fontSize: 42, fontWeight: 700, lineHeight: 1.1, color: 'primary.main' }}>
             {stats.patientsToday}
           </Typography>
-          <Typography sx={{ fontSize: 12, fontWeight: 500, color: 'text.secondary' }}>
-            Patients today
+          <Typography sx={{ fontSize: 13, fontWeight: 400, color: 'text.secondary', mt: 0.5 }}>
+            Patients Today
           </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, alignItems: 'center', textAlign: 'center' }}>
-          <Typography
-            component="span"
-            sx={{
-              fontSize: 80,
-              fontWeight: 700,
-              lineHeight: 1.1,
-              color: 'primary.main',
-            }}
-          >
+        </Paper>
+        <Paper variant="outlined" sx={{ ...SUMMARY_CARD, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 100 }}>
+          <Typography sx={{ fontSize: 42, fontWeight: 700, lineHeight: 1.1, color: 'primary.main' }}>
             {stats.notesToSign}
           </Typography>
-          <Typography sx={{ fontSize: 12, fontWeight: 500, color: 'text.secondary' }}>
-            Notes to sign
+          <Typography sx={{ fontSize: 13, fontWeight: 400, color: 'text.secondary', mt: 0.5 }}>
+            Notes to close
           </Typography>
-        </Box>
+        </Paper>
       </Box>
 
-      {/* Secondary: smaller numbers with labels below, accent color on number only */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1, alignItems: 'center' }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, alignItems: 'center', textAlign: 'center' }}>
-          <Typography sx={{ fontSize: 20, fontWeight: 700, lineHeight: 1.2, color: 'primary.main' }}>
-            {stats.newLabsImages}
-          </Typography>
-          <Typography sx={{ fontSize: 12, fontWeight: 500, color: 'text.secondary' }}>
-            New Documents
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, alignItems: 'center', textAlign: 'center' }}>
-          <Typography sx={{ fontSize: 20, fontWeight: 700, lineHeight: 1.2, color: 'primary.main' }}>
+      {/* Bottom row: 3 smaller cards */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
+        <Paper variant="outlined" sx={{ ...SUMMARY_CARD, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 88 }}>
+          <Typography sx={{ fontSize: 28, fontWeight: 700, lineHeight: 1.2, color: 'primary.main' }}>
             {stats.tasksOutstanding}
           </Typography>
-          <Typography sx={{ fontSize: 12, fontWeight: 500, color: 'text.secondary' }}>
-            Tasks
+          <Typography sx={{ fontSize: 12, fontWeight: 400, color: 'text.secondary', mt: 0.5 }}>
+            Pending Tasks
           </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, alignItems: 'center', textAlign: 'center' }}>
-          <Typography sx={{ fontSize: 20, fontWeight: 700, lineHeight: 1.2, color: 'primary.main' }}>
+        </Paper>
+        <Paper variant="outlined" sx={{ ...SUMMARY_CARD, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 88 }}>
+          <Typography sx={{ fontSize: 28, fontWeight: 700, lineHeight: 1.2, color: 'primary.main' }}>
             {stats.messagesUnread}
           </Typography>
-          <Typography sx={{ fontSize: 12, fontWeight: 500, color: 'text.secondary' }}>
-            Messages
+          <Typography sx={{ fontSize: 12, fontWeight: 400, color: 'text.secondary', mt: 0.5 }}>
+            New Messages
           </Typography>
-        </Box>
+        </Paper>
+        <Paper variant="outlined" sx={{ ...SUMMARY_CARD, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 88 }}>
+          <Typography sx={{ fontSize: 28, fontWeight: 700, lineHeight: 1.2, color: 'primary.main' }}>
+            {stats.newLabsImages}
+          </Typography>
+          <Typography sx={{ fontSize: 12, fontWeight: 400, color: 'text.secondary', mt: 0.5 }}>
+            New Documents
+          </Typography>
+        </Paper>
       </Box>
     </Box>
   );

@@ -29,7 +29,7 @@ import { AppointmentsTabContent } from './AppointmentsTabContent';
 import { AttachmentsTabContent } from './AttachmentsTabContent';
 import { BillingTabContent } from './BillingTabContent';
 import { OverviewTabContent } from './OverviewTabContent';
-import { VisitNoteContent } from './VisitNoteContent';
+import { VisitNoteContent, CitationPanelContent } from './VisitNoteContent';
 import {
   MedicationsTabContent,
   OrdersTabContent,
@@ -75,7 +75,7 @@ export type PrimaryTabId = (typeof PRIMARY_TABS)[number]['id'];
 export type MoreTabId = (typeof MORE_TAB_OPTIONS)[number]['id'];
 export type ProfileTabId = PrimaryTabId | MoreTabId;
 
-export type SecondaryPanelMode = 'pin' | 'chat' | 'tasks' | 'history' | 'ai';
+export type SecondaryPanelMode = 'pin' | 'chat' | 'tasks' | 'history' | 'ai' | 'citations';
 
 export interface OpenVisitNote {
   id: string;
@@ -105,9 +105,6 @@ const SECONDARY_PANEL_ICONS: { mode: SecondaryPanelMode; title: string }[] = [
 function PinPanelContent({ patient: _patient }: { patient: Patient }) {
   return (
     <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'text.primary' }}>
-        Pinned notes
-      </Typography>
       <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'grey.50' }}>
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
           Front desk
@@ -139,9 +136,6 @@ const MOCK_THREAD_MESSAGES = [
 function ChatPanelContent() {
   return (
     <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'text.primary', mb: 0.5 }}>
-        Care thread
-      </Typography>
       {MOCK_THREAD_MESSAGES.map((msg) => (
         <Box
           key={msg.id}
@@ -175,9 +169,6 @@ function TasksPanelContent() {
   const statusColor = (s: string) => (s === 'Done' ? 'success' : s === 'In progress' ? 'warning' : 'default');
   return (
     <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'text.primary', mb: 0.5 }}>
-        Tasks
-      </Typography>
       {MOCK_TASKS.map((t) => (
         <Paper key={t.id} variant="outlined" sx={{ p: 1.5 }}>
           <Typography variant="body2" sx={{ fontWeight: 600, fontSize: 13 }}>{t.name}</Typography>
@@ -212,9 +203,6 @@ const MOCK_ACTIVITY = [
 function HistoryPanelContent() {
   return (
     <Box sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'text.primary', mb: 1.5 }}>
-        Activity
-      </Typography>
       <Box
         sx={{
           position: 'relative',
@@ -291,6 +279,7 @@ export function PatientProfilePage({
   const [overflowTabVisible, setOverflowTabVisible] = useState<MoreTabId | null>(null);
   const [overflowTabFadingOut, setOverflowTabFadingOut] = useState<MoreTabId | null>(null);
   const [overflowTabFadeIn, setOverflowTabFadeIn] = useState(false);
+  const [highlightedCitationNumber, setHighlightedCitationNumber] = useState<number | undefined>(undefined);
 
   const isControlled = controlledPanelMode !== undefined;
   const secondaryPanelMode = isControlled ? controlledPanelMode : internalPanelMode;
@@ -756,6 +745,11 @@ export function PatientProfilePage({
               appointment={activeVisitNote.appointment}
               onAICheckClick={() => setSecondaryPanelMode(secondaryPanelMode === 'ai' ? null : 'ai')}
               isAIPanelOpen={secondaryPanelMode === 'ai'}
+              onCitationClick={(citationNumber) => {
+                setHighlightedCitationNumber(citationNumber);
+                setSecondaryPanelMode('citations');
+              }}
+              highlightedCitationInNote={highlightedCitationNumber}
             />
           ) : activeTab === 'overview' ? (
             <OverviewTabContent
@@ -810,25 +804,72 @@ export function PatientProfilePage({
               borderColor: 'divider',
               display: 'flex',
               flexDirection: 'column',
-              overflow: 'auto',
+              overflow: 'hidden',
               bgcolor: 'background.paper',
               transform: secondaryPanelOpen ? 'translateX(0)' : 'translateX(100%)',
               transition: 'transform 0.28s cubic-bezier(0.4, 0, 0.2, 1)',
               willChange: secondaryPanelOpen ? 'auto' : 'transform',
             }}
           >
-            <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-              {(secondaryPanelMode ?? lastPanelModeRef.current) === 'pin' && <PinPanelContent patient={patient} />}
-              {(secondaryPanelMode ?? lastPanelModeRef.current) === 'chat' && <ChatPanelContent />}
-              {(secondaryPanelMode ?? lastPanelModeRef.current) === 'tasks' && <TasksPanelContent />}
-              {(secondaryPanelMode ?? lastPanelModeRef.current) === 'history' && <HistoryPanelContent />}
-              {(secondaryPanelMode ?? lastPanelModeRef.current) === 'ai' && (
-                <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <Typography variant="body1" color="text.secondary">AI Check content</Typography>
-                </Box>
-              )}
+            <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              {(() => {
+                const currentMode = secondaryPanelMode ?? lastPanelModeRef.current;
+                const panelTitles: Record<NonNullable<typeof currentMode>, string> = {
+                  pin: 'Pinned notes',
+                  chat: 'Care thread',
+                  tasks: 'Tasks',
+                  history: 'Activity',
+                  ai: 'AI Check',
+                  citations: 'Citation sources',
+                };
+                const title = currentMode ? panelTitles[currentMode] : '';
+                return (
+                  <>
+                    <Box
+                      sx={{
+                        flexShrink: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 1,
+                        py: 0.75,
+                        px: 2,
+                      }}
+                    >
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                        {title}
+                      </Typography>
+                      <IconButton
+                        size="small"
+                        onClick={() => setSecondaryPanelMode(null)}
+                        aria-label="Close panel"
+                        title="Close"
+                        sx={{ color: 'text.secondary', '&:hover': { bgcolor: 'action.hover' } }}
+                      >
+                        <CloseOutlined sx={{ fontSize: 20 }} />
+                      </IconButton>
+                    </Box>
+                    <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+                      {currentMode === 'pin' && <PinPanelContent patient={patient} />}
+                      {currentMode === 'chat' && <ChatPanelContent />}
+                      {currentMode === 'tasks' && <TasksPanelContent />}
+                      {currentMode === 'history' && <HistoryPanelContent />}
+                      {currentMode === 'ai' && (
+                        <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Typography variant="body1" color="text.secondary">AI Check content</Typography>
+                        </Box>
+                      )}
+                      {currentMode === 'citations' && (
+                        <CitationPanelContent
+                          highlightedCitationNumber={highlightedCitationNumber}
+                          onCitationCardClick={(num) => setHighlightedCitationNumber(num)}
+                        />
+                      )}
+                    </Box>
+                  </>
+                );
+              })()}
             </Box>
-          </Box>
         </Box>
       </Box>
 
@@ -841,6 +882,7 @@ export function PatientProfilePage({
       >
         <MenuItem onClick={() => setPatientMenuAnchor(null)}>Switch patient</MenuItem>
       </Menu>
+    </Box>
     </Box>
   );
 }

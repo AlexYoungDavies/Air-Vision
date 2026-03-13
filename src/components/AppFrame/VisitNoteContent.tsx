@@ -15,6 +15,7 @@ import {
   Switch,
   Checkbox,
   FormControlLabel,
+  Paper,
 } from '@mui/material';
 import {
   VisitNoteTextArea,
@@ -79,11 +80,15 @@ function ReadViewSectionBlock({
   title,
   content,
   onEdit,
+  onCitationClick,
+  highlightedCitationInNote,
 }: {
   sectionId: string;
   title: string;
   content: string;
   onEdit: () => void;
+  onCitationClick?: (citationNumber: number) => void;
+  highlightedCitationInNote?: number;
 }) {
   const blockId = `read-${sectionId}`;
 
@@ -139,22 +144,9 @@ function ReadViewSectionBlock({
       </Box>
       <Box>
         {(sectionId === 'objective' || sectionId === 'assessment') ? (
-          <ReadViewSectionFormatted content={content} />
+          <ReadViewSectionFormatted sectionId={sectionId} content={content} onCitationClick={onCitationClick} highlightedCitationInNote={highlightedCitationInNote} />
         ) : (
-          <Typography
-            component="pre"
-            sx={{
-              fontFamily: 'inherit',
-              fontSize: 14,
-              lineHeight: 1.6,
-              color: 'text.primary',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-              m: 0,
-            }}
-          >
-            {content}
-          </Typography>
+          <ReadViewParagraphsWithCitations sectionId={sectionId} content={content} onCitationClick={onCitationClick} highlightedCitationInNote={highlightedCitationInNote} />
         )}
       </Box>
     </Box>
@@ -162,12 +154,44 @@ function ReadViewSectionBlock({
 }
 
 /** Renders objective/assessment read content with paragraphs and bulleted lists (measurements, goal progress). */
-function ReadViewSectionFormatted({ content }: { content: string }) {
+function ReadViewSectionFormatted({
+  sectionId,
+  content,
+  onCitationClick,
+  highlightedCitationInNote,
+}: {
+  sectionId: string;
+  content: string;
+  onCitationClick?: (citationNumber: number) => void;
+  highlightedCitationInNote?: number;
+}) {
   const segments = content.split(/\n\n+/).filter(Boolean);
   const nodes: React.ReactNode[] = [];
   let segIdx = 0;
+  let contentSegmentIndex = 0;
+  const citations = SECTION_CITATION_NUMBERS[sectionId] ?? [];
   const typographySx = { fontSize: 14, lineHeight: 1.6 } as const;
   const listSx = { mt: 0.5, mb: 1, pl: 2.5 } as const;
+
+  const pushParagraphWithCitation = (text: string) => {
+    const citationNums = citations[contentSegmentIndex] !== undefined ? [citations[contentSegmentIndex]] : [];
+    if (citationNums.length > 0) contentSegmentIndex++;
+    return (
+      <Box key={segIdx} component="span" sx={{ display: 'block', mb: 1 }}>
+        <Typography component="span" variant="body2" sx={typographySx}>
+          {text}
+          {citationNums.length > 0 && (
+            <>
+              {' '}
+              {citationNums.map((n) => (
+                <CitationBadge key={n} number={n} onClick={onCitationClick} isHighlighted={highlightedCitationInNote === n} />
+              ))}
+            </>
+          )}
+        </Typography>
+      </Box>
+    );
+  };
 
   while (segIdx < segments.length) {
     const segment = segments[segIdx];
@@ -205,11 +229,7 @@ function ReadViewSectionFormatted({ content }: { content: string }) {
 
     if (lines.length === 2 && lines[1].trimEnd().endsWith(':')) {
       // Intro paragraph + heading; next segment is the bullet list (e.g. "Patient performs...\nLumbar Mobility:")
-      nodes.push(
-        <Typography key={segIdx} variant="body2" sx={{ mb: 1, ...typographySx }}>
-          {lines[0]}
-        </Typography>
-      );
+      nodes.push(pushParagraphWithCitation(lines[0]));
       const nextSegment = segments[segIdx + 1];
       const bulletLines = nextSegment ? nextSegment.split(/\n/).filter(Boolean) : [];
       nodes.push(
@@ -233,11 +253,7 @@ function ReadViewSectionFormatted({ content }: { content: string }) {
     }
 
     if (singleLine) {
-      nodes.push(
-        <Typography key={segIdx} variant="body2" sx={{ mb: 1, ...typographySx }}>
-          {lines[0]}
-        </Typography>
-      );
+      nodes.push(pushParagraphWithCitation(lines[0]));
       segIdx++;
       continue;
     }
@@ -285,6 +301,100 @@ export interface VisitNoteContentProps {
   onAICheckClick?: () => void;
   /** When true, the AI Check button shows active state (panel open). */
   isAIPanelOpen?: boolean;
+  /** When provided, citation badges are clickable and this is called with the citation number (opens citation panel). */
+  onCitationClick?: (citationNumber: number) => void;
+  /** When set, the citation badge with this number is shown as highlighted (e.g. when user selects a card in the citation panel). */
+  highlightedCitationInNote?: number;
+}
+
+/** Citation details panel for the secondary content panel: one card per citation (source label, quote, kind badge). */
+export function CitationPanelContent({
+  highlightedCitationNumber,
+  onCitationCardClick,
+}: {
+  /** When set, scroll this citation’s card into view after mount. */
+  highlightedCitationNumber?: number;
+  /** Called when a citation card is clicked; use to highlight the corresponding citation in the note. */
+  onCitationCardClick?: (citationNumber: number) => void;
+} = {}) {
+  const cardRefs = useRef<Map<number, HTMLDivElement | null>>(new Map());
+
+  useEffect(() => {
+    if (highlightedCitationNumber == null) return;
+    const el = cardRefs.current.get(highlightedCitationNumber);
+    el?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [highlightedCitationNumber]);
+
+  const noteQuotesPerSource = getNoteQuotesPerSource();
+
+  return (
+    <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {CARRY_FORWARD_CITATION_DETAILS.map((detail) => {
+        const isActive = highlightedCitationNumber === detail.number;
+        const noteQuotes = noteQuotesPerSource[detail.number] ?? [];
+        return (
+        <Paper
+          key={detail.number}
+          ref={(ref) => {
+            cardRefs.current.set(detail.number, ref);
+          }}
+          component="button"
+          type="button"
+          variant="outlined"
+          onClick={() => onCitationCardClick?.(detail.number)}
+          sx={{
+            p: 1.5,
+            width: '100%',
+            textAlign: 'left',
+            cursor: onCitationCardClick ? 'pointer' : undefined,
+            bgcolor: isActive ? 'primary.light' : 'background.paper',
+            border: '1px solid',
+            borderColor: isActive ? 'primary.main' : 'divider',
+            '&:hover': onCitationCardClick ? { bgcolor: isActive ? 'primary.light' : 'action.hover' } : undefined,
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1, mb: 1 }}>
+            <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary', flex: 1 }}>
+              {detail.sourceLabel}
+            </Typography>
+            <Chip
+              label={detail.kind}
+              size="small"
+              sx={{
+                flexShrink: 0,
+                fontSize: 10,
+                height: 20,
+                fontWeight: 600,
+                bgcolor: detail.kind === 'Direct' ? 'primary.light' : 'grey.200',
+                color: detail.kind === 'Direct' ? 'primary.dark' : 'text.secondary',
+              }}
+            />
+          </Box>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {noteQuotes.map((quote, idx) => (
+              <Typography
+                key={idx}
+                variant="body2"
+                sx={{
+                  fontSize: 13,
+                  lineHeight: 1.5,
+                  color: 'text.secondary',
+                  fontStyle: 'italic',
+                  overflow: 'hidden',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 3,
+                  WebkitBoxOrient: 'vertical',
+                }}
+              >
+                "{quote}"
+              </Typography>
+            ))}
+          </Box>
+        </Paper>
+        );
+      })}
+    </Box>
+  );
 }
 
 const NAV_SECTION_LABEL = {
@@ -382,6 +492,183 @@ const CARRY_FORWARD_SOURCES: Partial<Record<string, string>> = {
   'plan-of-care': 'Initial Eval, Mar 4th 2026',
 };
 
+/** Unique source labels in display order; citation number = 1-based index (one number per source). */
+const UNIQUE_SOURCE_LABELS: string[] = [
+  'Initial Eval, Mar 4th 2026',
+  'Follow-up, Mar 7th 2026',
+  'Progress Note, Mar 9th',
+  'previous note, Mar 9th 2026',
+];
+
+/** Source label → citation number (1-based). Subsections that share a source share the same number. */
+function getSourceCitationNumber(sourceLabel: string): number {
+  const idx = UNIQUE_SOURCE_LABELS.indexOf(sourceLabel);
+  return idx === -1 ? 0 : idx + 1;
+}
+
+/** Citation numbers to show per read-view section (source numbers; same source = same number). */
+const SECTION_CITATION_NUMBERS: Record<string, number[]> = {
+  subjective: [1, 1, 1],   // chief-complaint, HPI, exacerbating all from source 1
+  objective: [],
+  assessment: [2],         // diagnosis-summary from source 2
+  plan: [3, 4, 1],         // treatment-plan → 3, goals → 4, plan-of-care → 1
+};
+
+/** Builds per-source arrays of quoted text from the current note (one entry per reference). */
+function getNoteQuotesPerSource(): Record<number, string[]> {
+  const result: Record<number, string[]> = {};
+  const sections: (keyof typeof SOAP_READ_VIEW_CONTENT)[] = ['subjective', 'assessment', 'plan'];
+  for (const sectionId of sections) {
+    const content = SOAP_READ_VIEW_CONTENT[sectionId];
+    const citations = SECTION_CITATION_NUMBERS[sectionId];
+    if (!content || !citations?.length) continue;
+    const segments = content.split(/\n\n+/).filter(Boolean);
+    let citationIndex = 0;
+    for (let segIdx = 0; segIdx < segments.length && citationIndex < citations.length; segIdx++) {
+      const segment = segments[segIdx];
+      const isLastSegment = segIdx === segments.length - 1;
+      const remainingCitations = citations.length - citationIndex;
+      if (isLastSegment && remainingCitations > 1) {
+        for (let i = citationIndex; i < citations.length; i++) {
+          const src = citations[i];
+          if (!result[src]) result[src] = [];
+          result[src].push(segment);
+        }
+        break;
+      }
+      const src = citations[citationIndex];
+      if (!result[src]) result[src] = [];
+      result[src].push(segment);
+      citationIndex++;
+    }
+  }
+  return result;
+}
+
+export type CarryForwardKind = 'Direct' | 'Blended';
+
+/** Per-citation details for the secondary panel (source label, kind; note quotes added at render). */
+export interface CitationDetail {
+  number: number;
+  sourceLabel: string;
+  kind: CarryForwardKind;
+}
+
+/** Citation details for read-view panel (mock quotes from “original” notes). */
+export const CARRY_FORWARD_CITATION_DETAILS: CitationDetail[] = [
+  { number: 1, sourceLabel: 'Initial Eval, Mar 4th 2026', kind: 'Direct' },
+  { number: 2, sourceLabel: 'Follow-up, Mar 7th 2026', kind: 'Direct' },
+  { number: 3, sourceLabel: 'Progress Note, Mar 9th', kind: 'Blended' },
+  { number: 4, sourceLabel: 'previous note, Mar 9th 2026', kind: 'Blended' },
+];
+
+/** Inline citation badge for read view: number in pastel accent container; clickable to open citation panel. */
+function CitationBadge({
+  number,
+  onClick,
+  isHighlighted,
+}: {
+  number: number;
+  onClick?: (citationNumber: number) => void;
+  isHighlighted?: boolean;
+}) {
+  const isClickable = Boolean(onClick);
+  return (
+    <Box
+      component="span"
+      role={isClickable ? 'button' : undefined}
+      tabIndex={isClickable ? 0 : undefined}
+      onClick={isClickable ? () => onClick(number) : undefined}
+      onKeyDown={
+        isClickable
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onClick(number);
+              }
+            }
+          : undefined
+      }
+      sx={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minWidth: 18,
+        height: 18,
+        px: 0.5,
+        borderRadius: '4px',
+        fontSize: 11,
+        fontWeight: 600,
+        color: 'primary.main',
+        bgcolor: 'primary.light',
+        border: '1px solid',
+        borderColor: isHighlighted ? 'primary.main' : 'transparent',
+        ml: 0.25,
+        verticalAlign: 'text-bottom',
+        ...(isClickable && {
+          cursor: 'pointer',
+          transition: 'background-color 0.15s ease, box-shadow 0.15s ease',
+          '&:hover': {
+            bgcolor: 'primary.main',
+            color: 'primary.contrastText',
+            boxShadow: 1,
+          },
+        }),
+      }}
+    >
+      {number}
+    </Box>
+  );
+}
+
+/** Renders read-view content as paragraphs with inline citation badges (subjective, plan). */
+function ReadViewParagraphsWithCitations({
+  sectionId,
+  content,
+  onCitationClick,
+  highlightedCitationInNote,
+}: {
+  sectionId: string;
+  content: string;
+  onCitationClick?: (citationNumber: number) => void;
+  highlightedCitationInNote?: number;
+}) {
+  const paragraphs = content.split(/\n\n+/).filter(Boolean);
+  const citations = SECTION_CITATION_NUMBERS[sectionId] ?? [];
+  const baseSx = {
+    fontFamily: 'inherit',
+    fontSize: 14,
+    lineHeight: 1.6,
+    color: 'text.primary',
+    whiteSpace: 'pre-wrap' as const,
+    wordBreak: 'break-word' as const,
+    m: 0,
+    mb: 1,
+  };
+
+  return (
+    <Box>
+      {paragraphs.map((text, i) => {
+        const isLast = i === paragraphs.length - 1;
+        const citationNums = isLast ? citations.slice(i) : (citations[i] !== undefined ? [citations[i]] : []);
+        return (
+          <Typography key={i} component="pre" sx={{ ...baseSx, display: 'block' }}>
+            {text}
+            {citationNums.length > 0 && (
+              <>
+                {' '}
+                {citationNums.map((n) => (
+                  <CitationBadge key={n} number={n} onClick={onCitationClick} isHighlighted={highlightedCitationInNote === n} />
+                ))}
+              </>
+            )}
+          </Typography>
+        );
+      })}
+    </Box>
+  );
+}
+
 function CarryForwardSourceTag({ source }: { source: string }) {
   return (
     <Box
@@ -424,7 +711,7 @@ const CHECK_NOTE_LOTTIE_SIZE = 22;
 
 type EditingReadSectionId = (typeof SOAP_READ_SECTION_IDS)[number] | null;
 
-export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick, isAIPanelOpen }: VisitNoteContentProps) {
+export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick, isAIPanelOpen, onCitationClick, highlightedCitationInNote }: VisitNoteContentProps) {
   const [mode, setMode] = useState<'edit' | 'read'>('read');
   const [editingReadSectionId, setEditingReadSectionId] = useState<EditingReadSectionId>(null);
   const checkNoteLottieRef = useRef<LottieRefCurrentProps | null>(null);
@@ -1076,6 +1363,8 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
                       title={SOAP_READ_SECTION_LABELS[sectionId]}
                       content={SOAP_READ_VIEW_CONTENT[sectionId] ?? ''}
                       onEdit={() => setEditingReadSectionId(sectionId)}
+                      onCitationClick={onCitationClick}
+                      highlightedCitationInNote={highlightedCitationInNote}
                     />
                   );
                 })}
