@@ -102,7 +102,7 @@ const SECONDARY_PANEL_ICONS: { mode: SecondaryPanelMode; title: string }[] = [
 ];
 
 /** Pinned notes: front desk comment (payment) + severe allergy note (reflective of allergies page). */
-function PinPanelContent({ patient }: { patient: Patient }) {
+function PinPanelContent({ patient: _patient }: { patient: Patient }) {
   return (
     <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
       <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'text.primary' }}>

@@ -169,7 +169,6 @@ function SupportingLink({
 
 function SummaryView({
   patient,
-  onSecondaryPanelMode,
   onNavigateToTab,
   onSetOverviewSubTab,
 }: OverviewTabContentProps & { onSetOverviewSubTab?: (subTab: OverviewSubTabId) => void }) {
