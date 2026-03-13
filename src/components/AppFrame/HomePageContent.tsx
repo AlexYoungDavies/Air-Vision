@@ -21,10 +21,12 @@ import PersonOutlined from '@mui/icons-material/PersonOutlined';
 import TaskAltOutlined from '@mui/icons-material/TaskAltOutlined';
 import { Link, useNavigate } from 'react-router-dom';
 import { MOCK_PATIENTS, TODAYS_PATIENTS, type Patient } from '../../data/mockPatients';
+import { getAppointmentsForPatient, type Appointment } from '../../data/mockAppointments';
 import { Callout } from './Callout';
 import { LabelValue } from './LabelValue';
 import { getPatientVisitPanelData } from '../../data/mockPatientVisitPanel';
 import { MOCK_CHATS, getChatById, getMessagesForChat } from '../../data/mockChats';
+import { VisitNoteContent } from './VisitNoteContent';
 
 // Icons matching global nav: Patients (person/group), Messages (chat). Custom: Notes (signature), Tasks (checklist). Settings at bottom.
 function PatientsNavIcon(props: React.ComponentProps<typeof SvgIcon>) {
@@ -711,6 +713,12 @@ function PatientVisitDetailPanel({ patient }: { patient: Patient | null }) {
   );
 }
 
+function pickAppointmentForNote(appointments: Appointment[], noteTemplate: string): Appointment | undefined {
+  const complete = appointments.find((a) => a.status === 'Complete');
+  const matchingTemplate = appointments.find((a) => a.template === noteTemplate);
+  return matchingTemplate ?? complete ?? appointments[0];
+}
+
 function NotePreviewPanel({ noteId }: { noteId: string | null }) {
   const navigate = useNavigate();
   if (!noteId) {
@@ -728,7 +736,21 @@ function NotePreviewPanel({ noteId }: { noteId: string | null }) {
       </Box>
     );
   }
-  const patient = TODAYS_PATIENTS.find((p) => p.fullName === note.patient);
+  const patient = MOCK_PATIENTS.find((p) => p.fullName === note.patient);
+  const appointments = patient ? getAppointmentsForPatient(patient.id) : [];
+  const appointment = pickAppointmentForNote(appointments, note.template);
+
+  if (patient && appointment) {
+    return (
+      <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <VisitNoteContent
+          noteId={note.id}
+          appointment={appointment}
+        />
+      </Box>
+    );
+  }
+
   return (
     <Box sx={{ p: 2, overflow: 'auto', height: '100%' }}>
       <Box
@@ -778,7 +800,9 @@ function NotePreviewPanel({ noteId }: { noteId: string | null }) {
         </Typography>
         <Box sx={{ ...PANEL_SUBSECTION, borderBottom: 'none' }}>
           <Typography sx={PANEL_BODY}>
-            Visit note for {note.patient} ({note.template}, {note.date}). Content will load when you open the note.
+            {patient
+              ? 'No visit note data available for this patient.'
+              : `No matching patient found for "${note.patient}". Visit note content is shown when the note is linked to a patient with appointments.`}
           </Typography>
         </Box>
       </Box>
