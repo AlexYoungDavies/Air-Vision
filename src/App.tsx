@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, useParams, Navigate } from 'react-router-dom'
 import { AppFrame } from './components/AppFrame'
 import { EmptyDemoPage } from './components/AppFrame/EmptyDemoPage'
+import { PreferencesPage } from './components/AppFrame/PreferencesPage'
 import { HomePageContent } from './components/AppFrame/HomePageContent'
 import { PatientsPage } from './components/AppFrame/PatientsPage'
 import { PatientProfilePage } from './components/AppFrame/PatientProfilePage'
@@ -39,7 +40,7 @@ function App() {
           <Route path="eobs" element={<EmptyDemoPage />} />
           <Route path="payments" element={<EmptyDemoPage />} />
           <Route path="statements" element={<EmptyDemoPage />} />
-          <Route path="preferences" element={<EmptyDemoPage />} />
+          <Route path="preferences" element={<PreferencesPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
