@@ -10,7 +10,7 @@ import {
   Button,
 } from '@mui/material';
 import { Link, useParams, Outlet } from 'react-router-dom';
-import SearchOutlined from '@mui/icons-material/SearchOutlined';
+import { SearchIcon } from '../icons';
 import PersonAddOutlined from '@mui/icons-material/PersonAddOutlined';
 import { MOCK_PATIENTS, type Patient } from '../../data/mockPatients';
 
@@ -99,7 +99,7 @@ export function PatientsPage() {
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <SearchOutlined sx={{ fontSize: 20, color: 'text.secondary' }} />
+                      <SearchIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
                     </InputAdornment>
                   ),
                 }}

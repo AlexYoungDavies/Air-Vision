@@ -2,7 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Box, IconButton, Avatar, Button, SvgIcon, Popover, List, ListItemButton, Typography } from '@mui/material';
 import { keyframes } from '@mui/system';
-import SearchOutlined from '@mui/icons-material/SearchOutlined';
+import { SearchIcon } from '../icons';
 import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
 import hoverAnimationData from '../../assets/hover.json';
 import { MOCK_PATIENTS } from '../../data/mockPatients';
@@ -301,7 +301,7 @@ export function HeaderBar({ navCollapsed = false, onToggleNav, onAskAthelasClick
             },
           }}
         >
-          <SearchOutlined sx={{ fontSize: ICON_SIZE, color: 'text.disabled', flexShrink: 0 }} />
+          <SearchIcon sx={{ fontSize: ICON_SIZE, color: 'text.disabled', flexShrink: 0 }} />
           <Box component="span" sx={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             Search for anything
           </Box>

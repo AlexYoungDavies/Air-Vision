@@ -19,7 +19,7 @@ import {
   MenuItem,
 } from '@mui/material';
 import AddOutlined from '@mui/icons-material/AddOutlined';
-import SearchOutlined from '@mui/icons-material/SearchOutlined';
+import { SearchIcon } from '../icons';
 import DownloadOutlined from '@mui/icons-material/DownloadOutlined';
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined';
 import EditOutlined from '@mui/icons-material/EditOutlined';
@@ -119,7 +119,7 @@ export function AppointmentsTabContent({ patientId, onOpenNote }: AppointmentsTa
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchOutlined sx={{ fontSize: 20, color: 'text.secondary' }} />
+                <SearchIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
               </InputAdornment>
             ),
           }}

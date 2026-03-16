@@ -23,7 +23,7 @@ import {
   IconButton,
 } from '@mui/material';
 import AddOutlined from '@mui/icons-material/AddOutlined';
-import SearchOutlined from '@mui/icons-material/SearchOutlined';
+import { SearchIcon } from '../../icons';
 import CloseOutlined from '@mui/icons-material/CloseOutlined';
 import { fieldRowSx, LABEL_WIDTH } from './visitNoteFieldStyles';
 
@@ -286,7 +286,7 @@ export function VisitNoteChipSelect({
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchOutlined sx={{ fontSize: 20, color: 'action.active' }} />
+                    <SearchIcon sx={{ fontSize: 20, color: 'action.active' }} />
                   </InputAdornment>
                 ),
                 endAdornment: search ? (

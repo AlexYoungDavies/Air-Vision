@@ -10,7 +10,7 @@ import {
   ListItemText,
   Paper,
 } from '@mui/material';
-import SearchOutlined from '@mui/icons-material/SearchOutlined';
+import { SearchIcon } from '../icons';
 import PersonOutlined from '@mui/icons-material/PersonOutlined';
 import DescriptionOutlined from '@mui/icons-material/DescriptionOutlined';
 import TaskAltOutlined from '@mui/icons-material/TaskAltOutlined';
@@ -202,7 +202,7 @@ export function SpotlightSearch({ open, onClose, query, onQueryChange }: Spotlig
             InputProps={{
               startAdornment: (
                 <Box component="span" sx={{ mr: 1.5, display: 'flex', color: 'text.secondary' }}>
-                  <SearchOutlined sx={{ fontSize: 22 }} />
+                  <SearchIcon sx={{ fontSize: 22 }} />
                 </Box>
               ),
               endAdornment: (

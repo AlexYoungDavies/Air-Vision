@@ -16,10 +16,9 @@ import {
   TextField,
   InputAdornment,
 } from '@mui/material';
-import UploadOutlined from '@mui/icons-material/UploadOutlined';
 import DownloadOutlined from '@mui/icons-material/DownloadOutlined';
 import VisibilityOutlined from '@mui/icons-material/VisibilityOutlined';
-import SearchOutlined from '@mui/icons-material/SearchOutlined';
+import { SearchIcon, UploadIcon } from '../icons';
 import { getAttachmentsForPatient, type AttachmentType } from '../../data/mockAttachments';
 
 const STICKY_ACTIONS_CELL = {
@@ -104,7 +103,7 @@ export function AttachmentsTabContent({ patientId }: AttachmentsTabContentProps)
             sx={{
               display: 'flex',
               alignItems: 'center',
-              gap: 0,
+              gap: '4px',
               height: 32,
             }}
           >
@@ -120,12 +119,14 @@ export function AttachmentsTabContent({ patientId }: AttachmentsTabContentProps)
               />
             ))}
           </Box>
+          <Box sx={{ flex: 1, minWidth: 16 }} />
           <Box
             sx={{
               display: 'flex',
               alignItems: 'center',
               gap: 1.5,
               height: 32,
+              flexShrink: 0,
             }}
           >
             <TextField
@@ -136,7 +137,7 @@ export function AttachmentsTabContent({ patientId }: AttachmentsTabContentProps)
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchOutlined sx={{ fontSize: 20, color: 'text.secondary' }} />
+                    <SearchIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
                   </InputAdornment>
                 ),
               }}
@@ -153,7 +154,7 @@ export function AttachmentsTabContent({ patientId }: AttachmentsTabContentProps)
               variant="contained"
               color="primary"
               size="small"
-              startIcon={<UploadOutlined sx={{ fontSize: 18 }} />}
+              startIcon={<UploadIcon sx={{ fontSize: 18 }} />}
               sx={{ textTransform: 'none', fontWeight: 600, boxShadow: 'none', height: 32, minHeight: 32 }}
             >
               Upload
