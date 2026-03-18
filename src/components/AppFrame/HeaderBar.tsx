@@ -286,13 +286,13 @@ export function HeaderBar({ navCollapsed = false, onToggleNav, onAskAthelasClick
             px: 1.5,
             borderRadius: 1,
             border: 'none',
-            bgcolor: 'rgba(0, 0, 0, 0.08)',
+            bgcolor: 'action.hover',
             cursor: 'pointer',
             textAlign: 'left',
             color: 'text.secondary',
             fontSize: 14,
             '&:hover': {
-              bgcolor: 'rgba(0, 0, 0, 0.12)',
+              bgcolor: 'action.selected',
             },
             '&:focus-visible': {
               outline: '2px solid',
@@ -316,7 +316,7 @@ export function HeaderBar({ navCollapsed = false, onToggleNav, onAskAthelasClick
             borderRadius: '9px',
             bgcolor: 'grey.400',
             border: '1px solid',
-            borderColor: 'rgba(0, 0, 0, 0.2)',
+            borderColor: 'divider',
             fontSize: '0.75rem',
           }}
         >

@@ -11,6 +11,7 @@ import {
   ListItemIcon,
   ListItemText,
   Tooltip,
+  useTheme,
 } from '@mui/material';
 import ChevronLeftOutlined from '@mui/icons-material/ChevronLeftOutlined';
 import ChevronRightOutlined from '@mui/icons-material/ChevronRightOutlined';
@@ -107,12 +108,6 @@ function SettingsNavIcon(props: React.ComponentProps<typeof SvgIcon>) {
 const ICON_SIZE = 18;
 const SIDE_TAB_WIDTH = 56;
 
-const APPOINTMENT_TYPE_COLORS: Record<NonNullable<Patient['appointmentType']>, string> = {
-  'Initial Eval': '#1976d2',
-  'Follow up': '#2e7d32',
-  'Progress Note': '#ed6c02',
-};
-const DEFAULT_APPOINTMENT_BORDER_COLOR = 'rgba(0, 0, 0, 0.2)';
 const SIDE_TAB_PADDING = 1; // 8px
 const SIDE_TAB_ICON_CONTAINER = 40; // 40x40px
 const SIDE_TAB_ICON_SIZE = 22; // 22x22px
@@ -139,9 +134,6 @@ const MOCK_TASKS = [
   { id: 't3', title: 'Sign off on referral', due: 'Tomorrow' },
 ];
 
-// Background for side tab: white at 50% opacity
-const SIDE_TAB_BG = 'rgba(255, 255, 255, 0.5)';
-
 // ----- Left panel content per tab -----
 
 function PatientsListPanel({
@@ -152,11 +144,13 @@ function PatientsListPanel({
   onSelect: (id: string) => void;
 }) {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const surfaceOverlay = (theme.palette.background as { surfaceOverlay?: string }).surfaceOverlay;
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', borderRadius: '16px 0 16px 0' }}>
       <Box
         sx={{
-          bgcolor: 'rgba(255,255,255,0.5)',
+          bgcolor: surfaceOverlay,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
@@ -166,7 +160,8 @@ function PatientsListPanel({
           borderTop: 0,
           borderRight: 0,
           borderLeft: 0,
-          borderBottom: '1px solid rgba(0, 0, 0, 0.1)',
+          borderBottom: 1,
+          borderColor: 'divider',
         }}
       >
         <Typography sx={{ fontSize: 12, fontWeight: 500, lineHeight: 18 / 12, color: 'text.primary' }}>
@@ -187,9 +182,13 @@ function PatientsListPanel({
           const showLabs = p.hasNewLabs === true;
           const showImaging = p.hasNewImaging === true;
           const blockColor =
-            p.appointmentType != null
-              ? APPOINTMENT_TYPE_COLORS[p.appointmentType]
-              : DEFAULT_APPOINTMENT_BORDER_COLOR;
+            p.appointmentType === 'Initial Eval'
+              ? theme.palette.info.main
+              : p.appointmentType === 'Follow up'
+                ? theme.palette.success.main
+                : p.appointmentType === 'Progress Note'
+                  ? theme.palette.warning.main
+                  : theme.palette.divider;
           return (
             <ListItemButton
               key={p.id}
@@ -207,7 +206,7 @@ function PatientsListPanel({
                 justifyContent: 'flex-start',
                 padding: 0,
                 borderBottom: '1px solid',
-                borderColor: 'rgba(0, 0, 0, 0.1)',
+                borderColor: 'divider',
                 '& .open-note-list-btn': {
                   opacity: 0,
                 },
@@ -1003,7 +1002,7 @@ export function HomePageContent() {
           alignItems: 'stretch',
           overflow: 'visible',
           borderRadius: '16px',
-          boxShadow: '0px 4px 36px 0px rgba(0, 0, 0, 0.08)',
+          boxShadow: (theme) => theme.shadows[4],
         }}
       >
         {/* Side tab: icons only, 56px wide, 40x40 containers, 8px padding, settings at bottom */}
@@ -1016,7 +1015,7 @@ export function HomePageContent() {
             alignItems: 'center',
             py: SIDE_TAB_PADDING,
             px: SIDE_TAB_PADDING,
-            bgcolor: SIDE_TAB_BG,
+            bgcolor: (theme) => (theme.palette.background as { surfaceOverlay?: string }).surfaceOverlay,
             borderRadius: '16px 0 0 16px',
           }}
         >
@@ -1032,7 +1031,7 @@ export function HomePageContent() {
                     color: activeTab === id ? 'primary.main' : 'text.primary',
                     borderRadius: 1,
                     '&:hover': {
-                      bgcolor: 'rgba(0, 0, 0, 0.04)',
+                      bgcolor: 'action.hover',
                     },
                   }}
                 >
@@ -1050,7 +1049,7 @@ export function HomePageContent() {
               color: 'text.primary',
               borderRadius: 1,
               '&:hover': {
-                bgcolor: 'rgba(0, 0, 0, 0.04)',
+                bgcolor: 'action.hover',
               },
             }}
           >

@@ -23,7 +23,7 @@ export const baseInputSx = {
   },
   '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
   '&:hover': {
-    backgroundColor: '#EEEEEE',
+    backgroundColor: 'action.hover',
     '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
   },
   '&.Mui-focused': {
@@ -31,15 +31,15 @@ export const baseInputSx = {
     '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
   },
   '&.Mui-error': {
-    backgroundColor: 'rgba(211, 47, 47, 0.08)',
-    '& .MuiOutlinedInput-notchedOutline': { border: '1px solid #d32f2f' },
+    backgroundColor: 'error.light',
+    '& .MuiOutlinedInput-notchedOutline': { border: '1px solid', borderColor: 'error.main' },
   },
   '&.Mui-error:hover': {
-    backgroundColor: 'rgba(211, 47, 47, 0.12)',
+    backgroundColor: 'error.light',
   },
   '&.Mui-disabled': {
-    backgroundColor: '#E0E0E0',
-    color: '#808080',
+    backgroundColor: 'action.disabledBackground',
+    color: 'text.disabled',
   },
 } as const;
 

@@ -27,11 +27,12 @@ const STICKY_ACTIONS_CELL = {
   minWidth: 88,
   width: 88,
   bgcolor: 'background.paper',
-  boxShadow: '-4px 0 8px -2px rgba(0,0,0,0.06)',
+  boxShadow: (theme: { palette: { mode: string } }) =>
+    theme.palette.mode === 'dark' ? '-4px 0 8px -2px rgba(0,0,0,0.3)' : '-4px 0 8px -2px rgba(0,0,0,0.06)',
   zIndex: 1,
   whiteSpace: 'nowrap' as const,
 };
-const STICKY_ACTIONS_HEADER = { ...STICKY_ACTIONS_CELL, bgcolor: 'grey.50', zIndex: 2 };
+const STICKY_ACTIONS_HEADER = { ...STICKY_ACTIONS_CELL, bgcolor: 'background.paper', zIndex: 2 };
 
 export interface AttachmentsTabContentProps {
   patientId: string;
@@ -84,6 +85,9 @@ export function AttachmentsTabContent({ patientId }: AttachmentsTabContentProps)
           pt: 2,
           pb: 1.5,
           flexShrink: 0,
+          bgcolor: 'background.paper',
+          borderBottom: 1,
+          borderColor: 'divider',
         }}
       >
         <Typography variant="h6" sx={{ fontWeight: 600 }}>

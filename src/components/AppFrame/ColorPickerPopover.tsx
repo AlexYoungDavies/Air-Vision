@@ -1,7 +1,10 @@
-import { Box, Popover, Typography } from '@mui/material';
+import { Box, Popover, Typography, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import CheckRounded from '@mui/icons-material/CheckRounded';
-import type { AccentKey } from '../../theme/accents';
+import DarkModeOutlined from '@mui/icons-material/DarkModeOutlined';
+import LightModeOutlined from '@mui/icons-material/LightModeOutlined';
+import type { AccentKey, PaletteMode } from '../../theme/accents';
 import { ACCENT_KEYS, ACCENT_OPTIONS } from '../../theme/accents';
+import { useAccent } from '../../theme/AppThemeProvider';
 
 export interface ColorPickerPopoverProps {
   open: boolean;
@@ -18,9 +21,15 @@ export function ColorPickerPopover({
   selectedAccentKey,
   onSelectAccent,
 }: ColorPickerPopoverProps) {
+  const { mode, setMode } = useAccent();
+
   const handleSelect = (key: AccentKey) => {
     onSelectAccent(key);
     onClose();
+  };
+
+  const handleModeChange = (_: React.MouseEvent<HTMLElement>, value: PaletteMode | null) => {
+    if (value != null) setMode(value);
   };
 
   return (
@@ -45,6 +54,52 @@ export function ColorPickerPopover({
           minWidth: 200,
         }}
       >
+        <Typography
+          variant="caption"
+          sx={{
+            display: 'block',
+            fontWeight: 700,
+            color: 'text.secondary',
+            mb: 1,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+          }}
+        >
+          Appearance
+        </Typography>
+        <ToggleButtonGroup
+          value={mode}
+          exclusive
+          onChange={handleModeChange}
+          aria-label="Theme mode"
+          size="small"
+          fullWidth
+          sx={{
+            mb: 2,
+            '& .MuiToggleButtonGroup-grouped': {
+              border: 1,
+              borderColor: 'divider',
+              py: 0.75,
+              textTransform: 'none',
+              fontSize: 13,
+              '&.Mui-selected': {
+                bgcolor: 'primary.light',
+                color: 'primary.dark',
+                borderColor: 'primary.main',
+                '&:hover': { bgcolor: 'primary.light' },
+              },
+            },
+          }}
+        >
+          <ToggleButton value="light" aria-label="Light mode">
+            <LightModeOutlined sx={{ fontSize: 16, mr: 0.5 }} />
+            Light
+          </ToggleButton>
+          <ToggleButton value="dark" aria-label="Dark mode">
+            <DarkModeOutlined sx={{ fontSize: 16, mr: 0.5 }} />
+            Dark
+          </ToggleButton>
+        </ToggleButtonGroup>
         <Typography
           variant="caption"
           sx={{

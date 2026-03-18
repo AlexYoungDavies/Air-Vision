@@ -17,6 +17,7 @@ import {
   Button,
   Menu,
   MenuItem,
+  useTheme,
 } from '@mui/material';
 import { AppIconButton } from '../AppIconButton';
 import PushPinOutlined from '@mui/icons-material/PushPinOutlined';
@@ -73,11 +74,12 @@ function SectionCard({
   children: React.ReactNode;
   onAdd?: () => void;
 }) {
+  const theme = useTheme();
   return (
     <Box
       sx={{
         borderRadius: 1,
-        boxShadow: '0 2px 8px 2px rgba(0, 0, 0, 0.08)',
+        boxShadow: theme.shadows[1],
         display: 'flex',
         flexDirection: 'column',
         flex: 1,
@@ -104,7 +106,7 @@ function SectionCard({
           alignItems: 'center',
           justifyContent: 'space-between',
           borderBottom: '1px solid',
-          borderColor: 'rgba(0, 0, 0, 0.1)',
+          borderColor: 'divider',
           gap: 1,
         }}
       >
@@ -268,16 +270,16 @@ function SummaryView({
             <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Date</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Time</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Case</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Template</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Clinical stage</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Provider</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Insurance</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Facility</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Tags</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Date</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Time</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Status</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Case</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Template</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Clinical stage</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Provider</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Insurance</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Facility</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Tags</TableCell>
                   <TableCell sx={{ fontWeight: 600, ...STICKY_ACTIONS_HEADER }} align="right">
                     Actions
                   </TableCell>
@@ -329,7 +331,7 @@ function SummaryView({
                                   key={tag}
                                   label={tag}
                                   size="small"
-                                  sx={{ fontSize: '0.75rem', bgcolor: '#f5f5f5', color: '#616161', flexShrink: 0 }}
+                                  sx={{ fontSize: '0.75rem', bgcolor: 'action.hover', color: 'text.secondary', flexShrink: 0 }}
                                 />
                               ))}
                             </Box>
@@ -422,12 +424,12 @@ function SummaryView({
                     py: 0.75,
                     borderRadius: '4px',
                     ...(alert.variant === 'warning' && {
-                      bgcolor: 'rgba(237, 108, 2, 0.1)',
+                      bgcolor: 'warning.light',
                       borderLeft: '4px solid',
                       borderColor: 'warning.main',
                     }),
                     ...(alert.variant === 'highlight' && {
-                      bgcolor: 'rgba(2, 136, 209, 0.08)',
+                      bgcolor: 'info.light',
                       borderLeft: '4px solid',
                       borderColor: 'info.main',
                     }),
@@ -463,10 +465,10 @@ function SummaryView({
             <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow sx={{ height: 28, minHeight: 28 }}>
-                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Medication</TableCell>
-                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Dose</TableCell>
-                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Frequency</TableCell>
-                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Prescriber</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Medication</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Dose</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Frequency</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Prescriber</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -507,10 +509,10 @@ function SummaryView({
             <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow sx={{ height: 28, minHeight: 28 }}>
-                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Type</TableCell>
-                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Description</TableCell>
-                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Date</TableCell>
-                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Status</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Type</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Description</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Date</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Status</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -553,7 +555,7 @@ function SummaryView({
                     py: 1,
                     px: 1.5,
                     borderRadius: 1,
-                    bgcolor: 'grey.50',
+                    bgcolor: 'action.hover',
                     flex: '1 1 0',
                     maxWidth: '23%',
                     minWidth: 0,
@@ -575,20 +577,20 @@ function SummaryView({
                       fontSize: 11,
                       height: 22,
                       ...(c.type === 'Emergency' && {
-                        bgcolor: 'rgba(211, 47, 47, 0.14)',
-                        color: '#b71c1c',
+                        bgcolor: 'error.light',
+                        color: 'error.main',
                       }),
                       ...(c.type === 'Legal' && {
-                        bgcolor: 'rgba(0, 151, 105, 0.14)',
-                        color: '#00563c',
+                        bgcolor: 'success.light',
+                        color: 'success.main',
                       }),
                       ...(c.type === 'Guarantor' && {
-                        bgcolor: 'rgba(46, 125, 50, 0.14)',
-                        color: '#1b5e20',
+                        bgcolor: 'success.light',
+                        color: 'success.main',
                       }),
                       ...(c.type === 'Family' && {
-                        bgcolor: 'rgba(97, 97, 97, 0.12)',
-                        color: '#424242',
+                        bgcolor: 'action.hover',
+                        color: 'text.primary',
                       }),
                     }}
                   >
@@ -666,9 +668,9 @@ function InsuranceView({ patient }: { patient: Patient }) {
           <Table size="small">
             <TableHead>
               <TableRow sx={{ height: 28, minHeight: 28 }}>
-                <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Provider</TableCell>
-                <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Member ID</TableCell>
-                <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Group Number</TableCell>
+                <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Provider</TableCell>
+                <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Member ID</TableCell>
+                <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Group Number</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -691,10 +693,10 @@ function InsuranceView({ patient }: { patient: Patient }) {
           <Table size="small">
             <TableHead>
               <TableRow sx={{ height: 28, minHeight: 28 }}>
-                <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Type</TableCell>
-                <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Description</TableCell>
-                <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Date</TableCell>
-                <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Type</TableCell>
+                <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Description</TableCell>
+                <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Date</TableCell>
+                <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Status</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -734,9 +736,9 @@ function CasesView({ patient }: { patient: Patient }) {
         <Table size="small">
           <TableHead>
             <TableRow sx={{ height: 28, minHeight: 28 }}>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Case name</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Case ID</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }} align="right">Appointments</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Case name</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Case ID</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }} align="right">Appointments</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>

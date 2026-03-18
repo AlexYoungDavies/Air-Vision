@@ -424,20 +424,22 @@ function NavItem({
         slotProps={{
           tooltip: {
             sx: {
-              bgcolor: '#fff',
+              bgcolor: 'background.paper',
               color: 'text.primary',
-              border: '1px solid rgba(0, 0, 0, 0.1)',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+              border: '1px solid',
+              borderColor: 'divider',
+              boxShadow: (theme) => theme.shadows[2],
               fontSize: 12,
               fontWeight: 500,
             },
           },
           arrow: {
             sx: {
-              color: '#fff',
+              color: 'background.paper',
               '&::before': {
-                border: '1px solid rgba(0, 0, 0, 0.1)',
-                backgroundColor: '#fff',
+                border: '1px solid',
+                borderColor: 'divider',
+                backgroundColor: 'background.paper',
                 boxSizing: 'border-box',
               },
             },

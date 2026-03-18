@@ -45,9 +45,9 @@ const CHARGE_SUB_TABS: { id: ChargeStatus | 'All'; label: string }[] = [
 ];
 
 const CHARGE_STATUS_CHIP: Record<ChargeStatus, { bgcolor: string; color: string }> = {
-  Outstanding: { bgcolor: '#fff3e0', color: '#e65100' },
-  Paid: { bgcolor: '#e8f5e9', color: '#2e7d32' },
-  Cancelled: { bgcolor: '#f5f5f5', color: '#616161' },
+  Outstanding: { bgcolor: 'warning.light', color: 'warning.dark' },
+  Paid: { bgcolor: 'success.light', color: 'success.dark' },
+  Cancelled: { bgcolor: 'action.hover', color: 'text.secondary' },
 };
 
 export interface BillingTabContentProps {
@@ -242,21 +242,21 @@ export function BillingTabContent({ patient }: BillingTabContentProps) {
             <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow>
-                  <TableCell padding="checkbox" sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>
+                  <TableCell padding="checkbox" sx={{ fontWeight: 600, bgcolor: 'action.hover' }}>
                     <Checkbox size="small" checked={charges.length > 0 && selectedIds.size === charges.length} indeterminate={selectedIds.size > 0 && selectedIds.size < charges.length} onChange={toggleSelectAll} />
                   </TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Date of Service</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Patient</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Financial Guarantor</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>PR Status</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Encounter ID</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Provider Name</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>PR</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Paid</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Written Off</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Balance Due</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Action</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'action.hover' }}>Date of Service</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'action.hover' }}>Patient</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'action.hover' }}>Financial Guarantor</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'action.hover' }}>PR Status</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'action.hover' }}>Encounter ID</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'action.hover' }}>Provider Name</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'action.hover' }}>PR</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'action.hover' }}>Paid</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'action.hover' }}>Written Off</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'action.hover' }}>Balance Due</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'action.hover' }}>Status</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'action.hover' }}>Action</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -298,11 +298,11 @@ export function BillingTabContent({ patient }: BillingTabContentProps) {
             <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Date</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Amount</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Payment type</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Payment method</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>View receipt</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'action.hover' }}>Date</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'action.hover' }}>Amount</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'action.hover' }}>Payment type</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'action.hover' }}>Payment method</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'action.hover' }}>View receipt</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>

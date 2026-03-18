@@ -1909,7 +1909,7 @@ function SignNoteBlock({
       sx={{
         p: 3,
         borderRadius: 4,
-        bgcolor: data.signStatus === 'signed' ? '#EDF5F3' : 'grey.200',
+        bgcolor: data.signStatus === 'signed' ? 'primary.light' : 'action.hover',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',

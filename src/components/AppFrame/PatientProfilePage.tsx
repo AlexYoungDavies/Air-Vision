@@ -107,19 +107,19 @@ const SECONDARY_PANEL_ICONS: { mode: SecondaryPanelMode; title: string }[] = [
 function PinPanelContent({ patient: _patient }: { patient: Patient }) {
   return (
     <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'grey.50' }}>
+      <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'background.paper' }}>
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
           Front desk
         </Typography>
-        <Typography variant="body2" sx={{ fontSize: 13 }}>
+        <Typography variant="body2" sx={{ fontSize: 13, color: 'text.primary' }}>
           Patient prefers to pay at time of service. Has had past issues with billing — please follow up on payment plan before next visit.
         </Typography>
       </Paper>
-      <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'grey.50', borderColor: 'warning.main' }}>
+      <Paper variant="outlined" sx={{ p: 1.5, bgcolor: 'background.paper', borderColor: 'warning.main' }}>
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
           Allergy alert
         </Typography>
-        <Typography variant="body2" sx={{ fontSize: 13 }}>
+        <Typography variant="body2" sx={{ fontSize: 13, color: 'text.primary' }}>
           Severe allergy to Penicillin (anaphylaxis). Patient also has Sulfa drugs — Hives. Ensure allergies are flagged in chart and at check-in.
         </Typography>
       </Paper>
