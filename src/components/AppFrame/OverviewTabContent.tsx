@@ -811,10 +811,9 @@ export function OverviewTabContent({ patient, onSecondaryPanelMode, onNavigateTo
         px: 6,
         py: 4,
         height: '100%',
-        minHeight: 0,
+        overflow: 'auto',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden',
       }}
     >
       <Box
@@ -825,8 +824,7 @@ export function OverviewTabContent({ patient, onSecondaryPanelMode, onNavigateTo
           display: 'flex',
           flexDirection: 'column',
           gap: 4,
-          flex: 1,
-          minHeight: 0,
+          flex: '0 0 auto',
         }}
       >
         {/* Container: patient name + LabelValue row (always visible) */}
@@ -898,8 +896,8 @@ export function OverviewTabContent({ patient, onSecondaryPanelMode, onNavigateTo
           ))}
         </Tabs>
 
-        {/* Tab content — scrollable; padding so card shadows are not clipped */}
-        <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', p: 1.5 }}>
+        {/* Tab content — padding so card shadows are not clipped */}
+        <Box sx={{ p: 1.5 }}>
           {subTab === 'summary' && (
             <SummaryView
               patient={patient}
