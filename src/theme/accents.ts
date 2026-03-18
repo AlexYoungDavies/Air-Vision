@@ -1,6 +1,6 @@
 import type { PaletteOptions } from '@mui/material/styles';
 
-export const ACCENT_KEYS = ['green', 'blue', 'yellow', 'lilac', 'orange'] as const;
+export const ACCENT_KEYS = ['green', 'blue', 'yellow', 'lilac', 'orange', 'teal', 'pink'] as const;
 export type AccentKey = (typeof ACCENT_KEYS)[number];
 
 /** Primary palette overrides per accent. Used for theme.palette.primary. */
@@ -38,6 +38,18 @@ export const ACCENT_PRIMARY_PALETTES: Record<
     light: 'rgba(255, 152, 0, 0.15)',
     contrastText: '#fff',
   },
+  teal: {
+    main: '#588796',
+    dark: '#3d6571',
+    light: 'rgba(88, 135, 150, 0.1)',
+    contrastText: '#fff',
+  },
+  pink: {
+    main: '#9B6B70',
+    dark: '#7a5559',
+    light: 'rgba(155, 107, 112, 0.12)',
+    contrastText: '#fff',
+  },
 };
 
 /** Tonal surface variants: app frame background and home page gradient. */
@@ -70,6 +82,16 @@ export const ACCENT_BACKGROUND_PALETTES: Record<
     gradientStart: '#fff0e8',
     gradientEnd: '#ffe0d0',
   },
+  teal: {
+    default: '#F2F7F9',
+    gradientStart: '#e5f0f4',
+    gradientEnd: '#cce2ea',
+  },
+  pink: {
+    default: '#FBF8F9',
+    gradientStart: '#f5eef0',
+    gradientEnd: '#eddde0',
+  },
 };
 
 /** Display label and swatch color for the color picker UI. */
@@ -82,6 +104,8 @@ export const ACCENT_OPTIONS: Record<
   yellow: { label: 'Yellow', swatch: '#FFC107' },
   lilac: { label: 'Lilac', swatch: '#B39DDB' },
   orange: { label: 'Orange', swatch: '#FF9800' },
+  teal: { label: 'Teal', swatch: '#588796' },
+  pink: { label: 'Pink', swatch: '#9B6B70' },
 };
 
 export function getPrimaryPaletteForAccent(accent: AccentKey): PaletteOptions['primary'] {
