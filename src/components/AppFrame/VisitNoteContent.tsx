@@ -16,6 +16,7 @@ import {
   Checkbox,
   FormControlLabel,
   Paper,
+  useTheme,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import {
@@ -42,6 +43,7 @@ import ShowChartOutlined from '@mui/icons-material/ShowChartOutlined';
 import PersonOutlined from '@mui/icons-material/PersonOutlined';
 import AssignmentOutlined from '@mui/icons-material/AssignmentOutlined';
 import CheckCircleOutlined from '@mui/icons-material/CheckCircleOutlined';
+import MicOutlined from '@mui/icons-material/MicOutlined';
 import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
 import type { Appointment } from '../../data/mockAppointments';
 import hoverAnimationData from '../../assets/hover.json';
@@ -696,6 +698,157 @@ const CLINICAL_STAGE_OPTIONS = ['Initial Evaluation', 'Progress Note', 'Follow-u
 
 const CHECK_NOTE_LOTTIE_SIZE = 22;
 
+/** Floating toolbar at bottom center of visit note: AI Check, Dictate, Scribe. */
+function VisitNoteFloatingToolbar({
+  onAICheckClick,
+  isAIPanelOpen,
+  checkNoteLottieRef,
+}: {
+  onAICheckClick?: () => void;
+  isAIPanelOpen?: boolean;
+  checkNoteLottieRef: React.RefObject<LottieRefCurrentProps | null>;
+}) {
+  const theme = useTheme();
+  const isDark = theme.palette.mode === 'dark';
+  const toolbarBg = isDark
+    ? (theme.palette.background as { paper?: string }).paper
+    : alpha(theme.palette.background.paper, 0.98);
+  const toolbarBorder = theme.palette.divider;
+  const toolbarShadow = isDark
+    ? '0px 4px 20px rgba(0,0,0,0.4)'
+    : '0px 4px 24px rgba(0,0,0,0.08)';
+  const toolbarGlow = isDark
+    ? '0 8px 28px rgba(0,0,0,0.25)'
+    : `0 8px 28px ${alpha(theme.palette.primary.main, 0.18)}`;
+
+  return (
+    <Box
+      sx={{
+        position: 'sticky',
+        bottom: 24,
+        left: 0,
+        right: 0,
+        display: 'flex',
+        justifyContent: 'center',
+        py: 1.5,
+        zIndex: 10,
+      }}
+    >
+      <Box
+        sx={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '8px',
+          borderRadius: '9999px',
+          border: '1px solid',
+          borderColor: toolbarBorder,
+          bgcolor: toolbarBg,
+          boxShadow: `${toolbarShadow}, ${toolbarGlow}`,
+          px: '3px',
+          py: '3px',
+        }}
+      >
+        {/* AI Check */}
+        <Button
+          variant="text"
+          size="small"
+          onClick={onAICheckClick}
+          startIcon={
+            <Box
+              component="span"
+              sx={{
+                width: CHECK_NOTE_LOTTIE_SIZE,
+                height: CHECK_NOTE_LOTTIE_SIZE,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                '& > div': { width: CHECK_NOTE_LOTTIE_SIZE, height: CHECK_NOTE_LOTTIE_SIZE },
+              }}
+            >
+              <Lottie
+                lottieRef={checkNoteLottieRef}
+                animationData={hoverAnimationData}
+                loop={false}
+                autoplay={false}
+                onDOMLoaded={() => checkNoteLottieRef.current?.goToAndStop(0, true)}
+                style={{ width: CHECK_NOTE_LOTTIE_SIZE, height: CHECK_NOTE_LOTTIE_SIZE }}
+                rendererSettings={{ preserveAspectRatio: 'xMidYMid meet' }}
+              />
+            </Box>
+          }
+          onMouseEnter={() => {
+            checkNoteLottieRef.current?.setDirection(1);
+            checkNoteLottieRef.current?.play();
+          }}
+          onMouseLeave={() => {
+            checkNoteLottieRef.current?.setDirection(-1);
+            checkNoteLottieRef.current?.play();
+          }}
+          sx={{
+            py: 0.75,
+            px: 1.5,
+            borderRadius: '9999px',
+            color: 'text.primary',
+            fontSize: 14,
+            fontWeight: 500,
+            textTransform: 'none',
+            minWidth: 0,
+            '&:hover': { bgcolor: 'action.hover' },
+            ...(isAIPanelOpen && { bgcolor: 'action.selected', color: 'primary.main' }),
+          }}
+        >
+          AI Check
+        </Button>
+
+        <Box sx={{ width: '1px', height: 20, bgcolor: 'divider', borderRadius: 1 }} role="separator" />
+
+        {/* Dictate */}
+        <Button
+          variant="text"
+          size="small"
+          startIcon={<MicOutlined sx={{ fontSize: 20 }} />}
+          sx={{
+            py: 0.75,
+            px: 1.5,
+            borderRadius: '9999px',
+            color: 'text.primary',
+            fontSize: 14,
+            fontWeight: 500,
+            textTransform: 'none',
+            minWidth: 0,
+            '&:hover': { bgcolor: 'action.hover' },
+          }}
+        >
+          Dictate
+        </Button>
+
+        <Box sx={{ width: '1px', height: 20, bgcolor: 'divider', borderRadius: 1 }} role="separator" />
+
+        {/* Scribe (primary) */}
+        <Button
+          variant="contained"
+          color="primary"
+          size="small"
+          startIcon={<MicOutlined sx={{ fontSize: 20 }} />}
+          sx={{
+            py: 0.75,
+            px: 2,
+            borderRadius: '9999px',
+            fontSize: 14,
+            fontWeight: 600,
+            textTransform: 'none',
+            minWidth: 0,
+            boxShadow: 'none',
+            '&:hover': { boxShadow: 'none', bgcolor: 'primary.dark' },
+          }}
+        >
+          Scribe
+        </Button>
+      </Box>
+    </Box>
+  );
+}
+
 type EditingReadSectionId = (typeof SOAP_READ_SECTION_IDS)[number] | null;
 
 export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick, isAIPanelOpen, onCitationClick, highlightedCitationInNote }: VisitNoteContentProps) {
@@ -1225,62 +1378,6 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
               <VisibilityOutlined sx={{ fontSize: 18 }} />
             </IconButton>
             </Box>
-            <Button
-              variant="text"
-              size="small"
-              onClick={onAICheckClick}
-              startIcon={
-                <Box
-                  component="span"
-                  sx={{
-                    width: CHECK_NOTE_LOTTIE_SIZE,
-                    height: CHECK_NOTE_LOTTIE_SIZE,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    '& > div': { width: CHECK_NOTE_LOTTIE_SIZE, height: CHECK_NOTE_LOTTIE_SIZE },
-                  }}
-                >
-                  <Lottie
-                    lottieRef={checkNoteLottieRef}
-                    animationData={hoverAnimationData}
-                    loop={false}
-                    autoplay={false}
-                    onDOMLoaded={() => {
-                      checkNoteLottieRef.current?.goToAndStop(0, true);
-                    }}
-                    style={{ width: CHECK_NOTE_LOTTIE_SIZE, height: CHECK_NOTE_LOTTIE_SIZE }}
-                    rendererSettings={{ preserveAspectRatio: 'xMidYMid meet' }}
-                  />
-                </Box>
-              }
-              onMouseEnter={() => {
-                checkNoteLottieRef.current?.setDirection(1);
-                checkNoteLottieRef.current?.play();
-              }}
-              onMouseLeave={() => {
-                checkNoteLottieRef.current?.setDirection(-1);
-                checkNoteLottieRef.current?.play();
-              }}
-              sx={{
-                py: 0.25,
-                px: 1,
-                borderRadius: '9px',
-                bgcolor: isAIPanelOpen ? 'action.selected' : 'primary.light',
-                border: '1px solid',
-                borderColor: isAIPanelOpen ? 'action.selected' : 'primary.light',
-                color: 'primary.main',
-                fontSize: 14,
-                fontWeight: 500,
-                textTransform: 'none',
-                '&:hover': {
-                  bgcolor: isAIPanelOpen ? 'action.selected' : (theme) => alpha(theme.palette.primary.main, 0.15),
-                  borderColor: isAIPanelOpen ? 'action.selected' : (theme) => alpha(theme.palette.primary.main, 0.2),
-                },
-              }}
-            >
-              AI Check
-            </Button>
           </Box>
           <Box sx={{ width: '100%', maxWidth: 820, mx: 'auto', display: 'flex', flexDirection: 'column', gap: 3 }}>
             {mode === 'read' ? (
@@ -1881,6 +1978,11 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
           })
             )}
           </Box>
+          <VisitNoteFloatingToolbar
+            onAICheckClick={onAICheckClick}
+            isAIPanelOpen={isAIPanelOpen}
+            checkNoteLottieRef={checkNoteLottieRef}
+          />
         </Box>
       </Box>
     </Box>
