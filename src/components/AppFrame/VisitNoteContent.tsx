@@ -725,12 +725,11 @@ function VisitNoteFloatingToolbar({
     <Box
       sx={{
         position: 'sticky',
-        bottom: 24,
+        bottom: 12,
         left: 0,
         right: 0,
         display: 'flex',
         justifyContent: 'center',
-        py: 1.5,
         zIndex: 10,
       }}
     >
@@ -785,7 +784,9 @@ function VisitNoteFloatingToolbar({
             checkNoteLottieRef.current?.play();
           }}
           sx={{
-            py: 0.75,
+            height: 44,
+            minHeight: 44,
+            py: 0,
             px: 1.5,
             borderRadius: '9999px',
             color: 'text.primary',
@@ -800,7 +801,7 @@ function VisitNoteFloatingToolbar({
           AI Check
         </Button>
 
-        <Box sx={{ width: '1px', height: 20, bgcolor: 'divider', borderRadius: 1 }} role="separator" />
+        <Box sx={{ width: '1px', height: 24, bgcolor: 'divider', borderRadius: 1 }} role="separator" />
 
         {/* Dictate */}
         <Button
@@ -808,7 +809,9 @@ function VisitNoteFloatingToolbar({
           size="small"
           startIcon={<MicOutlined sx={{ fontSize: 20 }} />}
           sx={{
-            py: 0.75,
+            height: 44,
+            minHeight: 44,
+            py: 0,
             px: 1.5,
             borderRadius: '9999px',
             color: 'text.primary',
@@ -822,7 +825,7 @@ function VisitNoteFloatingToolbar({
           Dictate
         </Button>
 
-        <Box sx={{ width: '1px', height: 20, bgcolor: 'divider', borderRadius: 1 }} role="separator" />
+        <Box sx={{ width: '1px', height: 24, bgcolor: 'divider', borderRadius: 1 }} role="separator" />
 
         {/* Scribe (primary) */}
         <Button
@@ -831,7 +834,9 @@ function VisitNoteFloatingToolbar({
           size="small"
           startIcon={<MicOutlined sx={{ fontSize: 20 }} />}
           sx={{
-            py: 0.75,
+            height: 44,
+            minHeight: 44,
+            py: 0,
             px: 2,
             borderRadius: '9999px',
             fontSize: 14,
