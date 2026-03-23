@@ -55,6 +55,7 @@ import PersonOutlined from '@mui/icons-material/PersonOutlined';
 import AssignmentOutlined from '@mui/icons-material/AssignmentOutlined';
 import CheckCircleOutlined from '@mui/icons-material/CheckCircleOutlined';
 import type { Appointment } from '../../data/mockAppointments';
+import { VISIT_NOTE_BUTTON_EXEMPT_CLASS } from '../../theme/buttonStyleConstants';
 import {
   VISIT_NOTE_SECTIONS,
   DEFAULT_VISIT_NOTE_DATA,
@@ -993,8 +994,12 @@ function VisitNoteFloatingToolbar({
               {isProcessing ? 'Processing...' : 'Recording'}
             </Typography>
             <Box sx={{ display: 'flex', gap: 0.5 }}>
-              <IconButton size="small" sx={{ color: 'primary.contrastText' }}><Box sx={{ width: 16, height: 16, border: 1, borderColor: 'primary.contrastText', borderRadius: 0.5 }} /></IconButton>
-              <IconButton size="small" sx={{ color: 'primary.contrastText' }}><Typography sx={{ fontSize: 14 }}>−</Typography></IconButton>
+              <IconButton size="small" className={VISIT_NOTE_BUTTON_EXEMPT_CLASS} sx={{ color: 'primary.contrastText' }}>
+                <Box sx={{ width: 16, height: 16, border: 1, borderColor: 'primary.contrastText', borderRadius: 0.5 }} />
+              </IconButton>
+              <IconButton size="small" className={VISIT_NOTE_BUTTON_EXEMPT_CLASS} sx={{ color: 'primary.contrastText' }}>
+                <Typography sx={{ fontSize: 14 }}>−</Typography>
+              </IconButton>
             </Box>
           </Box>
           {!isProcessing && (
@@ -1025,6 +1030,7 @@ function VisitNoteFloatingToolbar({
                 <Button
                   variant="contained"
                   fullWidth
+                  className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
                   onClick={onScribePause}
                   startIcon={<PauseOutlined />}
                   sx={{
@@ -1039,6 +1045,7 @@ function VisitNoteFloatingToolbar({
                 <Button
                   variant="contained"
                   fullWidth
+                  className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
                   onClick={onScribeEndRecording}
                   startIcon={<StopOutlined />}
                   sx={{
@@ -1088,6 +1095,7 @@ function VisitNoteFloatingToolbar({
         <Button
           variant="text"
           size="small"
+          className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
           onClick={onAICheckClick}
           startIcon={<AICheckIcon sx={{ fontSize: 24 }} />}
           sx={{
@@ -1114,6 +1122,7 @@ function VisitNoteFloatingToolbar({
         <Button
           variant="text"
           size="small"
+          className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
           startIcon={<DictateIcon sx={{ fontSize: 20 }} />}
           sx={{
             height: 44,
@@ -1139,6 +1148,7 @@ function VisitNoteFloatingToolbar({
           variant="contained"
           color="primary"
           size="small"
+          className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
           onClick={onScribeClick}
           startIcon={<ScribeIcon sx={{ fontSize: 20 }} />}
           sx={{
@@ -2352,6 +2362,7 @@ function SignNoteBlock({
       <Button
         variant="contained"
         color="primary"
+        className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
         startIcon={<SignatureAltIcon />}
         disabled={data.signStatus === 'signed'}
         onClick={() => data.signStatus === 'unsigned' && onUpdate('signStatus', 'signed')}

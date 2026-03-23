@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, useParams, Navigate } from 'react-router-dom'
 import { AppFrame } from './components/AppFrame'
 import { EmptyDemoPage } from './components/AppFrame/EmptyDemoPage'
+import { VisitsPage } from './components/AppFrame/VisitsPage'
 import { PreferencesPage } from './components/AppFrame/PreferencesPage'
 import { HomePageContent } from './components/AppFrame/HomePageContent'
 import { PatientsPage } from './components/AppFrame/PatientsPage'
@@ -22,7 +23,7 @@ function App() {
       <Routes>
         <Route path="/" element={<AppFrame />}>
           <Route index element={<HomePageContent />} />
-          <Route path="visits" element={<EmptyDemoPage />} />
+          <Route path="visits" element={<VisitsPage />} />
           <Route path="messages" element={<EmptyDemoPage />} />
           <Route path="patients" element={<PatientsPage />}>
             <Route index element={<TodayPatientsContent />} />

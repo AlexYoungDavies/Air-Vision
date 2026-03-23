@@ -2,6 +2,7 @@ import { createTheme } from '@mui/material/styles';
 import type { PaletteOptions } from '@mui/material/styles';
 import type { AccentKey, PaletteMode } from './accents';
 import { getPrimaryPaletteForAccent, getBackgroundPaletteForAccent } from './accents';
+import { VISIT_NOTE_BUTTON_EXEMPT_CLASS } from './buttonStyleConstants';
 
 const LIGHT_BASE = {
   palette: {
@@ -80,6 +81,135 @@ const DARK_BASE = {
   },
 };
 
+/** Global button / icon-button standards: 8px radius, no elevation, no ripple, sizes 28 / 36 / 44. */
+const BUTTON_STANDARD_COMPONENTS = {
+  MuiButtonBase: {
+    defaultProps: {
+      disableRipple: true,
+    },
+  },
+  MuiButton: {
+    defaultProps: {
+      disableElevation: true,
+    },
+    styleOverrides: {
+      root: {
+        borderRadius: 8,
+        boxSizing: 'border-box',
+        boxShadow: 'none',
+        textTransform: 'none',
+        '&:hover': { boxShadow: 'none' },
+        '&:active': { boxShadow: 'none' },
+        '&.Mui-focusVisible': { boxShadow: 'none' },
+      },
+      contained: {
+        boxShadow: 'none',
+        '&:hover': { boxShadow: 'none' },
+        '&:active': { boxShadow: 'none' },
+      },
+      sizeSmall: {
+        [`&:not(.${VISIT_NOTE_BUTTON_EXEMPT_CLASS})`]: {
+          minHeight: 28,
+          height: 28,
+          paddingLeft: 12,
+          paddingRight: 12,
+        },
+      },
+      sizeMedium: {
+        [`&:not(.${VISIT_NOTE_BUTTON_EXEMPT_CLASS})`]: {
+          minHeight: 36,
+          height: 36,
+          paddingLeft: 16,
+          paddingRight: 16,
+        },
+      },
+      sizeLarge: {
+        [`&:not(.${VISIT_NOTE_BUTTON_EXEMPT_CLASS})`]: {
+          minHeight: 44,
+          height: 44,
+          paddingLeft: 20,
+          paddingRight: 20,
+        },
+      },
+    },
+  },
+  MuiIconButton: {
+    styleOverrides: {
+      root: {
+        borderRadius: 8,
+        boxSizing: 'border-box',
+        boxShadow: 'none',
+        '&:hover': { boxShadow: 'none' },
+      },
+      sizeSmall: {
+        [`&:not(.${VISIT_NOTE_BUTTON_EXEMPT_CLASS})`]: {
+          // Square hit area: MUI default minWidth (e.g. 48px) would make width > height.
+          width: 28,
+          minWidth: 28,
+          maxWidth: 28,
+          height: 28,
+          minHeight: 28,
+          maxHeight: 28,
+          padding: 0,
+          flexShrink: 0,
+        },
+      },
+      sizeMedium: {
+        [`&:not(.${VISIT_NOTE_BUTTON_EXEMPT_CLASS})`]: {
+          width: 36,
+          minWidth: 36,
+          maxWidth: 36,
+          height: 36,
+          minHeight: 36,
+          maxHeight: 36,
+          padding: 0,
+          flexShrink: 0,
+        },
+      },
+      sizeLarge: {
+        [`&:not(.${VISIT_NOTE_BUTTON_EXEMPT_CLASS})`]: {
+          width: 44,
+          minWidth: 44,
+          maxWidth: 44,
+          height: 44,
+          minHeight: 44,
+          maxHeight: 44,
+          padding: 0,
+          flexShrink: 0,
+        },
+      },
+    },
+  },
+  MuiToggleButton: {
+    styleOverrides: {
+      root: {
+        borderRadius: 8,
+        boxShadow: 'none',
+        textTransform: 'none',
+        '&:hover': { boxShadow: 'none' },
+      },
+      sizeSmall: {
+        minHeight: 28,
+        height: 28,
+        paddingLeft: 10,
+        paddingRight: 10,
+      },
+      sizeMedium: {
+        minHeight: 36,
+        height: 36,
+        paddingLeft: 12,
+        paddingRight: 12,
+      },
+      sizeLarge: {
+        minHeight: 44,
+        height: 44,
+        paddingLeft: 14,
+        paddingRight: 14,
+      },
+    },
+  },
+} as const;
+
 const SHARED_OPTIONS = {
   shape: {
     borderRadius: 8,
@@ -95,13 +225,6 @@ const SHARED_OPTIONS = {
       fontSize: 12,
       lineHeight: 18 / 12,
       fontWeight: 700,
-    },
-  },
-  components: {
-    MuiButtonBase: {
-      defaultProps: {
-        disableRipple: true,
-      },
     },
   },
 };
@@ -122,6 +245,10 @@ export function createAppTheme(accentKey: AccentKey, mode: PaletteMode = 'light'
         gradientStart: background.gradientStart,
         gradientEnd: background.gradientEnd,
       } as unknown as PaletteOptions['background'],
+    },
+    components: {
+      ...base.components,
+      ...BUTTON_STANDARD_COMPONENTS,
     },
   });
 }

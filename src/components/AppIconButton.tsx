@@ -24,12 +24,7 @@ export function AppIconButton({
     <IconButton
       size={size}
       aria-label={rest['aria-label'] ?? (typeof tooltip === 'string' ? tooltip : undefined)}
-      sx={{
-        width: 28,
-        height: 28,
-        borderRadius: 1,
-        ...sx,
-      }}
+      sx={sx}
       {...rest}
     >
       {children}
