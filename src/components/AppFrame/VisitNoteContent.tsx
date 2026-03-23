@@ -1,5 +1,8 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
   Box,
   Typography,
   Button,
@@ -18,7 +21,15 @@ import {
   Paper,
   useTheme,
 } from '@mui/material';
+import ExpandMoreOutlined from '@mui/icons-material/ExpandMoreOutlined';
+import UploadFileOutlined from '@mui/icons-material/UploadFileOutlined';
+import AutoAwesomeOutlined from '@mui/icons-material/AutoAwesomeOutlined';
+import InfoOutlined from '@mui/icons-material/InfoOutlined';
+import BoltOutlined from '@mui/icons-material/BoltOutlined';
+import StopOutlined from '@mui/icons-material/StopOutlined';
+import PauseOutlined from '@mui/icons-material/PauseOutlined';
 import { alpha } from '@mui/material/styles';
+import { keyframes } from '@mui/system';
 import {
   VisitNoteTextArea,
   VisitNoteTextField,
@@ -43,10 +54,7 @@ import ShowChartOutlined from '@mui/icons-material/ShowChartOutlined';
 import PersonOutlined from '@mui/icons-material/PersonOutlined';
 import AssignmentOutlined from '@mui/icons-material/AssignmentOutlined';
 import CheckCircleOutlined from '@mui/icons-material/CheckCircleOutlined';
-import MicOutlined from '@mui/icons-material/MicOutlined';
-import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
 import type { Appointment } from '../../data/mockAppointments';
-import hoverAnimationData from '../../assets/hover.json';
 import {
   VISIT_NOTE_SECTIONS,
   DEFAULT_VISIT_NOTE_DATA,
@@ -66,6 +74,92 @@ function SignatureAltIcon(props: React.ComponentProps<typeof SvgIcon>) {
         d="M6.87476 2.52051C7.71484 2.52051 8.37685 2.86603 8.7609 3.53564C9.10748 4.13992 9.17166 4.91522 9.1145 5.69303C8.99885 7.26585 8.3478 9.29709 7.57121 11.253C7.54831 11.3107 7.52364 11.3681 7.50049 11.4258C7.57204 11.3914 7.64527 11.3549 7.71891 11.3139C8.1853 11.0542 8.64427 10.6893 9.05721 10.3041C9.46775 9.92118 9.81728 9.53281 10.0643 9.23885C10.1873 9.09251 10.2839 8.97097 10.349 8.88704C10.3814 8.84512 10.4064 8.81259 10.4224 8.79126C10.4302 8.78077 10.4358 8.77285 10.4394 8.76798C10.4412 8.76554 10.443 8.76261 10.443 8.76261L10.4438 8.76172L11.2065 7.71077L11.647 8.93359C11.9571 9.79558 12.2325 10.4476 12.5001 10.9075C12.7769 11.3831 12.9846 11.5453 13.1061 11.5923C13.1771 11.6197 13.3255 11.6515 13.6629 11.441C14.0145 11.2216 14.4682 10.7985 15.0567 10.0991L15.6654 9.37581L16.1659 10.177C16.6507 10.9518 17.0599 11.3134 17.5149 11.5028C17.9966 11.7032 18.6287 11.7546 19.6642 11.689L19.752 13.0604C18.683 13.1281 17.7777 13.1026 16.9858 12.773C16.4118 12.5341 15.9471 12.1547 15.524 11.6388C15.1288 12.0528 14.7538 12.3808 14.3907 12.6074C13.8389 12.9517 13.2272 13.1136 12.6102 12.8751C12.0437 12.656 11.6358 12.1554 11.3122 11.5994C11.1297 11.2859 10.9548 10.9188 10.7813 10.5064C10.5571 10.7548 10.2922 11.0334 9.99536 11.3103C9.53538 11.7393 8.98507 12.1826 8.38761 12.5152C7.91458 12.7786 7.38016 12.9869 6.81746 13.0452C6.53103 13.6963 6.23866 14.3294 5.9554 14.9259C10.3478 14.1421 14.0538 14.0053 19.7985 14.1686L19.76 15.5427C13.6607 15.3693 9.93903 15.5363 5.20345 16.4648C5.16943 16.5326 5.13735 16.6003 5.10409 16.6662C4.73237 17.4024 4.40891 18.0165 4.17847 18.4467C4.06328 18.6617 3.97073 18.8312 3.90723 18.9471C3.87563 19.0048 3.85145 19.0494 3.83472 19.0796C3.82633 19.0947 3.81941 19.1066 3.81502 19.1145C3.81292 19.1183 3.81168 19.1214 3.81055 19.1235L3.80876 19.1261C3.80876 19.1261 3.80824 19.1267 3.20809 18.7913L2.60832 18.4556L2.60921 18.4539L2.63159 18.4136C2.64746 18.3849 2.67067 18.3417 2.70142 18.2856C2.76299 18.1732 2.8534 18.0077 2.96639 17.7968C3.1052 17.5377 3.27704 17.2093 3.47485 16.8273C2.99503 16.9338 2.50194 17.0467 1.99333 17.1684L1.67285 15.831C2.58271 15.6133 3.44381 15.4209 4.27157 15.25C4.63545 14.5092 5.02737 13.6847 5.41203 12.8241C4.70921 12.4917 4.23399 11.85 3.9502 11.1259C3.55734 10.1234 3.47242 8.8635 3.58765 7.66512C3.70339 6.46168 4.02928 5.23832 4.53296 4.29386C5.0121 3.39556 5.78456 2.52051 6.87476 2.52051ZM6.87476 3.89551C6.5901 3.89551 6.17003 4.14588 5.74593 4.94108C5.34644 5.69017 5.0582 6.72871 4.95548 7.79671C4.85229 8.86994 4.94462 9.8924 5.2312 10.6237C5.41816 11.1008 5.66132 11.4038 5.95988 11.5601C6.0731 11.2895 6.18501 11.018 6.29289 10.7463C7.06304 8.80668 7.64383 6.94171 7.74308 5.59277C7.7933 4.90976 7.71067 4.46743 7.56852 4.21956C7.4638 4.03697 7.29508 3.89551 6.87476 3.89551Z"
         fill="currentColor"
       />
+    </SvgIcon>
+  );
+}
+
+/** Dictate toolbar icon – uses currentColor for text/accent. */
+function DictateIcon(props: React.ComponentProps<typeof SvgIcon>) {
+  return (
+    <SvgIcon {...props} viewBox="0 0 20 20" fill="none">
+      <path
+        d="M17.3487 10.4081C17.5756 10.4081 17.7655 10.4914 17.9184 10.6579C18.0712 10.8242 18.129 11.0216 18.0909 11.25C17.924 12.4123 17.4284 13.4078 16.6044 14.2352C15.7804 15.0626 14.7832 15.5467 13.6139 15.6877V16.7259C13.6139 16.9538 13.536 17.1464 13.3796 17.3037C13.223 17.4608 13.0312 17.5391 12.8045 17.5391C12.5778 17.539 12.3852 17.4607 12.2261 17.3037C12.0672 17.1464 11.9874 16.9538 11.9874 16.7259V15.6877C10.8183 15.5467 9.81999 15.0607 8.99262 14.2301C8.16519 13.3992 7.66767 12.4022 7.50065 11.2397C7.4625 11.0114 7.52136 10.8159 7.67643 10.6528C7.83137 10.4898 8.02169 10.4081 8.24718 10.4081C8.47263 10.4082 8.6684 10.4893 8.8342 10.6517C9.00003 10.814 9.10825 11.0073 9.15864 11.2315C9.35151 12.1003 9.79004 12.802 10.4737 13.3357C11.1574 13.8693 11.9302 14.1365 12.7925 14.1365C13.6668 14.1365 14.4455 13.8663 15.1287 13.3265C15.812 12.7866 16.2498 12.0881 16.4427 11.2315C16.4931 11.0073 16.6006 10.814 16.7639 10.6517C16.9272 10.4894 17.1221 10.4081 17.3487 10.4081Z"
+        fill="currentColor"
+      />
+      <path
+        d="M12.8012 3.50432C13.5207 3.50443 14.1315 3.75558 14.6339 4.25781C15.1364 4.76022 15.388 5.37179 15.388 6.09169V10.4081C15.388 11.128 15.1364 11.7396 14.6339 12.242C14.1315 12.7441 13.5206 12.9954 12.8012 12.9955C12.0816 12.9955 11.4699 12.7443 10.9674 12.242C10.4649 11.7396 10.2133 11.128 10.2133 10.4081V6.09169C10.2133 5.37179 10.4649 4.76022 10.9674 4.25781C11.4699 3.75542 12.0815 3.50432 12.8012 3.50432Z"
+        fill="currentColor"
+      />
+      <path
+        d="M5.72114 2.32422C6.10442 2.32436 6.41538 2.61902 6.41558 2.98211C6.41558 3.34537 6.10454 3.63987 5.72114 3.64001C5.08192 3.64001 4.56337 4.13127 4.56337 4.73684V15.2632C4.56337 15.8687 5.08192 16.36 5.72114 16.36C6.10454 16.3601 6.41558 16.6546 6.41558 17.0179C6.41539 17.381 6.10443 17.6756 5.72114 17.6758C4.99044 17.6758 4.33328 17.3821 3.86892 16.9151C3.40457 17.3821 2.74741 17.6758 2.01671 17.6758C1.63342 17.6756 1.32245 17.381 1.32227 17.0179C1.32227 16.6546 1.6333 16.3601 2.01671 16.36C2.65593 16.36 3.17448 15.8687 3.17448 15.2632V4.73684C3.17447 4.13127 2.65592 3.64001 2.01671 3.64001C1.6333 3.63987 1.32227 3.34537 1.32227 2.98211C1.32247 2.61902 1.63343 2.32436 2.01671 2.32422C2.74712 2.32422 3.4046 2.61716 3.86892 3.08388C4.33325 2.61716 4.99073 2.32422 5.72114 2.32422Z"
+        fill="currentColor"
+      />
+    </SvgIcon>
+  );
+}
+
+/** Scribe toolbar icon – uses currentColor (white on primary button). */
+function ScribeIcon(props: React.ComponentProps<typeof SvgIcon>) {
+  return (
+    <SvgIcon {...props} viewBox="0 0 20 20" fill="none">
+      <path
+        d="M17.3217 10.3926C17.5259 10.3926 17.6968 10.4717 17.8344 10.6299C17.9719 10.7879 18.0239 10.9754 17.9896 11.1924C17.8394 12.2966 17.3934 13.2423 16.6517 14.0283C15.9101 14.8143 15.0127 15.2742 13.9603 15.4082V16.3945C13.9603 16.611 13.8902 16.794 13.7494 16.9434C13.6085 17.0926 13.4359 17.167 13.2318 17.167C13.0279 17.167 12.8544 17.0925 12.7113 16.9434C12.5682 16.794 12.4965 16.611 12.4965 16.3945V15.4082C11.4443 15.2742 10.5458 14.8125 9.80115 14.0234C9.05646 13.2341 8.6087 12.287 8.45838 11.1826C8.42404 10.9657 8.47701 10.78 8.61658 10.625C8.75602 10.4702 8.92731 10.3926 9.13025 10.3926C9.33316 10.3927 9.50935 10.4698 9.65857 10.624C9.80782 10.7782 9.90522 10.9618 9.95056 11.1748C10.1241 12.0001 10.5188 12.6668 11.1342 13.1738C11.7494 13.6807 12.445 13.9346 13.2211 13.9346C14.0079 13.9346 14.7087 13.6779 15.3236 13.165C15.9386 12.6522 16.3326 11.9885 16.5062 11.1748C16.5516 10.9618 16.6483 10.7782 16.7953 10.624C16.9423 10.4698 17.1177 10.3926 17.3217 10.3926Z"
+        fill="currentColor"
+      />
+      <path
+        d="M13.2289 3.83398C13.8764 3.83409 14.4262 4.07268 14.8783 4.5498C15.3306 5.0271 15.557 5.60808 15.557 6.29199V10.3926C15.557 11.0765 15.3306 11.6575 14.8783 12.1348C14.4262 12.6118 13.8763 12.8505 13.2289 12.8506C12.5812 12.8506 12.0307 12.612 11.5785 12.1348C11.1262 11.6575 10.8998 11.0765 10.8998 10.3926V6.29199C10.8998 5.60808 11.1262 5.0271 11.5785 4.5498C12.0307 4.07253 12.5812 3.83398 13.2289 3.83398Z"
+        fill="currentColor"
+      />
+      <path
+        d="M9.7002 0.399414C10.0868 0.399414 10.4004 0.71301 10.4004 1.09961C10.4004 1.48621 10.0868 1.7998 9.7002 1.7998H3.7002C3.3136 1.7998 3 1.48621 3 1.09961C3 0.71301 3.3136 0.399414 3.7002 0.399414H9.7002Z"
+        fill="currentColor"
+      />
+      <path
+        d="M8.7002 7.0002C9.08679 7.0002 9.40039 6.6866 9.40039 6.3C9.40039 5.9134 9.08679 5.5998 8.7002 5.5998H3.7002C3.3136 5.5998 3 5.9134 3 6.3C3 6.6866 3.3136 7.0002 3.7002 7.0002H8.7002Z"
+        fill="currentColor"
+      />
+      <path
+        d="M6.7002 10.8002C7.08679 10.8002 7.40039 11.1138 7.40039 11.5004C7.40039 11.887 7.08679 12.2006 6.7002 12.2006H3.7002C3.3136 12.2006 3 11.887 3 11.5004C3 11.1138 3.3136 10.8002 3.7002 10.8002H6.7002Z"
+        fill="currentColor"
+      />
+    </SvgIcon>
+  );
+}
+
+/** AI Check toolbar icon – primary accent gradients. */
+function AICheckIcon(props: React.ComponentProps<typeof SvgIcon>) {
+  const theme = useTheme();
+  const primary = theme.palette.primary.main;
+  const primaryFade = alpha(primary, 0);
+  const baseId = (React as { useId?: () => string }).useId?.() ?? 'ai-check';
+  const id0 = `${baseId}-0`;
+  const id1 = `${baseId}-1`;
+  const id2 = `${baseId}-2`;
+  const id3 = `${baseId}-3`;
+  return (
+    <SvgIcon {...props} viewBox="0 0 24 24" fill="none">
+      <path d="M19 7C19 3.13401 15.866 0 12 0C8.13401 0 5 3.13401 5 7C5 10.866 8.13401 14 12 14C15.866 14 19 10.866 19 7Z" fill={`url(#${id0})`} />
+      <path d="M19 17C19 20.866 15.866 24 12 24C8.13401 24 5 20.866 5 17C5 13.134 8.13401 10 12 10C15.866 10 19 13.134 19 17Z" fill={`url(#${id1})`} />
+      <path d="M17 19C20.866 19 24 15.866 24 12C24 8.13401 20.866 5 17 5C13.134 5 10 8.13401 10 12C10 15.866 13.134 19 17 19Z" fill={`url(#${id2})`} />
+      <path d="M7 19C3.13401 19 0 15.866 0 12C0 8.13401 3.13401 5 7 5C10.866 5 14 8.13401 14 12C14 15.866 10.866 19 7 19Z" fill={`url(#${id3})`} />
+      <defs>
+        <linearGradient id={id0} x1="11.5" y1="14" x2="11.5" y2="0" gradientUnits="userSpaceOnUse">
+          <stop stopColor={primary} />
+          <stop offset="1" stopColor={primaryFade} />
+        </linearGradient>
+        <linearGradient id={id1} x1="11.5" y1="10" x2="11.5" y2="24" gradientUnits="userSpaceOnUse">
+          <stop stopColor={primary} />
+          <stop offset="1" stopColor={primaryFade} />
+        </linearGradient>
+        <linearGradient id={id2} x1="10" y1="13" x2="24" y2="13" gradientUnits="userSpaceOnUse">
+          <stop stopColor={primary} />
+          <stop offset="1" stopColor={primaryFade} />
+        </linearGradient>
+        <linearGradient id={id3} x1="14" y1="13" x2="0" y2="13" gradientUnits="userSpaceOnUse">
+          <stop stopColor={primary} />
+          <stop offset="1" stopColor={primaryFade} />
+        </linearGradient>
+      </defs>
     </SvgIcon>
   );
 }
@@ -304,6 +398,16 @@ export interface VisitNoteContentProps {
   onAICheckClick?: () => void;
   /** When true, the AI Check button shows active state (panel open). */
   isAIPanelOpen?: boolean;
+  /** When provided, the Scribe button opens the Scribe panel and shows active state when open. */
+  onScribeClick?: () => void;
+  /** When true, the Scribe button shows active state (panel open). */
+  isScribePanelOpen?: boolean;
+  /** Current Scribe recording state; when not idle, the toolbar shows the recording/processing UI. */
+  scribeRecordingState?: ScribeRecordingState;
+  /** Called when user pauses or resumes recording. */
+  onScribePause?: () => void;
+  /** Called when user ends the recording (toolbar then shows processing, then returns to normal). */
+  onScribeEndRecording?: () => void;
   /** When provided, citation badges are clickable and this is called with the citation number (opens citation panel). */
   onCitationClick?: (citationNumber: number) => void;
   /** When set, the citation badge with this number is shown as highlighted (e.g. when user selects a card in the citation panel). */
@@ -696,20 +800,167 @@ const NOTE_TEMPLATE_OPTIONS = [
 
 const CLINICAL_STAGE_OPTIONS = ['Initial Evaluation', 'Progress Note', 'Follow-up'];
 
-const CHECK_NOTE_LOTTIE_SIZE = 22;
+const pulseOpacity = keyframes`
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+`;
+
+/** Fake transcript shown after ending a Scribe recording (prototype). */
+export const FAKE_SCRIBE_TRANSCRIPT = `Patient reports ongoing right knee pain, approximately 4/10, worse with prolonged standing and going downstairs. Denies swelling, locking, or giving way. No recent trauma. Previous PT completed with good improvement; symptoms returned after returning to running.
+
+Current medications: ibuprofen PRN. No new medications. Allergies: NKDA.
+
+Assessment: Right knee pain, likely patellofemoral. Plan: Continue home exercise program, consider imaging if no improvement in 4 weeks.`;
+
+export type ScribeRecordingState = 'idle' | 'recording' | 'paused' | 'processing';
+
+/** Scribe setup + transcript panel for the secondary content panel. */
+export function ScribePanelContent({
+  view,
+  appointment,
+  patientName,
+  onStartRecording,
+  onBack,
+}: {
+  view: 'setup' | 'transcript';
+  appointment: Appointment;
+  patientName: string;
+  onStartRecording: () => void;
+  onBack?: () => void;
+}) {
+  const [fastTranscription, setFastTranscription] = useState(false);
+
+  if (view === 'transcript') {
+    return (
+      <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+          Transcript
+        </Typography>
+        <Paper variant="outlined" sx={{ p: 2, bgcolor: 'background.default' }}>
+          <Typography component="pre" sx={{ fontFamily: 'inherit', fontSize: 13, lineHeight: 1.6, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+            {FAKE_SCRIBE_TRANSCRIPT}
+          </Typography>
+        </Paper>
+      </Box>
+    );
+  }
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+      {onBack && (
+        <Button startIcon={<KeyboardArrowRightOutlined sx={{ transform: 'rotate(180deg)' }} />} onClick={onBack} sx={{ alignSelf: 'flex-start', textTransform: 'none', color: 'text.secondary', mb: 0.5 }}>
+          All Visits
+        </Button>
+      )}
+      <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
+        New Scribe
+      </Typography>
+      <Typography variant="caption" sx={{ color: 'primary.main', fontWeight: 600, display: 'block', mb: 0.5 }}>
+        Starting a Scribe for:
+      </Typography>
+      <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 0.5 }}>
+        {patientName}
+      </Typography>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', mb: 2 }}>
+        <Typography variant="body2" color="text.secondary">
+          {appointment.date} • {appointment.time}
+        </Typography>
+        {appointment.tags?.[0] && (
+          <Chip label={appointment.tags[0]} size="small" sx={{ borderRadius: 1 }} />
+        )}
+      </Box>
+      <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+        <Accordion disableGutters elevation={0} sx={{ border: 1, borderColor: 'divider', '&:before': { display: 'none' }, '&.Mui-expanded': { m: 0 } }}>
+          <AccordionSummary expandIcon={<ExpandMoreOutlined />} sx={{ minHeight: 48 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <AutoAwesomeOutlined sx={{ fontSize: 20, color: 'text.secondary' }} />
+              <Typography variant="body2" fontWeight={500}>Summary of Previous Visit</Typography>
+            </Box>
+          </AccordionSummary>
+          <AccordionDetails sx={{ pt: 0 }}>
+            <Typography variant="body2" color="text.secondary">
+              Optional summary from the last visit will appear here.
+            </Typography>
+          </AccordionDetails>
+        </Accordion>
+        <Accordion disableGutters elevation={0} sx={{ border: 1, borderColor: 'divider', borderTop: 0, '&:before': { display: 'none' }, '&.Mui-expanded': { m: 0 } }}>
+          <AccordionSummary expandIcon={<ExpandMoreOutlined />} sx={{ minHeight: 48 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <InfoOutlined sx={{ fontSize: 20, color: 'text.secondary' }} />
+              <Typography variant="body2" fontWeight={500}>Pre-charting Note (Optional)</Typography>
+            </Box>
+          </AccordionSummary>
+          <AccordionDetails sx={{ pt: 0 }}>
+            <Typography variant="body2" color="text.secondary">
+              Add any pre-charting notes here.
+            </Typography>
+          </AccordionDetails>
+        </Accordion>
+        <Accordion disableGutters elevation={0} sx={{ border: 1, borderColor: 'divider', borderTop: 0, '&:before': { display: 'none' }, '&.Mui-expanded': { m: 0 } }}>
+          <AccordionSummary expandIcon={<ExpandMoreOutlined />} sx={{ minHeight: 48 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flex: 1 }}>
+              <BoltOutlined sx={{ fontSize: 20, color: 'text.secondary' }} />
+              <Typography variant="body2" fontWeight={500}>Fast Transcription</Typography>
+              <Switch size="small" checked={fastTranscription} onChange={(_, c) => setFastTranscription(c)} sx={{ ml: 'auto' }} />
+            </Box>
+          </AccordionSummary>
+          <AccordionDetails sx={{ pt: 0 }}>
+            <Typography variant="body2" color="text.secondary">
+              When enabled, transcription is prioritized for speed.
+            </Typography>
+          </AccordionDetails>
+        </Accordion>
+      </Box>
+      <Box sx={{ flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, py: 1.5, borderTop: 1, borderColor: 'divider' }}>
+        <Button startIcon={<UploadFileOutlined />} size="medium" sx={{ textTransform: 'none' }}>
+          Import Record
+        </Button>
+        <Button variant="contained" color="primary" startIcon={<ScribeIcon sx={{ fontSize: 20 }} />} onClick={onStartRecording} sx={{ textTransform: 'none', boxShadow: 'none' }}>
+          Start Recording
+        </Button>
+      </Box>
+    </Box>
+  );
+}
 
 /** Floating toolbar at bottom center of visit note: AI Check, Dictate, Scribe. */
 function VisitNoteFloatingToolbar({
   onAICheckClick,
   isAIPanelOpen,
-  checkNoteLottieRef,
+  onScribeClick,
+  isScribePanelOpen,
+  scribeRecordingState,
+  onScribePause,
+  onScribeEndRecording,
 }: {
   onAICheckClick?: () => void;
   isAIPanelOpen?: boolean;
-  checkNoteLottieRef: React.RefObject<LottieRefCurrentProps | null>;
+  onScribeClick?: () => void;
+  isScribePanelOpen?: boolean;
+  scribeRecordingState?: ScribeRecordingState;
+  onScribePause?: () => void;
+  onScribeEndRecording?: () => void;
 }) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
+  const isRecordingActive = scribeRecordingState === 'recording' || scribeRecordingState === 'paused';
+  const isProcessing = scribeRecordingState === 'processing';
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [noiseBars] = useState(() => Array.from({ length: 12 }, () => 0.3 + Math.random() * 0.7));
+
+  useEffect(() => {
+    if (!isRecordingActive) {
+      setRecordingSeconds(0);
+      return;
+    }
+    const t = setInterval(() => setRecordingSeconds((s) => s + 1), 1000);
+    return () => clearInterval(t);
+  }, [isRecordingActive]);
+
+  const mm = Math.floor(recordingSeconds / 60);
+  const ss = recordingSeconds % 60;
+  const timerLabel = `${String(mm).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+
   const toolbarBg = isDark
     ? (theme.palette.background as { paper?: string }).paper
     : alpha(theme.palette.background.paper, 0.98);
@@ -720,6 +971,92 @@ function VisitNoteFloatingToolbar({
   const toolbarGlow = isDark
     ? '0 8px 28px rgba(0,0,0,0.25)'
     : `0 8px 28px ${alpha(theme.palette.primary.main, 0.18)}`;
+
+  if (isProcessing || isRecordingActive) {
+    const gradientBg = `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`;
+    return (
+      <Box sx={{ position: 'sticky', bottom: 12, left: 0, right: 0, display: 'flex', justifyContent: 'center', zIndex: 10 }}>
+        <Box
+          sx={{
+            display: 'inline-flex',
+            flexDirection: 'column',
+            alignItems: 'stretch',
+            borderRadius: 3,
+            minWidth: 320,
+            overflow: 'hidden',
+            background: gradientBg,
+            boxShadow: 3,
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 0.75 }}>
+            <Typography variant="caption" sx={{ color: 'primary.contrastText', fontWeight: 600 }}>
+              {isProcessing ? 'Processing...' : 'Recording'}
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 0.5 }}>
+              <IconButton size="small" sx={{ color: 'primary.contrastText' }}><Box sx={{ width: 16, height: 16, border: 1, borderColor: 'primary.contrastText', borderRadius: 0.5 }} /></IconButton>
+              <IconButton size="small" sx={{ color: 'primary.contrastText' }}><Typography sx={{ fontSize: 14 }}>−</Typography></IconButton>
+            </Box>
+          </Box>
+          {!isProcessing && (
+            <>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 0.5 }}>
+                <ScribeIcon sx={{ fontSize: 22, color: 'primary.contrastText' }} />
+                <Box sx={{ display: 'flex', alignItems: 'flex-end', gap: 0.35, height: 24 }}>
+                  {noiseBars.map((h, i) => (
+                    <Box
+                      key={i}
+                      sx={{
+                        width: 4,
+                        height: `${h * 100}%`,
+                        minHeight: 4,
+                        borderRadius: 1,
+                        bgcolor: 'primary.contrastText',
+                        animation: `${pulseOpacity} 0.8s ease-in-out infinite`,
+                        animationDelay: `${i * 0.05}s`,
+                      }}
+                    />
+                  ))}
+                </Box>
+                <Typography variant="body2" sx={{ color: 'primary.contrastText', fontWeight: 600, ml: 'auto' }}>
+                  {timerLabel}
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 1, p: 1 }}>
+                <Button
+                  variant="contained"
+                  fullWidth
+                  onClick={onScribePause}
+                  startIcon={<PauseOutlined />}
+                  sx={{
+                    bgcolor: 'primary.contrastText',
+                    color: 'primary.main',
+                    textTransform: 'none',
+                    '&:hover': { bgcolor: alpha(theme.palette.common.white, 0.9) },
+                  }}
+                >
+                  {scribeRecordingState === 'paused' ? 'Resume' : 'Pause'}
+                </Button>
+                <Button
+                  variant="contained"
+                  fullWidth
+                  onClick={onScribeEndRecording}
+                  startIcon={<StopOutlined />}
+                  sx={{
+                    bgcolor: 'rgba(0,0,0,0.4)',
+                    color: 'primary.contrastText',
+                    textTransform: 'none',
+                    '&:hover': { bgcolor: 'rgba(0,0,0,0.5)' },
+                  }}
+                >
+                  End Recording
+                </Button>
+              </Box>
+            </>
+          )}
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <Box
@@ -752,37 +1089,7 @@ function VisitNoteFloatingToolbar({
           variant="text"
           size="small"
           onClick={onAICheckClick}
-          startIcon={
-            <Box
-              component="span"
-              sx={{
-                width: CHECK_NOTE_LOTTIE_SIZE,
-                height: CHECK_NOTE_LOTTIE_SIZE,
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                '& > div': { width: CHECK_NOTE_LOTTIE_SIZE, height: CHECK_NOTE_LOTTIE_SIZE },
-              }}
-            >
-              <Lottie
-                lottieRef={checkNoteLottieRef}
-                animationData={hoverAnimationData}
-                loop={false}
-                autoplay={false}
-                onDOMLoaded={() => checkNoteLottieRef.current?.goToAndStop(0, true)}
-                style={{ width: CHECK_NOTE_LOTTIE_SIZE, height: CHECK_NOTE_LOTTIE_SIZE }}
-                rendererSettings={{ preserveAspectRatio: 'xMidYMid meet' }}
-              />
-            </Box>
-          }
-          onMouseEnter={() => {
-            checkNoteLottieRef.current?.setDirection(1);
-            checkNoteLottieRef.current?.play();
-          }}
-          onMouseLeave={() => {
-            checkNoteLottieRef.current?.setDirection(-1);
-            checkNoteLottieRef.current?.play();
-          }}
+          startIcon={<AICheckIcon sx={{ fontSize: 24 }} />}
           sx={{
             height: 44,
             minHeight: 44,
@@ -807,7 +1114,7 @@ function VisitNoteFloatingToolbar({
         <Button
           variant="text"
           size="small"
-          startIcon={<MicOutlined sx={{ fontSize: 20 }} />}
+          startIcon={<DictateIcon sx={{ fontSize: 20 }} />}
           sx={{
             height: 44,
             minHeight: 44,
@@ -832,7 +1139,8 @@ function VisitNoteFloatingToolbar({
           variant="contained"
           color="primary"
           size="small"
-          startIcon={<MicOutlined sx={{ fontSize: 20 }} />}
+          onClick={onScribeClick}
+          startIcon={<ScribeIcon sx={{ fontSize: 20 }} />}
           sx={{
             height: 44,
             minHeight: 44,
@@ -845,6 +1153,7 @@ function VisitNoteFloatingToolbar({
             minWidth: 0,
             boxShadow: 'none',
             '&:hover': { boxShadow: 'none', bgcolor: 'primary.dark' },
+            ...(isScribePanelOpen && { boxShadow: 'none' }),
           }}
         >
           Scribe
@@ -856,10 +1165,21 @@ function VisitNoteFloatingToolbar({
 
 type EditingReadSectionId = (typeof SOAP_READ_SECTION_IDS)[number] | null;
 
-export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick, isAIPanelOpen, onCitationClick, highlightedCitationInNote }: VisitNoteContentProps) {
+export function VisitNoteContent({
+  noteId: _noteId,
+  appointment,
+  onAICheckClick,
+  isAIPanelOpen,
+  onScribeClick,
+  isScribePanelOpen,
+  scribeRecordingState,
+  onScribePause,
+  onScribeEndRecording,
+  onCitationClick,
+  highlightedCitationInNote,
+}: VisitNoteContentProps) {
   const [mode, setMode] = useState<'edit' | 'read'>('read');
   const [editingReadSectionId, setEditingReadSectionId] = useState<EditingReadSectionId>(null);
-  const checkNoteLottieRef = useRef<LottieRefCurrentProps | null>(null);
   const [data, setData] = useState<VisitNoteData>(DEFAULT_VISIT_NOTE_DATA);
   const [noteTemplate, setNoteTemplate] = useState(appointment.template);
   const [clinicalStage, setClinicalStage] = useState(appointment.clinicalStage);
@@ -1986,7 +2306,11 @@ export function VisitNoteContent({ noteId: _noteId, appointment, onAICheckClick,
           <VisitNoteFloatingToolbar
             onAICheckClick={onAICheckClick}
             isAIPanelOpen={isAIPanelOpen}
-            checkNoteLottieRef={checkNoteLottieRef}
+            onScribeClick={onScribeClick}
+            isScribePanelOpen={isScribePanelOpen}
+            scribeRecordingState={scribeRecordingState}
+            onScribePause={onScribePause}
+            onScribeEndRecording={onScribeEndRecording}
           />
         </Box>
       </Box>

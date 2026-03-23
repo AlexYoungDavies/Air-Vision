@@ -31,7 +31,7 @@ import { AppointmentsTabContent } from './AppointmentsTabContent';
 import { AttachmentsTabContent } from './AttachmentsTabContent';
 import { BillingTabContent } from './BillingTabContent';
 import { OverviewTabContent } from './OverviewTabContent';
-import { VisitNoteContent, CitationPanelContent } from './VisitNoteContent';
+import { VisitNoteContent, CitationPanelContent, ScribePanelContent, type ScribeRecordingState } from './VisitNoteContent';
 import {
   MedicationsTabContent,
   OrdersTabContent,
@@ -77,7 +77,7 @@ export type PrimaryTabId = (typeof PRIMARY_TABS)[number]['id'];
 export type MoreTabId = (typeof MORE_TAB_OPTIONS)[number]['id'];
 export type ProfileTabId = PrimaryTabId | MoreTabId;
 
-export type SecondaryPanelMode = 'pin' | 'chat' | 'tasks' | 'history' | 'ai' | 'citations';
+export type SecondaryPanelMode = 'pin' | 'chat' | 'tasks' | 'history' | 'ai' | 'scribe' | 'citations';
 
 export interface OpenVisitNote {
   id: string;
@@ -487,6 +487,8 @@ export function PatientProfilePage({
   const [overflowTabFadingOut, setOverflowTabFadingOut] = useState<MoreTabId | null>(null);
   const [overflowTabFadeIn, setOverflowTabFadeIn] = useState(false);
   const [highlightedCitationNumber, setHighlightedCitationNumber] = useState<number | undefined>(undefined);
+  const [scribeRecordingState, setScribeRecordingState] = useState<ScribeRecordingState>('idle');
+  const [scribePanelView, setScribePanelView] = useState<'setup' | 'transcript'>('setup');
 
   const isControlled = controlledPanelMode !== undefined;
   const secondaryPanelMode = isControlled ? controlledPanelMode : internalPanelMode;
@@ -511,6 +513,14 @@ export function PatientProfilePage({
 
   const handleSecondaryIconClick = (mode: SecondaryPanelMode) => {
     setSecondaryPanelMode(secondaryPanelMode === mode ? null : mode);
+  };
+
+  const handleScribeEndRecording = () => {
+    setScribeRecordingState('processing');
+    setTimeout(() => {
+      setScribeRecordingState('idle');
+      setScribePanelView('transcript');
+    }, 2500);
   };
 
   const handleMoreTabSelect = (id: MoreTabId) => {
@@ -952,6 +962,17 @@ export function PatientProfilePage({
               appointment={activeVisitNote.appointment}
               onAICheckClick={() => setSecondaryPanelMode(secondaryPanelMode === 'ai' ? null : 'ai')}
               isAIPanelOpen={secondaryPanelMode === 'ai'}
+              onScribeClick={() => {
+                if (secondaryPanelMode === 'scribe') setSecondaryPanelMode(null);
+                else {
+                  setScribePanelView('setup');
+                  setSecondaryPanelMode('scribe');
+                }
+              }}
+              isScribePanelOpen={secondaryPanelMode === 'scribe'}
+              scribeRecordingState={scribeRecordingState}
+              onScribePause={() => setScribeRecordingState((s) => (s === 'paused' ? 'recording' : 'paused'))}
+              onScribeEndRecording={handleScribeEndRecording}
               onCitationClick={(citationNumber) => {
                 setHighlightedCitationNumber(citationNumber);
                 setSecondaryPanelMode('citations');
@@ -1027,6 +1048,7 @@ export function PatientProfilePage({
                   tasks: 'Tasks',
                   history: 'Activity',
                   ai: 'AI Check',
+                  scribe: scribePanelView === 'transcript' ? 'Transcript' : 'New Scribe',
                   citations: 'Citation sources',
                 };
                 const title = currentMode ? panelTitles[currentMode] : '';
@@ -1066,6 +1088,15 @@ export function PatientProfilePage({
                         {currentMode === 'tasks' && <TasksPanelContent />}
                         {currentMode === 'history' && <HistoryPanelContent />}
                         {currentMode === 'ai' && <AICheckPanelContent />}
+                        {currentMode === 'scribe' && activeVisitNote && (
+                          <ScribePanelContent
+                            view={scribePanelView}
+                            appointment={activeVisitNote.appointment}
+                            patientName={patient.fullName}
+                            onStartRecording={() => setScribeRecordingState('recording')}
+                            onBack={undefined}
+                          />
+                        )}
                         {currentMode === 'citations' && (
                           <CitationPanelContent
                             highlightedCitationNumber={highlightedCitationNumber}
