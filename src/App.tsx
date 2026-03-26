@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, useParams, Navigate } from 'react-router-dom'
+import { AutomationsPage } from './components/AppFrame/AutomationsPage'
 import { AppFrame } from './components/AppFrame'
 import { EmptyDemoPage } from './components/AppFrame/EmptyDemoPage'
 import { VisitsPage } from './components/AppFrame/VisitsPage'
@@ -37,7 +38,8 @@ function App() {
           <Route path="lead-management" element={<EmptyDemoPage />} />
           <Route path="outreach" element={<EmptyDemoPage />} />
           <Route path="reports" element={<EmptyDemoPage />} />
-          <Route path="encounters" element={<EmptyDemoPage />} />
+          <Route path="automations" element={<AutomationsPage />} />
+          <Route path="encounters" element={<Navigate to="/automations" replace />} />
           <Route path="claims" element={<ClaimsPage />} />
           <Route path="remittances" element={<RemittancesPage />} />
           <Route path="eobs" element={<EmptyDemoPage />} />

@@ -329,7 +329,7 @@ const businessItems: NavItemConfig[] = [
 ];
 
 const revenueCycleItems: NavItemConfig[] = [
-  { id: 'encounters', label: 'Encounters', icon: 'inbox', path: '/encounters' },
+  { id: 'automations', label: 'Automations', icon: 'inbox', path: '/automations' },
   { id: 'claims', label: 'Claims', icon: 'assignment', path: '/claims' },
   { id: 'remittances', label: 'Remittances', icon: 'receipt_long', path: '/remittances' },
   { id: 'eobs', label: 'EoBs', icon: 'description', path: '/eobs' },

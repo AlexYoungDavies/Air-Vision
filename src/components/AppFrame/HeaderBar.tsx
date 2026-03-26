@@ -27,7 +27,7 @@ const PATH_LABELS: Record<string, string> = {
   '/lead-management': 'Lead Management',
   '/outreach': 'Outreach',
   '/reports': 'Reports',
-  '/encounters': 'Encounters',
+  '/automations': 'Automations',
   '/claims': 'Claims',
   '/remittances': 'Remittances',
   '/eobs': 'EoBs',

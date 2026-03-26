@@ -9,12 +9,14 @@ import {
   CircularProgress,
   Link,
   Paper,
+  Tab,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
+  Tabs,
   Typography,
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
@@ -37,12 +39,31 @@ import {
   type ClaimStatusVariant,
 } from '../../data/mockClaims';
 
-const HEADER_CONTROL_HEIGHT = 28;
+/** Matches Remittances underline tabs + toolbar controls. */
+const HEADER_CONTROL_HEIGHT = 36;
+
+/** Same tab chrome as `RemittancesPage` (underline indicator, typography). */
+const REMITTANCE_STYLE_TABS_SX = {
+  minHeight: 0,
+  flex: 1,
+  minWidth: 0,
+  '& .MuiTabs-flexContainer': { gap: 0 },
+  '& .MuiTabs-indicator': { height: 2 },
+  '& .MuiTab-root': {
+    minHeight: 0,
+    minWidth: 'unset',
+    py: 1.5,
+    px: 2,
+    textTransform: 'none',
+    fontWeight: 500,
+    fontSize: 14,
+  },
+} as const;
 
 const TOOLBAR_TEXT_BUTTON_SX = {
   textTransform: 'none' as const,
   fontWeight: 500,
-  borderRadius: '8px',
+  borderRadius: '10px',
   minHeight: HEADER_CONTROL_HEIGHT,
 };
 
@@ -255,98 +276,97 @@ export function ClaimsPage() {
         flexDirection: 'column',
         overflow: 'hidden',
         bgcolor: 'background.paper',
+        p: 0,
       }}
     >
-      {/* Title row: scope tabs + global actions */}
-      <Box
+      <Paper
+        elevation={0}
         sx={{
-          flexShrink: 0,
+          flex: 1,
+          minHeight: 0,
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 2,
-          flexWrap: 'wrap',
-          py: 1.5,
-          px: 1.5,
-          borderBottom: 1,
-          borderColor: 'divider',
+          flexDirection: 'column',
+          borderRadius: '9px',
+          bgcolor: 'background.paper',
+          overflow: 'hidden',
         }}
       >
-        <Box sx={{ display: 'inline-flex', alignItems: 'stretch', gap: 0.5 }}>
-          <Button
-            variant="text"
-            size="small"
-            onClick={() => setClaimsScope('all')}
-            sx={{
-              ...TOOLBAR_TEXT_BUTTON_SX,
-              px: 1.5,
-              py: 0.75,
-              ...(claimsScope === 'all'
-                ? { bgcolor: 'primary.light', color: 'primary.main' }
-                : { color: 'text.secondary' }),
-            }}
+        {/* Scope tabs + global actions — underline tabs match Remittances */}
+        <Box
+          sx={{
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 2,
+            flexWrap: 'wrap',
+            borderBottom: 1,
+            borderColor: 'divider',
+            bgcolor: 'background.paper',
+            pr: 1.5,
+          }}
+        >
+          <Tabs
+            value={claimsScope === 'all' ? 0 : 1}
+            onChange={(_, v) => setClaimsScope(v === 0 ? 'all' : 'mine')}
+            variant="scrollable"
+            scrollButtons={false}
+            sx={REMITTANCE_STYLE_TABS_SX}
           >
-            All Claims ({ALL_CLAIMS_TOTAL})
-          </Button>
-          <Button
-            variant="text"
-            size="small"
-            onClick={() => setClaimsScope('mine')}
-            sx={{
-              ...TOOLBAR_TEXT_BUTTON_SX,
-              px: 1.5,
-              py: 0.75,
-              ...(claimsScope === 'mine'
-                ? { bgcolor: 'primary.light', color: 'primary.main' }
-                : { color: 'text.secondary' }),
-            }}
-          >
-            My Claims
-          </Button>
+            <Tab disableRipple value={0} label={`All Claims (${ALL_CLAIMS_TOTAL})`} />
+            <Tab disableRipple value={1} label="My Claims" />
+          </Tabs>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <AppIconButton
+              tooltip="History"
+              aria-label="History"
+              sx={{ width: HEADER_CONTROL_HEIGHT, height: HEADER_CONTROL_HEIGHT, borderRadius: '10px' }}
+            >
+              <HistoryOutlined fontSize="small" />
+            </AppIconButton>
+            <AppIconButton
+              tooltip="Download"
+              aria-label="Download"
+              sx={{ width: HEADER_CONTROL_HEIGHT, height: HEADER_CONTROL_HEIGHT, borderRadius: '10px' }}
+            >
+              <DownloadOutlined fontSize="small" />
+            </AppIconButton>
+            <Button
+              variant="contained"
+              startIcon={<AddOutlined sx={{ fontSize: 18 }} />}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: 14,
+                borderRadius: '10px',
+                boxShadow: 'none',
+                ml: 0.5,
+                minHeight: HEADER_CONTROL_HEIGHT,
+                height: HEADER_CONTROL_HEIGHT,
+                py: 0,
+                px: 2,
+              }}
+            >
+              Create Claim
+            </Button>
+          </Box>
         </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <AppIconButton tooltip="History" aria-label="History">
-            <HistoryOutlined fontSize="small" />
-          </AppIconButton>
-          <AppIconButton tooltip="Download" aria-label="Download">
-            <DownloadOutlined fontSize="small" />
-          </AppIconButton>
-          <Button
-            variant="contained"
-            size="small"
-            startIcon={<AddOutlined sx={{ fontSize: 18 }} />}
-            sx={{
-              textTransform: 'none',
-              fontWeight: 600,
-              borderRadius: '8px',
-              boxShadow: 'none',
-              ml: 0.5,
-              minHeight: HEADER_CONTROL_HEIGHT,
-              height: HEADER_CONTROL_HEIGHT,
-              py: 0,
-              px: 1.5,
-            }}
-          >
-            Create Claim
-          </Button>
-        </Box>
-      </Box>
 
-      {/* Toolbar: filters + table chrome */}
-      <Box
-        sx={{
-          flexShrink: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 1.5,
-          flexWrap: 'wrap',
-          py: 1.25,
-          px: 1.5,
-          borderBottom: 1,
-          borderColor: 'divider',
-        }}
-      >
+        {/* Toolbar: filters + table chrome */}
+        <Box
+          sx={{
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 1.5,
+            flexWrap: 'wrap',
+            py: 1.25,
+            px: 2,
+            borderBottom: 1,
+            borderColor: 'divider',
+          }}
+        >
         <Button
           variant="outlined"
           size="small"
@@ -354,7 +374,7 @@ export function ClaimsPage() {
           sx={{
             textTransform: 'none',
             fontWeight: 500,
-            borderRadius: '8px',
+            borderRadius: '10px',
             minHeight: HEADER_CONTROL_HEIGHT,
             borderColor: 'divider',
             color: 'text.primary',
@@ -370,7 +390,7 @@ export function ClaimsPage() {
             sx={{
               textTransform: 'none',
               fontWeight: 500,
-              borderRadius: '8px',
+              borderRadius: '10px',
               minHeight: HEADER_CONTROL_HEIGHT,
               borderColor: 'divider',
               color: 'text.primary',
@@ -387,10 +407,9 @@ export function ClaimsPage() {
         </Box>
       </Box>
 
-      <TableContainer
-        component={Paper}
-        sx={{ flex: 1, minHeight: 0, overflow: 'auto', borderRadius: 0, boxShadow: 'none' }}
-      >
+        <TableContainer
+          sx={{ flex: 1, minHeight: 0, overflow: 'auto', bgcolor: 'background.paper' }}
+        >
         <Table size="small" stickyHeader sx={{ borderCollapse: 'collapse' }}>
           <TableHead>
             <TableRow>
@@ -460,7 +479,8 @@ export function ClaimsPage() {
             ))}
           </TableBody>
         </Table>
-      </TableContainer>
+        </TableContainer>
+      </Paper>
     </Box>
   );
 }
