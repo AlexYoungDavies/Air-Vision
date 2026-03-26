@@ -6,6 +6,7 @@ import { PreferencesPage } from './components/AppFrame/PreferencesPage'
 import { HomePageContent } from './components/AppFrame/HomePageContent'
 import { PatientsPage } from './components/AppFrame/PatientsPage'
 import { ClaimsPage } from './components/AppFrame/ClaimsPage'
+import { RemittancesPage } from './components/AppFrame/RemittancesPage'
 import { PatientProfilePage } from './components/AppFrame/PatientProfilePage'
 import { TodayPatientsContent } from './components/AppFrame/TodayPatientsContent'
 import { MOCK_PATIENTS } from './data/mockPatients'
@@ -38,7 +39,7 @@ function App() {
           <Route path="reports" element={<EmptyDemoPage />} />
           <Route path="encounters" element={<EmptyDemoPage />} />
           <Route path="claims" element={<ClaimsPage />} />
-          <Route path="remittances" element={<EmptyDemoPage />} />
+          <Route path="remittances" element={<RemittancesPage />} />
           <Route path="eobs" element={<EmptyDemoPage />} />
           <Route path="payments" element={<EmptyDemoPage />} />
           <Route path="statements" element={<EmptyDemoPage />} />
