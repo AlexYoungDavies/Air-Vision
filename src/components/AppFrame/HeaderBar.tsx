@@ -1,16 +1,62 @@
 import { useRef, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Box, IconButton, Avatar, Button, SvgIcon, Popover, List, ListItemButton, Typography } from '@mui/material';
+import { Box, IconButton, Button, SvgIcon, Popover, List, ListItemButton, Typography, Tooltip } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { keyframes } from '@mui/system';
-import { SearchIcon } from '../icons';
+import StopRounded from '@mui/icons-material/StopRounded';
+import { SearchIcon, MicrophoneIcon, SpeakingIcon } from '../icons';
 import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
 import hoverAnimationData from '../../assets/hover.json';
 import { MOCK_PATIENTS } from '../../data/mockPatients';
+import { AppIconButton } from '../AppIconButton';
 
 const lottieSlowSpin = keyframes`
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 `;
+
+const soundWavePulse = keyframes`
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+`;
+
+/** Five bars, light-on-accent; sits inside the active dictation pill to the left of the mic/stop icon. */
+function DictationSoundWaveBars() {
+  return (
+    <Box
+      aria-hidden
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '2px',
+        height: 22,
+        flexShrink: 0,
+        pr: 0.25,
+      }}
+    >
+      {[0, 1, 2, 3, 4].map((i) => (
+        <Box
+          key={i}
+          sx={{
+            width: 2,
+            height: 12,
+            borderRadius: 0.5,
+            bgcolor: (theme) => alpha(theme.palette.primary.contrastText, 0.92),
+            transformOrigin: 'center bottom',
+            animation: `${soundWavePulse} 0.55s ease-in-out infinite`,
+            animationDelay: `${i * 0.08}s`,
+          }}
+        />
+      ))}
+    </Box>
+  );
+}
 
 const ICON_SIZE = 20;
 const LOTTIE_SIZE = 22;
@@ -90,15 +136,32 @@ function LeftPanelIcon(props: React.ComponentProps<typeof SvgIcon>) {
 export interface HeaderBarProps {
   navCollapsed?: boolean;
   onToggleNav?: () => void;
+  /** Toggles dictation mode (visual only in demo). */
+  onDictateClick?: () => void;
+  dictateActive?: boolean;
+  /** Toggles Scribe “today’s visits” panel. */
+  onScribeClick?: () => void;
+  scribePanelOpen?: boolean;
   /** Called when the user clicks "Ask Athelas" (toggles AI Assistant panel). */
   onAskAthelasClick?: () => void;
+  assistantOpen?: boolean;
   /** Called when the user clicks the search bar (opens spotlight search). */
   onSearchClick?: () => void;
 }
 
 export type NavHistoryEntry = { pathname: string; search: string; label: string };
 
-export function HeaderBar({ navCollapsed = false, onToggleNav, onAskAthelasClick, onSearchClick }: HeaderBarProps = {}) {
+export function HeaderBar({
+  navCollapsed = false,
+  onToggleNav,
+  onDictateClick,
+  dictateActive = false,
+  onScribeClick,
+  scribePanelOpen = false,
+  onAskAthelasClick,
+  assistantOpen = false,
+  onSearchClick,
+}: HeaderBarProps = {}) {
   const navigate = useNavigate();
   const location = useLocation();
   const cameFromBackRef = useRef(false);
@@ -308,20 +371,122 @@ export function HeaderBar({ navCollapsed = false, onToggleNav, onAskAthelasClick
         </Box>
       </Box>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
-        <Avatar
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexShrink: 0 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          {!dictateActive ? (
+            <AppIconButton
+              tooltip="Dictate"
+              aria-label="Dictate"
+              onClick={onDictateClick}
+              sx={{
+                color: 'primary.main',
+                bgcolor: 'transparent',
+                '&:hover': {
+                  bgcolor: 'action.hover',
+                },
+              }}
+            >
+              <SpeakingIcon sx={{ fontSize: 20 }} />
+            </AppIconButton>
+          ) : (
+            <Tooltip title="Stop dictation">
+              <Box
+                component="button"
+                type="button"
+                onClick={onDictateClick}
+                aria-label="Stop dictation"
+                sx={{
+                  flexShrink: 0,
+                  p: 0,
+                  pl: 0.875,
+                  pr: 0.625,
+                  border: 'none',
+                  borderRadius: 14,
+                  minHeight: 28,
+                  height: 28,
+                  cursor: 'pointer',
+                  bgcolor: 'primary.main',
+                  color: 'primary.contrastText',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 0.25,
+                  '&:hover': {
+                    bgcolor: 'primary.dark',
+                  },
+                  '&:hover .dictate-recording-layer': { opacity: 0 },
+                  '&:hover .dictate-stop-layer': { opacity: 1 },
+                }}
+              >
+                <DictationSoundWaveBars />
+                <Box
+                  sx={{
+                    position: 'relative',
+                    width: 22,
+                    height: 22,
+                    flexShrink: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Box
+                    className="dictate-recording-layer"
+                    sx={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'opacity 0.12s ease-out',
+                    }}
+                  >
+                    <SpeakingIcon sx={{ fontSize: 20 }} />
+                  </Box>
+                  <Box
+                    className="dictate-stop-layer"
+                    sx={{
+                      position: 'absolute',
+                      inset: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: 0,
+                      transition: 'opacity 0.12s ease-out',
+                    }}
+                  >
+                    <StopRounded sx={{ fontSize: 20 }} />
+                  </Box>
+                </Box>
+              </Box>
+            </Tooltip>
+          )}
+        </Box>
+        <Button
+          variant="text"
+          onClick={onScribeClick}
+          startIcon={<MicrophoneIcon sx={{ fontSize: 18 }} />}
           sx={{
-            width: 28,
             height: 28,
+            px: 1.25,
+            py: 0.5,
+            gap: 0.5,
+            minWidth: 0,
             borderRadius: '9px',
-            bgcolor: 'grey.400',
-            border: '1px solid',
-            borderColor: 'rgba(0, 0, 0, 0.2)',
-            fontSize: '0.75rem',
+            textTransform: 'none',
+            fontSize: 14,
+            fontWeight: 600,
+            color: 'primary.main',
+            bgcolor: scribePanelOpen ? (theme) => alpha(theme.palette.primary.main, 0.15) : 'transparent',
+            border: 'none',
+            boxShadow: 'none',
+            '&:hover': {
+              bgcolor: (theme) =>
+                alpha(theme.palette.primary.main, scribePanelOpen ? 0.22 : 0.1),
+              boxShadow: 'none',
+            },
           }}
         >
-          P
-        </Avatar>
+          Scribe
+        </Button>
         <Button
           variant="text"
           onClick={onAskAthelasClick}
@@ -365,17 +530,18 @@ export function HeaderBar({ navCollapsed = false, onToggleNav, onAskAthelasClick
             py: 0.5,
             gap: 0,
             borderRadius: '9px',
-            bgcolor: 'unset',
-            background: 'unset',
+            bgcolor: assistantOpen ? (theme) => alpha(theme.palette.primary.main, 0.12) : 'transparent',
             border: 'none',
             color: 'primary.main',
             fontSize: 14,
             fontWeight: 500,
             lineHeight: '24px',
             textTransform: 'none',
+            boxShadow: 'none',
             '&:hover': {
-              bgcolor: 'unset',
-              background: 'unset',
+              bgcolor: (theme) =>
+                alpha(theme.palette.primary.main, assistantOpen ? 0.18 : 0.08),
+              boxShadow: 'none',
             },
           }}
         >

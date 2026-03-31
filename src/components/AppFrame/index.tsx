@@ -5,6 +5,7 @@ import { SideNav } from './SideNav';
 import { HeaderBar } from './HeaderBar';
 import { AppCanvas } from './AppCanvas';
 import { AIAssistantPanel } from './AIAssistantPanel';
+import { ScribePanel } from './ScribePanel';
 import { ColorPickerPopover } from './ColorPickerPopover';
 import { SpotlightSearch } from './SpotlightSearch';
 import { useAccent } from '../../theme/AppThemeProvider';
@@ -16,6 +17,8 @@ export interface AppFrameProps {
 export function AppFrame({ children }: AppFrameProps) {
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [aiAssistantOpen, setAiAssistantOpen] = useState(false);
+  const [scribeOpen, setScribeOpen] = useState(false);
+  const [dictateActive, setDictateActive] = useState(false);
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [spotlightOpen, setSpotlightOpen] = useState(false);
   const [spotlightQuery, setSpotlightQuery] = useState('');
@@ -78,7 +81,24 @@ export function AppFrame({ children }: AppFrameProps) {
           <HeaderBar
             navCollapsed={navCollapsed}
             onToggleNav={() => setNavCollapsed((c) => !c)}
-            onAskAthelasClick={() => setAiAssistantOpen((o) => !o)}
+            dictateActive={dictateActive}
+            onDictateClick={() => setDictateActive((a) => !a)}
+            scribePanelOpen={scribeOpen}
+            onScribeClick={() => {
+              setScribeOpen((o) => {
+                const next = !o;
+                if (next) setAiAssistantOpen(false);
+                return next;
+              });
+            }}
+            assistantOpen={aiAssistantOpen}
+            onAskAthelasClick={() => {
+              setAiAssistantOpen((o) => {
+                const next = !o;
+                if (next) setScribeOpen(false);
+                return next;
+              });
+            }}
             onSearchClick={() => setSpotlightOpen(true)}
           />
           <AppCanvas>{children ?? <Outlet />}</AppCanvas>
@@ -92,6 +112,17 @@ export function AppFrame({ children }: AppFrameProps) {
             }}
           >
             <AIAssistantPanel onClose={() => setAiAssistantOpen(false)} />
+          </Box>
+        )}
+        {scribeOpen && (
+          <Box
+            sx={{
+              width: 280,
+              flexShrink: 0,
+              overflow: 'hidden',
+            }}
+          >
+            <ScribePanel onClose={() => setScribeOpen(false)} />
           </Box>
         )}
       </Box>
