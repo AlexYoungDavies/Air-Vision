@@ -1,5 +1,7 @@
-import { useState, useRef, useEffect } from 'react';
-import { Box } from '@mui/material';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { Box, Fade } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
+import { SwitchTransition } from 'react-transition-group';
 import { Outlet } from 'react-router-dom';
 import { SideNav } from './SideNav';
 import { HeaderBar } from './HeaderBar';
@@ -10,20 +12,43 @@ import { ColorPickerPopover } from './ColorPickerPopover';
 import { SpotlightSearch } from './SpotlightSearch';
 import { useAccent } from '../../theme/AppThemeProvider';
 
+const PANEL_WIDTH = 280;
+/** Width open/close (canvas + panel move together). */
+const PANEL_TRANSITION_MS = 300;
+/** Per-step fade when switching Assistant ↔ Scribe (out-in, so total ≈ 2× this). */
+const PANEL_CROSSFADE_MS = 150;
+
+export type SidePanel = 'none' | 'assistant' | 'scribe';
+
 export interface AppFrameProps {
   children?: React.ReactNode;
 }
 
 export function AppFrame({ children }: AppFrameProps) {
   const [navCollapsed, setNavCollapsed] = useState(false);
-  const [aiAssistantOpen, setAiAssistantOpen] = useState(false);
-  const [scribeOpen, setScribeOpen] = useState(false);
+  const [activePanel, setActivePanel] = useState<SidePanel>('none');
+  /** Keeps panel content mounted while width animates to 0 on close. */
+  const [renderedPanel, setRenderedPanel] = useState<SidePanel>('none');
   const [dictateActive, setDictateActive] = useState(false);
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
   const [spotlightOpen, setSpotlightOpen] = useState(false);
   const [spotlightQuery, setSpotlightQuery] = useState('');
   const colorPickerAnchorRef = useRef<HTMLDivElement>(null);
+  const theme = useTheme();
   const { accentKey, setAccentKey } = useAccent();
+
+  useLayoutEffect(() => {
+    if (activePanel !== 'none') {
+      setRenderedPanel(activePanel);
+    }
+  }, [activePanel]);
+
+  const handlePanelWidthTransitionEnd = (e: React.TransitionEvent<HTMLDivElement>) => {
+    if (e.propertyName !== 'width' || e.target !== e.currentTarget) return;
+    if (activePanel === 'none') {
+      setRenderedPanel('none');
+    }
+  };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -39,6 +64,9 @@ export function AppFrame({ children }: AppFrameProps) {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  const scribeOpen = activePanel === 'scribe';
+  const aiAssistantOpen = activePanel === 'assistant';
 
   return (
     <Box
@@ -85,46 +113,78 @@ export function AppFrame({ children }: AppFrameProps) {
             onDictateClick={() => setDictateActive((a) => !a)}
             scribePanelOpen={scribeOpen}
             onScribeClick={() => {
-              setScribeOpen((o) => {
-                const next = !o;
-                if (next) setAiAssistantOpen(false);
-                return next;
+              setActivePanel((p) => {
+                if (p === 'scribe') return 'none';
+                return 'scribe';
               });
             }}
             assistantOpen={aiAssistantOpen}
             onAskAthelasClick={() => {
-              setAiAssistantOpen((o) => {
-                const next = !o;
-                if (next) setScribeOpen(false);
-                return next;
+              setActivePanel((p) => {
+                if (p === 'assistant') return 'none';
+                return 'assistant';
               });
             }}
             onSearchClick={() => setSpotlightOpen(true)}
           />
-          <AppCanvas>{children ?? <Outlet />}</AppCanvas>
+          <Box
+            sx={{
+              flex: 1,
+              minHeight: 0,
+              minWidth: 0,
+              display: 'flex',
+              flexDirection: 'row',
+              alignItems: 'stretch',
+              overflow: 'hidden',
+            }}
+          >
+            <AppCanvas>{children ?? <Outlet />}</AppCanvas>
+            <Box
+              onTransitionEnd={handlePanelWidthTransitionEnd}
+              sx={{
+                width: activePanel !== 'none' ? PANEL_WIDTH : 0,
+                flexShrink: 0,
+                overflow: 'hidden',
+                minHeight: 0,
+                height: '100%',
+                transition: (t) =>
+                  t.transitions.create('width', {
+                    duration: PANEL_TRANSITION_MS,
+                    easing: t.transitions.easing.easeInOut,
+                  }),
+              }}
+            >
+              {renderedPanel !== 'none' && (
+                <SwitchTransition mode="out-in">
+                  <Fade
+                    key={renderedPanel}
+                    timeout={PANEL_CROSSFADE_MS}
+                    easing={{
+                      enter: theme.transitions.easing.easeInOut,
+                      exit: theme.transitions.easing.easeInOut,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: PANEL_WIDTH,
+                        height: '100%',
+                        minHeight: 0,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {renderedPanel === 'assistant' && (
+                        <AIAssistantPanel onClose={() => setActivePanel('none')} />
+                      )}
+                      {renderedPanel === 'scribe' && <ScribePanel />}
+                    </Box>
+                  </Fade>
+                </SwitchTransition>
+              )}
+            </Box>
+          </Box>
         </Box>
-        {aiAssistantOpen && (
-          <Box
-            sx={{
-              width: 280,
-              flexShrink: 0,
-              overflow: 'hidden',
-            }}
-          >
-            <AIAssistantPanel onClose={() => setAiAssistantOpen(false)} />
-          </Box>
-        )}
-        {scribeOpen && (
-          <Box
-            sx={{
-              width: 280,
-              flexShrink: 0,
-              overflow: 'hidden',
-            }}
-          >
-            <ScribePanel onClose={() => setScribeOpen(false)} />
-          </Box>
-        )}
       </Box>
       <ColorPickerPopover
         open={colorPickerOpen}

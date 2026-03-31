@@ -8,8 +8,6 @@ import { SearchIcon, MicrophoneIcon, SpeakingIcon } from '../icons';
 import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
 import hoverAnimationData from '../../assets/hover.json';
 import { MOCK_PATIENTS } from '../../data/mockPatients';
-import { AppIconButton } from '../AppIconButton';
-
 const lottieSlowSpin = keyframes`
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
@@ -25,8 +23,13 @@ const soundWavePulse = keyframes`
   }
 `;
 
+const DICTATE_TRANSITION_MS = 300;
+/** Pl: 7px + wave ~20px + gap 6px + icon 22px + pr 5px */
+const DICTATE_EXPANDED_MIN_WIDTH = 60;
+const DICTATE_COLLAPSED_WIDTH = 28;
+
 /** Five bars, light-on-accent; sits inside the active dictation pill to the left of the mic/stop icon. */
-function DictationSoundWaveBars() {
+function DictationSoundWaveBars({ active = true }: { active?: boolean }) {
   return (
     <Box
       aria-hidden
@@ -49,8 +52,10 @@ function DictationSoundWaveBars() {
             borderRadius: 0.5,
             bgcolor: (theme) => alpha(theme.palette.primary.contrastText, 0.92),
             transformOrigin: 'center bottom',
-            animation: `${soundWavePulse} 0.55s ease-in-out infinite`,
-            animationDelay: `${i * 0.08}s`,
+            animation: active
+              ? `${soundWavePulse} 0.55s ease-in-out infinite`
+              : 'none',
+            animationDelay: active ? `${i * 0.08}s` : undefined,
           }}
         />
       ))}
@@ -208,6 +213,7 @@ export function HeaderBar({
     <Box
       component="header"
       sx={{
+        position: 'relative',
         width: '100%',
         height: 'fit-content',
         pl: 1,
@@ -220,7 +226,7 @@ export function HeaderBar({
         flexShrink: 0,
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+      <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
         {onToggleNav && (
           <IconButton
             size="small"
@@ -230,7 +236,9 @@ export function HeaderBar({
               color: 'text.secondary',
               width: 28,
               height: 28,
-              borderRadius: '9px',
+              minHeight: 28,
+              maxHeight: 28,
+              borderRadius: '8px',
             }}
           >
             <LeftPanelIcon
@@ -249,7 +257,9 @@ export function HeaderBar({
             color: 'text.secondary',
             width: 28,
             height: 28,
-            borderRadius: '9px',
+            minHeight: 28,
+            maxHeight: 28,
+            borderRadius: '8px',
           }}
         >
           <ArrowLeftIcon sx={{ fontSize: ICON_SIZE }} />
@@ -263,7 +273,9 @@ export function HeaderBar({
             color: 'text.secondary',
             width: 28,
             height: 28,
-            borderRadius: '9px',
+            minHeight: 28,
+            maxHeight: 28,
+            borderRadius: '8px',
           }}
         >
           <ArrowRightIcon sx={{ fontSize: ICON_SIZE }} />
@@ -279,12 +291,272 @@ export function HeaderBar({
             color: 'text.secondary',
             width: 28,
             height: 28,
-            borderRadius: '9px',
+            minHeight: 28,
+            maxHeight: 28,
+            borderRadius: '8px',
           }}
         >
           <HistoryIcon sx={{ fontSize: ICON_SIZE }} />
         </IconButton>
       </Box>
+
+      <Box
+        component="button"
+        type="button"
+        onClick={onSearchClick}
+        aria-label="Search"
+        sx={{
+          position: 'absolute',
+          left: '50%',
+          top: '50%',
+          zIndex: 1,
+          transform: 'translate(-50%, -50%)',
+          width: 360,
+          height: 28,
+          minHeight: 28,
+          maxHeight: 28,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          px: 1.5,
+          borderRadius: '8px',
+          border: 'none',
+          bgcolor: 'action.hover',
+          cursor: 'pointer',
+          textAlign: 'left',
+          color: 'text.secondary',
+          fontSize: 14,
+          '&:hover': {
+            bgcolor: 'action.selected',
+          },
+          '&:focus-visible': {
+            outline: '2px solid',
+            outlineOffset: 2,
+            outlineColor: 'primary.main',
+          },
+        }}
+      >
+        <SearchIcon sx={{ fontSize: ICON_SIZE, color: 'text.disabled', flexShrink: 0 }} />
+        <Box
+          component="span"
+          sx={{
+            width: 'fit-content',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Search for anything
+        </Box>
+      </Box>
+
+      <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+          <Tooltip title={dictateActive ? 'Stop dictation' : 'Dictate'}>
+            <Box
+              component="button"
+              type="button"
+              onClick={onDictateClick}
+              aria-label={dictateActive ? 'Stop dictation' : 'Dictate'}
+              sx={{
+                flexShrink: 0,
+                p: 0,
+                border: 'none',
+                borderRadius: '8px',
+                boxSizing: 'border-box',
+                minHeight: 28,
+                maxHeight: 28,
+                height: 28,
+                minWidth: dictateActive ? DICTATE_EXPANDED_MIN_WIDTH : DICTATE_COLLAPSED_WIDTH,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'flex-start',
+                pl: dictateActive ? 0.875 : 0.375,
+                pr: dictateActive ? 0.625 : 0.375,
+                gap: dictateActive ? '6px' : '0px',
+                bgcolor: dictateActive ? 'primary.main' : 'transparent',
+                color: dictateActive ? 'primary.contrastText' : 'primary.main',
+                transition: (theme) =>
+                  theme.transitions.create(
+                    ['min-width', 'padding-left', 'padding-right', 'background-color', 'color', 'gap'],
+                    {
+                      duration: DICTATE_TRANSITION_MS,
+                      easing: theme.transitions.easing.easeInOut,
+                    },
+                  ),
+                '&:hover': {
+                  bgcolor: dictateActive ? 'primary.dark' : 'action.hover',
+                },
+                ...(dictateActive && {
+                  '&:hover .dictate-recording-layer': { opacity: 0 },
+                  '&:hover .dictate-stop-layer': { opacity: 1 },
+                }),
+                '&:focus-visible': {
+                  outline: '2px solid',
+                  outlineOffset: 2,
+                  outlineColor: 'primary.main',
+                },
+              }}
+            >
+              <Box
+                sx={{
+                  display: 'flex',
+                  overflow: 'hidden',
+                  minWidth: 0,
+                  flexShrink: 0,
+                  maxWidth: dictateActive ? 40 : 0,
+                  opacity: dictateActive ? 1 : 0,
+                  transition: (theme) =>
+                    theme.transitions.create(['max-width', 'opacity'], {
+                      duration: DICTATE_TRANSITION_MS,
+                      easing: theme.transitions.easing.easeInOut,
+                    }),
+                }}
+              >
+                <DictationSoundWaveBars active={dictateActive} />
+              </Box>
+              <Box
+                sx={{
+                  position: 'relative',
+                  width: 22,
+                  height: 22,
+                  flexShrink: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Box
+                  className="dictate-recording-layer"
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'opacity 0.12s ease-out',
+                  }}
+                >
+                  <SpeakingIcon sx={{ fontSize: 20 }} />
+                </Box>
+                <Box
+                  className="dictate-stop-layer"
+                  sx={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    opacity: 0,
+                    transition: 'opacity 0.12s ease-out',
+                  }}
+                >
+                  <StopRounded sx={{ fontSize: 20 }} />
+                </Box>
+              </Box>
+            </Box>
+          </Tooltip>
+        </Box>
+        <Button
+          variant="text"
+          size="small"
+          onClick={onScribeClick}
+          startIcon={<MicrophoneIcon />}
+          sx={{
+            height: 28,
+            minHeight: 28,
+            maxHeight: 28,
+            px: 1.25,
+            py: 0,
+            gap: '6px',
+            minWidth: 0,
+            borderRadius: '8px',
+            textTransform: 'none',
+            fontSize: 14,
+            fontWeight: 600,
+            lineHeight: 1,
+            color: 'primary.main',
+            bgcolor: scribePanelOpen ? (theme) => alpha(theme.palette.primary.main, 0.15) : 'transparent',
+            border: 'none',
+            boxShadow: 'none',
+            '& .MuiButton-startIcon': {
+              margin: 0,
+              '& .MuiSvgIcon-root': { fontSize: 20 },
+            },
+            '&:hover': {
+              bgcolor: (theme) =>
+                alpha(theme.palette.primary.main, scribePanelOpen ? 0.22 : 0.1),
+              boxShadow: 'none',
+            },
+          }}
+        >
+          Scribe
+        </Button>
+        <Button
+          variant="text"
+          size="small"
+          onClick={onAskAthelasClick}
+          startIcon={
+            <Box
+              component="span"
+              sx={{
+                width: LOTTIE_SIZE,
+                height: LOTTIE_SIZE,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                animation: `${lottieSlowSpin} 20s linear infinite`,
+                '& > div': { width: LOTTIE_SIZE, height: LOTTIE_SIZE },
+              }}
+            >
+              <Lottie
+                lottieRef={askAthelasLottieRef}
+                animationData={hoverAnimationData}
+                loop={false}
+                autoplay={false}
+                onDOMLoaded={() => {
+                  askAthelasLottieRef.current?.goToAndStop(0, true);
+                }}
+                style={{ width: LOTTIE_SIZE, height: LOTTIE_SIZE }}
+                rendererSettings={{ preserveAspectRatio: 'xMidYMid meet' }}
+              />
+            </Box>
+          }
+          onMouseEnter={() => {
+            askAthelasLottieRef.current?.setDirection(1);
+            askAthelasLottieRef.current?.play();
+          }}
+          onMouseLeave={() => {
+            askAthelasLottieRef.current?.setDirection(-1);
+            askAthelasLottieRef.current?.play();
+          }}
+          sx={{
+            height: 28,
+            minHeight: 28,
+            maxHeight: 28,
+            px: '8px',
+            py: 0,
+            gap: '6px',
+            borderRadius: '8px',
+            bgcolor: assistantOpen ? (theme) => alpha(theme.palette.primary.main, 0.12) : 'transparent',
+            border: 'none',
+            color: 'primary.main',
+            fontSize: 14,
+            fontWeight: 500,
+            lineHeight: 1,
+            textTransform: 'none',
+            boxShadow: 'none',
+            '& .MuiButton-startIcon': { margin: 0 },
+            '&:hover': {
+              bgcolor: (theme) =>
+                alpha(theme.palette.primary.main, assistantOpen ? 0.18 : 0.08),
+              boxShadow: 'none',
+            },
+          }}
+        >
+          Ask Athelas
+        </Button>
+      </Box>
+
       <Popover
         open={historyOpen}
         anchorEl={historyButtonRef.current}
@@ -333,221 +605,6 @@ export function HeaderBar({
           )}
         </Box>
       </Popover>
-
-      <Box sx={{ flex: 1, display: 'flex', justifyContent: 'center', minWidth: 0 }}>
-        <Box
-          component="button"
-          type="button"
-          onClick={onSearchClick}
-          aria-label="Search"
-          sx={{
-            width: 360,
-            height: 28,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1,
-            px: 1.5,
-            borderRadius: 1,
-            border: 'none',
-            bgcolor: 'action.hover',
-            cursor: 'pointer',
-            textAlign: 'left',
-            color: 'text.secondary',
-            fontSize: 14,
-            '&:hover': {
-              bgcolor: 'action.selected',
-            },
-            '&:focus-visible': {
-              outline: '2px solid',
-              outlineOffset: 2,
-              outlineColor: 'primary.main',
-            },
-          }}
-        >
-          <SearchIcon sx={{ fontSize: ICON_SIZE, color: 'text.disabled', flexShrink: 0 }} />
-          <Box component="span" sx={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            Search for anything
-          </Box>
-        </Box>
-      </Box>
-
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexShrink: 0 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          {!dictateActive ? (
-            <AppIconButton
-              tooltip="Dictate"
-              aria-label="Dictate"
-              onClick={onDictateClick}
-              sx={{
-                color: 'primary.main',
-                bgcolor: 'transparent',
-                '&:hover': {
-                  bgcolor: 'action.hover',
-                },
-              }}
-            >
-              <SpeakingIcon sx={{ fontSize: 20 }} />
-            </AppIconButton>
-          ) : (
-            <Tooltip title="Stop dictation">
-              <Box
-                component="button"
-                type="button"
-                onClick={onDictateClick}
-                aria-label="Stop dictation"
-                sx={{
-                  flexShrink: 0,
-                  p: 0,
-                  pl: 0.875,
-                  pr: 0.625,
-                  border: 'none',
-                  borderRadius: 14,
-                  minHeight: 28,
-                  height: 28,
-                  cursor: 'pointer',
-                  bgcolor: 'primary.main',
-                  color: 'primary.contrastText',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 0.25,
-                  '&:hover': {
-                    bgcolor: 'primary.dark',
-                  },
-                  '&:hover .dictate-recording-layer': { opacity: 0 },
-                  '&:hover .dictate-stop-layer': { opacity: 1 },
-                }}
-              >
-                <DictationSoundWaveBars />
-                <Box
-                  sx={{
-                    position: 'relative',
-                    width: 22,
-                    height: 22,
-                    flexShrink: 0,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Box
-                    className="dictate-recording-layer"
-                    sx={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      transition: 'opacity 0.12s ease-out',
-                    }}
-                  >
-                    <SpeakingIcon sx={{ fontSize: 20 }} />
-                  </Box>
-                  <Box
-                    className="dictate-stop-layer"
-                    sx={{
-                      position: 'absolute',
-                      inset: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      opacity: 0,
-                      transition: 'opacity 0.12s ease-out',
-                    }}
-                  >
-                    <StopRounded sx={{ fontSize: 20 }} />
-                  </Box>
-                </Box>
-              </Box>
-            </Tooltip>
-          )}
-        </Box>
-        <Button
-          variant="text"
-          onClick={onScribeClick}
-          startIcon={<MicrophoneIcon sx={{ fontSize: 18 }} />}
-          sx={{
-            height: 28,
-            px: 1.25,
-            py: 0.5,
-            gap: 0.5,
-            minWidth: 0,
-            borderRadius: '9px',
-            textTransform: 'none',
-            fontSize: 14,
-            fontWeight: 600,
-            color: 'primary.main',
-            bgcolor: scribePanelOpen ? (theme) => alpha(theme.palette.primary.main, 0.15) : 'transparent',
-            border: 'none',
-            boxShadow: 'none',
-            '&:hover': {
-              bgcolor: (theme) =>
-                alpha(theme.palette.primary.main, scribePanelOpen ? 0.22 : 0.1),
-              boxShadow: 'none',
-            },
-          }}
-        >
-          Scribe
-        </Button>
-        <Button
-          variant="text"
-          onClick={onAskAthelasClick}
-          startIcon={
-            <Box
-              component="span"
-              sx={{
-                width: LOTTIE_SIZE,
-                height: LOTTIE_SIZE,
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                animation: `${lottieSlowSpin} 20s linear infinite`,
-                '& > div': { width: LOTTIE_SIZE, height: LOTTIE_SIZE },
-              }}
-            >
-              <Lottie
-                lottieRef={askAthelasLottieRef}
-                animationData={hoverAnimationData}
-                loop={false}
-                autoplay={false}
-                onDOMLoaded={() => {
-                  askAthelasLottieRef.current?.goToAndStop(0, true);
-                }}
-                style={{ width: LOTTIE_SIZE, height: LOTTIE_SIZE }}
-                rendererSettings={{ preserveAspectRatio: 'xMidYMid meet' }}
-              />
-            </Box>
-          }
-          onMouseEnter={() => {
-            askAthelasLottieRef.current?.setDirection(1);
-            askAthelasLottieRef.current?.play();
-          }}
-          onMouseLeave={() => {
-            askAthelasLottieRef.current?.setDirection(-1);
-            askAthelasLottieRef.current?.play();
-          }}
-          sx={{
-            height: 28,
-            px: 1.25,
-            py: 0.5,
-            gap: 0,
-            borderRadius: '9px',
-            bgcolor: assistantOpen ? (theme) => alpha(theme.palette.primary.main, 0.12) : 'transparent',
-            border: 'none',
-            color: 'primary.main',
-            fontSize: 14,
-            fontWeight: 500,
-            lineHeight: '24px',
-            textTransform: 'none',
-            boxShadow: 'none',
-            '&:hover': {
-              bgcolor: (theme) =>
-                alpha(theme.palette.primary.main, assistantOpen ? 0.18 : 0.08),
-              boxShadow: 'none',
-            },
-          }}
-        >
-          Ask Athelas
-        </Button>
-      </Box>
     </Box>
   );
 }
