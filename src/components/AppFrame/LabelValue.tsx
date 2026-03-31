@@ -3,7 +3,7 @@ import { Typography } from '@mui/material';
 const LABEL_SX = {
   fontSize: 12,
   fontWeight: 600,
-  color: 'rgba(163, 163, 163, 1)',
+  color: 'text.secondary',
 } as const;
 
 const VALUE_SX = {

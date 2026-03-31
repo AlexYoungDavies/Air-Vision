@@ -329,7 +329,7 @@ const businessItems: NavItemConfig[] = [
 ];
 
 const revenueCycleItems: NavItemConfig[] = [
-  { id: 'encounters', label: 'Encounters', icon: 'inbox', path: '/encounters' },
+  { id: 'automations', label: 'Automations', icon: 'inbox', path: '/automations' },
   { id: 'claims', label: 'Claims', icon: 'assignment', path: '/claims' },
   { id: 'remittances', label: 'Remittances', icon: 'receipt_long', path: '/remittances' },
   { id: 'eobs', label: 'EoBs', icon: 'description', path: '/eobs' },
@@ -424,20 +424,22 @@ function NavItem({
         slotProps={{
           tooltip: {
             sx: {
-              bgcolor: '#fff',
+              bgcolor: 'background.paper',
               color: 'text.primary',
-              border: '1px solid rgba(0, 0, 0, 0.1)',
-              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+              border: '1px solid',
+              borderColor: 'divider',
+              boxShadow: (theme) => theme.shadows[2],
               fontSize: 12,
               fontWeight: 500,
             },
           },
           arrow: {
             sx: {
-              color: '#fff',
+              color: 'background.paper',
               '&::before': {
-                border: '1px solid rgba(0, 0, 0, 0.1)',
-                backgroundColor: '#fff',
+                border: '1px solid',
+                borderColor: 'divider',
+                backgroundColor: 'background.paper',
                 boxSizing: 'border-box',
               },
             },

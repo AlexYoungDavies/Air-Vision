@@ -31,11 +31,12 @@ export const STICKY_ACTIONS_CELL = {
   minWidth: 140,
   width: 140,
   bgcolor: 'background.paper',
-  boxShadow: '-4px 0 8px -2px rgba(0,0,0,0.06)',
+  boxShadow: (theme: { palette: { mode: string } }) =>
+    theme.palette.mode === 'dark' ? '-4px 0 8px -2px rgba(0,0,0,0.3)' : '-4px 0 8px -2px rgba(0,0,0,0.06)',
   zIndex: 1,
   whiteSpace: 'nowrap' as const,
 };
-export const STICKY_ACTIONS_HEADER = { ...STICKY_ACTIONS_CELL, bgcolor: 'grey.50', zIndex: 2 };
+export const STICKY_ACTIONS_HEADER = { ...STICKY_ACTIONS_CELL, bgcolor: 'background.paper', zIndex: 2 };
 
 export const COLUMN_HEADER_STYLE = { maxWidth: 240 };
 export const COLUMN_BODY_STYLE = { maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const };
@@ -50,12 +51,12 @@ export const STATUS_CHIP_STYLES: Record<
   AppointmentStatus,
   { bgcolor: string; color: string }
 > = {
-  Schedule: { bgcolor: '#f5f5f5', color: '#616161' },
-  Confirmed: { bgcolor: '#e3f2fd', color: '#1565c0' },
-  'Checked In': { bgcolor: '#fff3e0', color: '#e65100' },
-  Complete: { bgcolor: '#e8f5e9', color: '#2e7d32' },
-  Canceled: { bgcolor: '#ffebee', color: '#c62828' },
-  'No Show': { bgcolor: '#fff8e1', color: '#f57c00' },
+  Schedule: { bgcolor: 'action.hover', color: 'text.secondary' },
+  Confirmed: { bgcolor: 'info.light', color: 'info.dark' },
+  'Checked In': { bgcolor: 'warning.light', color: 'warning.dark' },
+  Complete: { bgcolor: 'success.light', color: 'success.dark' },
+  Canceled: { bgcolor: 'error.light', color: 'error.dark' },
+  'No Show': { bgcolor: 'warning.light', color: 'warning.dark' },
 };
 
 export function AppointmentsTabContent({ patientId, onOpenNote }: AppointmentsTabContentProps) {
@@ -95,6 +96,9 @@ export function AppointmentsTabContent({ patientId, onOpenNote }: AppointmentsTa
           pt: 2,
           pb: 1.5,
           flexShrink: 0,
+          bgcolor: 'background.paper',
+          borderBottom: 1,
+          borderColor: 'divider',
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
@@ -138,16 +142,16 @@ export function AppointmentsTabContent({ patientId, onOpenNote }: AppointmentsTa
         <Table size="small" stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Date</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Time</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Status</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Case</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Template</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Clinical stage</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Provider</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Insurance</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Facility</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Tags</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Date</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Time</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Status</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Case</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Template</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Clinical stage</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Provider</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Insurance</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Facility</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Tags</TableCell>
               <TableCell sx={{ fontWeight: 600, ...STICKY_ACTIONS_HEADER }} align="right">
                 Actions
               </TableCell>

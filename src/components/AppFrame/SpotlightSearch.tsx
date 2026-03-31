@@ -9,6 +9,7 @@ import {
   ListItemIcon,
   ListItemText,
   Paper,
+  useTheme,
 } from '@mui/material';
 import { SearchIcon } from '../icons';
 import PersonOutlined from '@mui/icons-material/PersonOutlined';
@@ -47,6 +48,8 @@ function matchQuery(text: string, q: string): boolean {
 export function SpotlightSearch({ open, onClose, query, onQueryChange }: SpotlightSearchProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const theme = useTheme();
+  const backdropColor = (theme.palette.background as { backdrop?: string }).backdrop ?? 'rgba(0,0,0,0.4)';
 
   useEffect(() => {
     if (open) {
@@ -153,7 +156,7 @@ export function SpotlightSearch({ open, onClose, query, onQueryChange }: Spotlig
         position: 'fixed',
         inset: 0,
         zIndex: 1300,
-        bgcolor: 'rgba(0,0,0,0.4)',
+        bgcolor: backdropColor,
         display: 'flex',
         alignItems: 'flex-start',
         justifyContent: 'center',
