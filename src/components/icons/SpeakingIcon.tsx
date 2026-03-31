@@ -1,17 +1,15 @@
 import { SvgIcon, type SvgIconProps } from '@mui/material';
 
-/** Dictation header action — source: Speaking.svg */
+/** Dictation header action — Speaking.svg (filled) */
 export function SpeakingIcon(props: SvgIconProps) {
   return (
     <SvgIcon {...props} viewBox="0 0 24 24">
       <path
-        d="M9.5 14C13.5 14 15 16 15 20V21.25C15 21.6642 14.6642 22 14.25 22C13.8358 22 13.5 21.6642 13.5 21.25V20C13.5 17 13 15.5 9.5 15.5H8.5C5 15.5 4.5 17 4.5 20V21.25C4.5 21.6642 4.16421 22 3.75 22C3.33579 22 3 21.6642 3 21.25V20C3 16 4.5 14 8.5 14H9.5Z"
+        d="M9.5 14C13.5 14 15 15.9997 15 20C15 21.1045 14.1094 22 13.0049 22H4.99512C3.89058 22 3 21.1045 3 20C3.00003 15.9997 4.50004 14 8.5 14H9.5Z"
         fill="currentColor"
       />
       <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M9 2C11.7614 2 13.9999 4.23863 14 7C14 9.76142 11.7614 12 9 12C6.23858 12 4 9.76142 4 7C4.00007 4.23863 6.23862 2 9 2ZM9 3.5C7.06704 3.5 5.50007 5.06706 5.5 7C5.5 8.933 7.067 10.5 9 10.5C10.933 10.5 12.5 8.933 12.5 7C12.4999 5.06706 10.933 3.5 9 3.5Z"
+        d="M9 2C11.7614 2 13.9999 4.23863 14 7C14 9.76142 11.7614 12 9 12C6.23858 12 4 9.76142 4 7C4.00007 4.23863 6.23862 2 9 2Z"
         fill="currentColor"
       />
       <path
