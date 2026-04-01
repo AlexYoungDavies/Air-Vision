@@ -11,8 +11,7 @@ import {
   StopRecordingIcon,
 } from '../icons';
 import { ScribeRecordingEmblem } from './ScribeRecordingEmblem';
-
-type RecordingUiPhase = 'idle' | 'recording' | 'paused';
+import type { ActiveScribeRecordingSession } from './scribeRecordingSession';
 
 function formatTimer(totalSeconds: number): string {
   const m = Math.floor(totalSeconds / 60);
@@ -58,21 +57,30 @@ function AudioLevelMock() {
 export interface ScribeAppointmentViewProps {
   visit: MockScribeVisit;
   onBack: () => void;
+  /** Lifted session when this visit is recording or paused; null before Begin or after Finish. */
+  recordingForVisit: ActiveScribeRecordingSession | null;
+  onBeginRecording: () => void;
+  onPauseRecording: () => void;
+  onResumeRecording: () => void;
+  onFinishRecording: () => void;
+  onCancelRecording: () => void;
 }
 
-export function ScribeAppointmentView({ visit, onBack }: ScribeAppointmentViewProps) {
-  const [phase, setPhase] = useState<RecordingUiPhase>('idle');
-  const [seconds, setSeconds] = useState(0);
+export function ScribeAppointmentView({
+  visit,
+  onBack,
+  recordingForVisit,
+  onBeginRecording,
+  onPauseRecording,
+  onResumeRecording,
+  onFinishRecording,
+  onCancelRecording,
+}: ScribeAppointmentViewProps) {
   const [mic, setMic] = useState('MacBook Pro Microphone');
 
-  useEffect(() => {
-    if (phase !== 'recording') return;
-    const id = window.setInterval(() => setSeconds((s) => s + 1), 1000);
-    return () => window.clearInterval(id);
-  }, [phase]);
-
-  const emblemPhase = phase === 'recording' ? 'pulse' : 'flower';
-
+  const phase = recordingForVisit ? recordingForVisit.phase : 'idle';
+  const seconds = recordingForVisit?.seconds ?? 0;
+  const emblemPhase = recordingForVisit?.phase === 'recording' ? 'pulse' : 'flower';
   const timerLabel = useMemo(() => formatTimer(seconds), [seconds]);
 
   const handleMicChange = (e: SelectChangeEvent<string>) => setMic(e.target.value);
@@ -160,7 +168,7 @@ export function ScribeAppointmentView({ visit, onBack }: ScribeAppointmentViewPr
               </Typography>
             )}
 
-            {phase !== 'paused' && <AudioLevelMock />}
+            {phase !== 'paused' && phase !== 'idle' && <AudioLevelMock />}
 
             <Select
               value={mic}
@@ -190,10 +198,7 @@ export function ScribeAppointmentView({ visit, onBack }: ScribeAppointmentViewPr
               size="large"
               fullWidth
               startIcon={<MicrophoneIcon />}
-              onClick={() => {
-                setSeconds(0);
-                setPhase('recording');
-              }}
+              onClick={onBeginRecording}
               sx={{ textTransform: 'none', fontWeight: 600, py: 1.25, borderRadius: 1.5 }}
             >
               Begin Recording
@@ -208,7 +213,7 @@ export function ScribeAppointmentView({ visit, onBack }: ScribeAppointmentViewPr
                 size="large"
                 fullWidth
                 startIcon={<PauseRecordingIcon />}
-                onClick={() => setPhase('paused')}
+                onClick={onPauseRecording}
                 sx={{ textTransform: 'none', fontWeight: 600, py: 1.25, borderRadius: 1.5 }}
               >
                 Pause
@@ -219,10 +224,7 @@ export function ScribeAppointmentView({ visit, onBack }: ScribeAppointmentViewPr
                 size="large"
                 fullWidth
                 startIcon={<StopRecordingIcon />}
-                onClick={() => {
-                  setPhase('idle');
-                  setSeconds(0);
-                }}
+                onClick={onFinishRecording}
                 sx={{ textTransform: 'none', fontWeight: 600, py: 1.25, borderRadius: 1.5 }}
               >
                 Finish
@@ -239,7 +241,7 @@ export function ScribeAppointmentView({ visit, onBack }: ScribeAppointmentViewPr
                   size="large"
                   fullWidth
                   startIcon={<PlayRecordingIcon />}
-                  onClick={() => setPhase('recording')}
+                  onClick={onResumeRecording}
                   sx={{ textTransform: 'none', fontWeight: 600, py: 1.25, borderRadius: 1.5, flex: 1 }}
                 >
                   Resume
@@ -250,10 +252,7 @@ export function ScribeAppointmentView({ visit, onBack }: ScribeAppointmentViewPr
                   size="large"
                   fullWidth
                   startIcon={<StopRecordingIcon />}
-                  onClick={() => {
-                    setPhase('idle');
-                    setSeconds(0);
-                  }}
+                  onClick={onFinishRecording}
                   sx={{ textTransform: 'none', fontWeight: 600, py: 1.25, borderRadius: 1.5, flex: 1 }}
                 >
                   Finish
@@ -264,7 +263,7 @@ export function ScribeAppointmentView({ visit, onBack }: ScribeAppointmentViewPr
                 color="inherit"
                 size="medium"
                 startIcon={<StopBlockedRecordingIcon sx={{ fontSize: 18 }} />}
-                onClick={onBack}
+                onClick={onCancelRecording}
                 sx={{
                   alignSelf: 'center',
                   mt: 0.5,

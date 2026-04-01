@@ -1,10 +1,11 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useLayoutEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Box, IconButton, Button, SvgIcon, Popover, List, ListItemButton, Typography, Tooltip } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { keyframes } from '@mui/system';
 import StopRounded from '@mui/icons-material/StopRounded';
 import { SearchIcon, MicrophoneIcon, SpeakingIcon } from '../icons';
+import { ScribeLiveActivityBar } from './ScribeLiveActivityBar';
 import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
 import hoverAnimationData from '../../assets/hover.json';
 import { MOCK_PATIENTS } from '../../data/mockPatients';
@@ -27,6 +28,12 @@ const DICTATE_TRANSITION_MS = 300;
 /** Pl: 7px + wave ~20px + gap 6px + icon 22px + pr 5px */
 const DICTATE_EXPANDED_MIN_WIDTH = 60;
 const DICTATE_COLLAPSED_WIDTH = 28;
+
+/** Scribe chip ↔ live activity morph (same timing as dictate). */
+const SCRIBE_MORPH_MS = DICTATE_TRANSITION_MS;
+const SCRIBE_SLOT_WIDTH_COLLAPSED = 90;
+/** Initial expanded slot width before layout measure (avoids 0-width flash). */
+const SCRIBE_LIVE_WIDTH_FALLBACK = 160;
 
 /** Five bars, light-on-accent; sits inside the active dictation pill to the left of the mic/stop icon. */
 function DictationSoundWaveBars({ active = true }: { active?: boolean }) {
@@ -147,6 +154,15 @@ export interface HeaderBarProps {
   /** Toggles Scribe “today’s visits” panel. */
   onScribeClick?: () => void;
   scribePanelOpen?: boolean;
+  /** When set, replaces the Scribe chip with the in-progress recording bar (panel closed / away from recording view). */
+  scribeLiveActivity?: {
+    phase: 'recording' | 'paused';
+    seconds: number;
+    onPause: () => void;
+    onResume: () => void;
+    onFinish: () => void;
+    onNavigateToRecording: () => void;
+  } | null;
   /** Called when the user clicks "Ask Athelas" (toggles AI Assistant panel). */
   onAskAthelasClick?: () => void;
   assistantOpen?: boolean;
@@ -163,6 +179,7 @@ export function HeaderBar({
   dictateActive = false,
   onScribeClick,
   scribePanelOpen = false,
+  scribeLiveActivity = null,
   onAskAthelasClick,
   assistantOpen = false,
   onSearchClick,
@@ -175,6 +192,36 @@ export function HeaderBar({
   const [canGoForward, setCanGoForward] = useState(false);
   const [navHistory, setNavHistory] = useState<NavHistoryEntry[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
+
+  type ScribeLiveSlotProps = NonNullable<HeaderBarProps['scribeLiveActivity']>;
+  const scribeLiveSnapshotRef = useRef<ScribeLiveSlotProps | null>(null);
+  if (scribeLiveActivity) {
+    scribeLiveSnapshotRef.current = scribeLiveActivity;
+  }
+  const [scribeLiveMounted, setScribeLiveMounted] = useState(false);
+
+  useLayoutEffect(() => {
+    if (scribeLiveActivity) {
+      setScribeLiveMounted(true);
+    } else {
+      const t = window.setTimeout(() => setScribeLiveMounted(false), SCRIBE_MORPH_MS);
+      return () => window.clearTimeout(t);
+    }
+  }, [scribeLiveActivity]);
+
+  const scribeSlotExpanded = Boolean(scribeLiveActivity);
+  const liveBarProps = scribeLiveActivity ?? scribeLiveSnapshotRef.current;
+
+  const scribeLiveBarRef = useRef<HTMLDivElement>(null);
+  const [scribeLiveMeasuredWidth, setScribeLiveMeasuredWidth] = useState(SCRIBE_LIVE_WIDTH_FALLBACK);
+
+  useLayoutEffect(() => {
+    if (!liveBarProps || !(scribeLiveActivity || scribeLiveMounted)) return;
+    const el = scribeLiveBarRef.current;
+    if (!el) return;
+    const w = Math.ceil(el.getBoundingClientRect().width);
+    if (w > 0) setScribeLiveMeasuredWidth(w);
+  }, [scribeLiveActivity, scribeLiveMounted, liveBarProps, liveBarProps?.seconds, liveBarProps?.phase]);
 
   useEffect(() => {
     const key = location.pathname + location.search;
@@ -456,41 +503,107 @@ export function HeaderBar({
             </Box>
           </Tooltip>
         </Box>
-        <Button
-          variant="text"
-          size="small"
-          onClick={onScribeClick}
-          startIcon={<MicrophoneIcon />}
+        <Box
           sx={{
+            position: 'relative',
             height: 28,
-            minHeight: 28,
-            maxHeight: 28,
-            px: 1.25,
-            py: 0,
-            gap: '6px',
-            minWidth: 0,
-            borderRadius: '8px',
-            textTransform: 'none',
-            fontSize: 14,
-            fontWeight: 600,
-            lineHeight: 1,
-            color: 'primary.main',
-            bgcolor: scribePanelOpen ? (theme) => alpha(theme.palette.primary.main, 0.15) : 'transparent',
-            border: 'none',
-            boxShadow: 'none',
-            '& .MuiButton-startIcon': {
-              margin: 0,
-              '& .MuiSvgIcon-root': { fontSize: 20 },
-            },
-            '&:hover': {
-              bgcolor: (theme) =>
-                alpha(theme.palette.primary.main, scribePanelOpen ? 0.22 : 0.1),
-              boxShadow: 'none',
-            },
+            width: scribeSlotExpanded ? scribeLiveMeasuredWidth : SCRIBE_SLOT_WIDTH_COLLAPSED,
+            flexShrink: 0,
+            overflow: 'hidden',
+            transition: (theme) =>
+              theme.transitions.create('width', {
+                duration: SCRIBE_MORPH_MS,
+                easing: theme.transitions.easing.easeInOut,
+              }),
           }}
         >
-          Scribe
-        </Button>
+          <Box
+            sx={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              zIndex: 1,
+              width: SCRIBE_SLOT_WIDTH_COLLAPSED,
+              height: 28,
+              display: 'flex',
+              alignItems: 'center',
+              opacity: scribeSlotExpanded ? 0 : 1,
+              pointerEvents: scribeSlotExpanded ? 'none' : 'auto',
+              transition: (theme) =>
+                theme.transitions.create('opacity', {
+                  duration: SCRIBE_MORPH_MS,
+                  easing: theme.transitions.easing.easeInOut,
+                }),
+            }}
+          >
+            <Button
+              variant="text"
+              size="small"
+              onClick={onScribeClick}
+              startIcon={<MicrophoneIcon />}
+              sx={{
+                height: 28,
+                minHeight: 28,
+                maxHeight: 28,
+                px: 1.25,
+                py: 0,
+                gap: '6px',
+                minWidth: 0,
+                borderRadius: '8px',
+                textTransform: 'none',
+                fontSize: 14,
+                fontWeight: 600,
+                lineHeight: 1,
+                color: 'primary.main',
+                bgcolor: scribePanelOpen ? (theme) => alpha(theme.palette.primary.main, 0.15) : 'transparent',
+                border: 'none',
+                boxShadow: 'none',
+                '& .MuiButton-startIcon': {
+                  margin: 0,
+                  '& .MuiSvgIcon-root': { fontSize: 20 },
+                },
+                '&:hover': {
+                  bgcolor: (theme) =>
+                    alpha(theme.palette.primary.main, scribePanelOpen ? 0.22 : 0.1),
+                  boxShadow: 'none',
+                },
+              }}
+            >
+              Scribe
+            </Button>
+          </Box>
+          {liveBarProps && (scribeLiveActivity || scribeLiveMounted) ? (
+            <Box
+              sx={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                zIndex: 2,
+                width: 'max-content',
+                height: 28,
+                display: 'flex',
+                alignItems: 'center',
+                opacity: scribeSlotExpanded ? 1 : 0,
+                pointerEvents: scribeSlotExpanded ? 'auto' : 'none',
+                transition: (theme) =>
+                  theme.transitions.create('opacity', {
+                    duration: SCRIBE_MORPH_MS,
+                    easing: theme.transitions.easing.easeInOut,
+                  }),
+              }}
+            >
+              <ScribeLiveActivityBar
+                ref={scribeLiveBarRef}
+                phase={liveBarProps.phase}
+                seconds={liveBarProps.seconds}
+                onPause={liveBarProps.onPause}
+                onResume={liveBarProps.onResume}
+                onFinish={liveBarProps.onFinish}
+                onNavigateToRecording={liveBarProps.onNavigateToRecording}
+              />
+            </Box>
+          ) : null}
+        </Box>
         <Button
           variant="text"
           size="small"

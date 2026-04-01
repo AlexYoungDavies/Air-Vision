@@ -1,4 +1,4 @@
-import { useState, type ComponentProps, type ReactNode } from 'react';
+import { useState, type ComponentProps, type Dispatch, type ReactNode, type SetStateAction } from 'react';
 import {
   Box,
   Typography,
@@ -25,6 +25,7 @@ import {
   type MockScribeVisit,
   type ScribeVisitRowStatus,
 } from '../../data/mockTodaysVisits';
+import type { ActiveScribeRecordingSession } from './scribeRecordingSession';
 import { ACCENT_PRIMARY_PALETTES } from '../../theme/accents';
 import { ScribeAppointmentView } from './ScribeAppointmentView';
 
@@ -295,14 +296,25 @@ function CollapsibleGroup({ title, icon, open, onToggle, children }: Collapsible
   );
 }
 
-export function ScribePanel() {
+export interface ScribePanelProps {
+  selectedVisit: MockScribeVisit | null;
+  onSelectedVisitChange: (visit: MockScribeVisit | null) => void;
+  activeRecording: ActiveScribeRecordingSession | null;
+  onActiveRecordingChange: Dispatch<SetStateAction<ActiveScribeRecordingSession | null>>;
+}
+
+export function ScribePanel({
+  selectedVisit,
+  onSelectedVisitChange,
+  activeRecording,
+  onActiveRecordingChange,
+}: ScribePanelProps) {
   const [scheduleDate, setScheduleDate] = useState<Dayjs>(() => dayjs().startOf('day'));
   const [datePickerAnchor, setDatePickerAnchor] = useState<HTMLElement | null>(null);
   const datePickerOpen = Boolean(datePickerAnchor);
   const [openUpcoming, setOpenUpcoming] = useState(true);
   const [openAction, setOpenAction] = useState(true);
   const [openCompleted, setOpenCompleted] = useState(false);
-  const [selectedVisit, setSelectedVisit] = useState<MockScribeVisit | null>(null);
 
   const upcoming = MOCK_SCRIBE_VISITS.filter((v) => v.group === 'upcoming');
   const action = MOCK_SCRIBE_VISITS.filter((v) => v.group === 'action');
@@ -408,7 +420,32 @@ export function ScribePanel() {
         <ScribeAppointmentView
           key={selectedVisit.id}
           visit={selectedVisit}
-          onBack={() => setSelectedVisit(null)}
+          onBack={() => onSelectedVisitChange(null)}
+          recordingForVisit={
+            activeRecording?.visit.id === selectedVisit.id ? activeRecording : null
+          }
+          onBeginRecording={() =>
+            onActiveRecordingChange({
+              visit: selectedVisit,
+              phase: 'recording',
+              seconds: 0,
+            })
+          }
+          onPauseRecording={() =>
+            onActiveRecordingChange((s) =>
+              s && s.visit.id === selectedVisit.id ? { ...s, phase: 'paused' } : s,
+            )
+          }
+          onResumeRecording={() =>
+            onActiveRecordingChange((s) =>
+              s && s.visit.id === selectedVisit.id ? { ...s, phase: 'recording' } : s,
+            )
+          }
+          onFinishRecording={() => onActiveRecordingChange(null)}
+          onCancelRecording={() => {
+            onActiveRecordingChange(null);
+            onSelectedVisitChange(null);
+          }}
         />
       ) : (
         <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', px: 0, pb: 2 }}>
@@ -420,7 +457,7 @@ export function ScribePanel() {
           >
             <List disablePadding sx={scribeVisitListSx}>
               {upcoming.map((visit) => (
-                <VisitRow key={visit.id} visit={visit} onSelect={setSelectedVisit} />
+                <VisitRow key={visit.id} visit={visit} onSelect={onSelectedVisitChange} />
               ))}
             </List>
           </CollapsibleGroup>
@@ -433,7 +470,7 @@ export function ScribePanel() {
           >
             <List disablePadding sx={scribeVisitListSx}>
               {action.map((visit) => (
-                <VisitRow key={visit.id} visit={visit} onSelect={setSelectedVisit} />
+                <VisitRow key={visit.id} visit={visit} onSelect={onSelectedVisitChange} />
               ))}
             </List>
           </CollapsibleGroup>
@@ -446,7 +483,7 @@ export function ScribePanel() {
           >
             <List disablePadding sx={scribeVisitListSx}>
               {completed.map((visit) => (
-                <VisitRow key={visit.id} visit={visit} onSelect={setSelectedVisit} />
+                <VisitRow key={visit.id} visit={visit} onSelect={onSelectedVisitChange} />
               ))}
             </List>
           </CollapsibleGroup>

@@ -11,6 +11,8 @@ import { ScribePanel } from './ScribePanel';
 import { ColorPickerPopover } from './ColorPickerPopover';
 import { SpotlightSearch } from './SpotlightSearch';
 import { useAccent } from '../../theme/AppThemeProvider';
+import type { ActiveScribeRecordingSession } from './scribeRecordingSession';
+import type { MockScribeVisit } from '../../data/mockTodaysVisits';
 
 const PANEL_WIDTH = 280;
 /** Width open/close (canvas + panel move together). */
@@ -27,6 +29,8 @@ export interface AppFrameProps {
 export function AppFrame({ children }: AppFrameProps) {
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [activePanel, setActivePanel] = useState<SidePanel>('none');
+  const activePanelRef = useRef<SidePanel>(activePanel);
+  activePanelRef.current = activePanel;
   /** Keeps panel content mounted while width animates to 0 on close. */
   const [renderedPanel, setRenderedPanel] = useState<SidePanel>('none');
   const [dictateActive, setDictateActive] = useState(false);
@@ -67,6 +71,35 @@ export function AppFrame({ children }: AppFrameProps) {
 
   const scribeOpen = activePanel === 'scribe';
   const aiAssistantOpen = activePanel === 'assistant';
+
+  const [scribeSelectedVisit, setScribeSelectedVisit] = useState<MockScribeVisit | null>(null);
+  const [activeScribeRecording, setActiveScribeRecording] = useState<ActiveScribeRecordingSession | null>(null);
+
+  useEffect(() => {
+    if (!activeScribeRecording || activeScribeRecording.phase !== 'recording') return;
+    const id = window.setInterval(() => {
+      setActiveScribeRecording((s) => {
+        if (!s || s.phase !== 'recording') return s;
+        return { ...s, seconds: s.seconds + 1 };
+      });
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, [activeScribeRecording?.phase, activeScribeRecording?.visit.id]);
+
+  const onRecordingViewVisible =
+    activePanel === 'scribe' && scribeSelectedVisit?.id === activeScribeRecording?.visit.id;
+  /** Live bar while recording or paused, away from the recording UI */
+  const showScribeLiveActivity = Boolean(
+    activeScribeRecording &&
+      (activeScribeRecording.phase === 'recording' || activeScribeRecording.phase === 'paused') &&
+      !onRecordingViewVisible,
+  );
+
+  const openScribeToRecording = () => {
+    if (!activeScribeRecording) return;
+    setActivePanel('scribe');
+    setScribeSelectedVisit(activeScribeRecording.visit);
+  };
 
   return (
     <Box
@@ -113,11 +146,38 @@ export function AppFrame({ children }: AppFrameProps) {
             onDictateClick={() => setDictateActive((a) => !a)}
             scribePanelOpen={scribeOpen}
             onScribeClick={() => {
-              setActivePanel((p) => {
-                if (p === 'scribe') return 'none';
-                return 'scribe';
-              });
+              if (activePanelRef.current === 'scribe') {
+                setActivePanel('none');
+              } else {
+                setScribeSelectedVisit(null);
+                setActivePanel('scribe');
+              }
             }}
+            scribeLiveActivity={
+              showScribeLiveActivity && activeScribeRecording
+                ? {
+                    phase: activeScribeRecording.phase,
+                    seconds: activeScribeRecording.seconds,
+                    onPause: () =>
+                      setActiveScribeRecording((s) => (s ? { ...s, phase: 'paused' } : s)),
+                    onResume: () =>
+                      setActiveScribeRecording((s) => (s ? { ...s, phase: 'recording' } : s)),
+                    onFinish: () => {
+                      setActiveScribeRecording((s) => {
+                        const v = s?.visit;
+                        if (v) {
+                          queueMicrotask(() => {
+                            setActivePanel('scribe');
+                            setScribeSelectedVisit(v);
+                          });
+                        }
+                        return null;
+                      });
+                    },
+                    onNavigateToRecording: openScribeToRecording,
+                  }
+                : null
+            }
             assistantOpen={aiAssistantOpen}
             onAskAthelasClick={() => {
               setActivePanel((p) => {
@@ -177,7 +237,14 @@ export function AppFrame({ children }: AppFrameProps) {
                       {renderedPanel === 'assistant' && (
                         <AIAssistantPanel onClose={() => setActivePanel('none')} />
                       )}
-                      {renderedPanel === 'scribe' && <ScribePanel />}
+                      {renderedPanel === 'scribe' && (
+                        <ScribePanel
+                          selectedVisit={scribeSelectedVisit}
+                          onSelectedVisitChange={setScribeSelectedVisit}
+                          activeRecording={activeScribeRecording}
+                          onActiveRecordingChange={setActiveScribeRecording}
+                        />
+                      )}
                     </Box>
                   </Fade>
                 </SwitchTransition>
