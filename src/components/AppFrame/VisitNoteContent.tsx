@@ -924,8 +924,10 @@ export function ScribePanelContent({
   );
 }
 
-/** Floating toolbar at bottom center of visit note: AI Check, Dictate, Scribe. */
+/** Floating toolbar at bottom center: Scribe, AI Check, Dictate | view/edit toggle. */
 function VisitNoteFloatingToolbar({
+  mode,
+  onModeChange,
   onAICheckClick,
   isAIPanelOpen,
   onScribeClick,
@@ -934,6 +936,8 @@ function VisitNoteFloatingToolbar({
   onScribePause,
   onScribeEndRecording,
 }: {
+  mode: 'edit' | 'read';
+  onModeChange: (next: 'edit' | 'read') => void;
   onAICheckClick?: () => void;
   isAIPanelOpen?: boolean;
   onScribeClick?: () => void;
@@ -1065,6 +1069,8 @@ function VisitNoteFloatingToolbar({
     );
   }
 
+  const modeToggleTrackBg = isDark ? alpha(theme.palette.common.white, 0.08) : theme.palette.grey[200];
+
   return (
     <Box
       sx={{
@@ -1081,93 +1087,146 @@ function VisitNoteFloatingToolbar({
         sx={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: '8px',
+          gap: 1,
           borderRadius: '9999px',
           border: '1px solid',
           borderColor: toolbarBorder,
           bgcolor: toolbarBg,
           boxShadow: `${toolbarShadow}, ${toolbarGlow}`,
-          px: '3px',
-          py: '3px',
+          pl: 0.75,
+          pr: 0.75,
+          py: 0.5,
         }}
       >
-        {/* AI Check */}
-        <Button
-          variant="text"
-          size="small"
-          className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
-          onClick={onAICheckClick}
-          startIcon={<AICheckIcon sx={{ fontSize: 24 }} />}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'nowrap' }}>
+          {/* Scribe (primary, left) */}
+          <Button
+            variant="contained"
+            color="primary"
+            size="small"
+            className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
+            onClick={onScribeClick}
+            startIcon={<ScribeIcon sx={{ fontSize: 20, color: 'primary.contrastText' }} />}
+            sx={{
+              height: 44,
+              minHeight: 44,
+              py: 0,
+              px: 2,
+              borderRadius: '9999px',
+              fontSize: 14,
+              fontWeight: 600,
+              textTransform: 'none',
+              minWidth: 0,
+              boxShadow: 'none',
+              '&:hover': { boxShadow: 'none', bgcolor: 'primary.dark' },
+              ...(isScribePanelOpen && { boxShadow: 'none' }),
+            }}
+          >
+            Scribe
+          </Button>
+
+          {/* AI Check */}
+          <Button
+            variant="text"
+            size="small"
+            className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
+            onClick={onAICheckClick}
+            startIcon={<AICheckIcon sx={{ fontSize: 24, color: 'primary.main' }} />}
+            sx={{
+              height: 44,
+              minHeight: 44,
+              py: 0,
+              px: 1.5,
+              borderRadius: '9999px',
+              color: 'primary.main',
+              fontSize: 14,
+              fontWeight: 500,
+              textTransform: 'none',
+              minWidth: 0,
+              '&:hover': { bgcolor: 'action.hover' },
+              ...(isAIPanelOpen && { bgcolor: alpha(theme.palette.primary.main, 0.12) }),
+            }}
+          >
+            AI Check
+          </Button>
+
+          {/* Dictate */}
+          <Button
+            variant="text"
+            size="small"
+            className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
+            startIcon={<DictateIcon sx={{ fontSize: 20, color: 'primary.main' }} />}
+            sx={{
+              height: 44,
+              minHeight: 44,
+              py: 0,
+              px: 1.5,
+              borderRadius: '9999px',
+              color: 'primary.main',
+              fontSize: 14,
+              fontWeight: 500,
+              textTransform: 'none',
+              minWidth: 0,
+              '&:hover': { bgcolor: 'action.hover' },
+            }}
+          >
+            Dictate
+          </Button>
+        </Box>
+
+        <Box sx={{ width: '1px', height: 24, flexShrink: 0, bgcolor: 'divider', borderRadius: 1 }} role="separator" />
+
+        {/* View (read) / Edit segmented control */}
+        <Box
           sx={{
-            height: 44,
-            minHeight: 44,
-            py: 0,
-            px: 1.5,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.5,
             borderRadius: '9999px',
-            color: 'text.primary',
-            fontSize: 14,
-            fontWeight: 500,
-            textTransform: 'none',
-            minWidth: 0,
-            '&:hover': { bgcolor: 'action.hover' },
-            ...(isAIPanelOpen && { bgcolor: 'action.selected', color: 'primary.main' }),
+            bgcolor: modeToggleTrackBg,
+            p: 0.5,
+            flexShrink: 0,
           }}
         >
-          AI Check
-        </Button>
-
-        <Box sx={{ width: '1px', height: 24, bgcolor: 'divider', borderRadius: 1 }} role="separator" />
-
-        {/* Dictate */}
-        <Button
-          variant="text"
-          size="small"
-          className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
-          startIcon={<DictateIcon sx={{ fontSize: 20 }} />}
-          sx={{
-            height: 44,
-            minHeight: 44,
-            py: 0,
-            px: 1.5,
-            borderRadius: '9999px',
-            color: 'text.primary',
-            fontSize: 14,
-            fontWeight: 500,
-            textTransform: 'none',
-            minWidth: 0,
-            '&:hover': { bgcolor: 'action.hover' },
-          }}
-        >
-          Dictate
-        </Button>
-
-        <Box sx={{ width: '1px', height: 24, bgcolor: 'divider', borderRadius: 1 }} role="separator" />
-
-        {/* Scribe (primary) */}
-        <Button
-          variant="contained"
-          color="primary"
-          size="small"
-          className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
-          onClick={onScribeClick}
-          startIcon={<ScribeIcon sx={{ fontSize: 20 }} />}
-          sx={{
-            height: 44,
-            minHeight: 44,
-            py: 0,
-            px: 2,
-            borderRadius: '9999px',
-            fontSize: 14,
-            fontWeight: 600,
-            textTransform: 'none',
-            minWidth: 0,
-            boxShadow: 'none',
-            '&:hover': { boxShadow: 'none', bgcolor: 'primary.dark' },
-            ...(isScribePanelOpen && { boxShadow: 'none' }),
-          }}
-        >
-          Scribe
-        </Button>
+          <IconButton
+            size="small"
+            onClick={() => onModeChange('read')}
+            aria-label="View note"
+            title="View"
+            className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
+            aria-pressed={mode === 'read'}
+            sx={{
+              width: 36,
+              height: 36,
+              borderRadius: '50%',
+              color: mode === 'read' ? 'primary.main' : 'text.secondary',
+              bgcolor: mode === 'read' ? 'background.paper' : 'transparent',
+              boxShadow: mode === 'read' ? (isDark ? '0 1px 4px rgba(0,0,0,0.45)' : '0 1px 4px rgba(0,0,0,0.12)') : 'none',
+              '&:hover': { bgcolor: mode === 'read' ? 'background.paper' : 'action.hover' },
+            }}
+          >
+            <VisibilityOutlined sx={{ fontSize: 20 }} />
+          </IconButton>
+          <IconButton
+            size="small"
+            onClick={() => onModeChange('edit')}
+            aria-label="Edit note"
+            title="Edit"
+            className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
+            aria-pressed={mode === 'edit'}
+            sx={{
+              width: 36,
+              height: 36,
+              borderRadius: '50%',
+              color: mode === 'edit' ? 'primary.main' : 'text.secondary',
+              bgcolor: mode === 'edit' ? 'background.paper' : 'transparent',
+              boxShadow: mode === 'edit' ? (isDark ? '0 1px 4px rgba(0,0,0,0.45)' : '0 1px 4px rgba(0,0,0,0.12)') : 'none',
+              '&:hover': { bgcolor: mode === 'edit' ? 'background.paper' : 'action.hover' },
+            }}
+          >
+            <EditOutlined sx={{ fontSize: 20 }} />
+          </IconButton>
+        </Box>
       </Box>
     </Box>
   );
@@ -1651,7 +1710,7 @@ export function VisitNoteContent({
             flex: 1,
             minWidth: 0,
             overflow: 'auto',
-            pt: 7,
+            pt: 3,
             pb: 2,
             px: 2,
             bgcolor: 'background.paper',
@@ -1659,61 +1718,6 @@ export function VisitNoteContent({
             flexDirection: 'column',
           }}
         >
-          <Box
-            sx={{
-              position: 'absolute',
-              top: '12px',
-              right: '12px',
-              zIndex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-end',
-              gap: 1.5,
-              pt: 0,
-              pb: 0,
-              pr: 0,
-              bgcolor: 'transparent',
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
-              <IconButton
-              size="small"
-              onClick={() => setMode('edit')}
-              aria-label="Edit note"
-              title="Edit"
-              sx={{
-                width: 28,
-                height: 28,
-                borderRadius: '8px',
-                ...(mode === 'edit' && {
-                  bgcolor: 'action.selected',
-                  color: 'primary.main',
-                  '&:hover': { bgcolor: 'action.selected' },
-                }),
-              }}
-            >
-              <EditOutlined sx={{ fontSize: 18 }} />
-            </IconButton>
-            <IconButton
-              size="small"
-              onClick={() => setMode('read')}
-              aria-label="Read view"
-              title="Read"
-              sx={{
-                width: 28,
-                height: 28,
-                borderRadius: '8px',
-                ...(mode === 'read' && {
-                  bgcolor: 'action.selected',
-                  color: 'primary.main',
-                  '&:hover': { bgcolor: 'action.selected' },
-                }),
-              }}
-            >
-              <VisibilityOutlined sx={{ fontSize: 18 }} />
-            </IconButton>
-            </Box>
-          </Box>
           <Box sx={{ width: '100%', maxWidth: 820, mx: 'auto', display: 'flex', flexDirection: 'column', gap: 3 }}>
             {mode === 'read' ? (
               <>
@@ -2314,6 +2318,8 @@ export function VisitNoteContent({
             )}
           </Box>
           <VisitNoteFloatingToolbar
+            mode={mode}
+            onModeChange={setMode}
             onAICheckClick={onAICheckClick}
             isAIPanelOpen={isAIPanelOpen}
             onScribeClick={onScribeClick}
