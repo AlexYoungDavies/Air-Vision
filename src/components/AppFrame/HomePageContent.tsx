@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
+  Badge,
   Box,
   Button,
   IconButton,
@@ -147,7 +148,7 @@ function PatientsListPanel({
   const theme = useTheme();
   const surfaceOverlay = (theme.palette.background as { surfaceOverlay?: string }).surfaceOverlay;
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', borderRadius: '16px 0 16px 0' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', borderRadius: 0 }}>
       <Box
         sx={{
           bgcolor: surfaceOverlay,
@@ -315,7 +316,7 @@ function NotesListPanel({
   onSelect: (id: string) => void;
 }) {
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', borderRadius: '16px 0 16px 0' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', borderRadius: 0 }}>
       <Box sx={{ px: 1.5, py: 1, borderBottom: 1, borderColor: 'divider' }}>
         <Typography sx={{ fontSize: 12, fontWeight: 600, color: 'text.primary' }}>
           Outstanding visit notes
@@ -351,7 +352,7 @@ function TasksListPanel({
   onSelect: (id: string) => void;
 }) {
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', borderRadius: '16px 0 16px 0' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', borderRadius: 0 }}>
       <Box sx={{ px: 1.5, py: 1, borderBottom: 1, borderColor: 'divider' }}>
         <Typography sx={{ fontSize: 12, fontWeight: 600, color: 'text.primary' }}>
           Outstanding tasks
@@ -390,7 +391,7 @@ function MessagesListPanel({
   onSelect: (id: string) => void;
 }) {
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', borderRadius: '16px 0 16px 0' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', borderRadius: 0 }}>
       <Box sx={{ px: 1.5, py: 1, borderBottom: 1, borderColor: 'divider' }}>
         <Typography sx={{ fontSize: 12, fontWeight: 600, color: 'text.primary' }}>
           Chats
@@ -1020,25 +1021,47 @@ export function HomePageContent() {
           }}
         >
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SIDE_TAB_ITEM_GAP }}>
-            {SIDE_TABS.map(({ id, label, Icon }) => (
-              <Tooltip key={id} title={label}>
-                <IconButton
-                  onClick={() => setActiveTab(id)}
-                  aria-label={label}
-                  sx={{
-                    width: SIDE_TAB_ICON_CONTAINER,
-                    height: SIDE_TAB_ICON_CONTAINER,
-                    color: activeTab === id ? 'primary.main' : 'text.primary',
-                    borderRadius: 1,
-                    '&:hover': {
-                      bgcolor: 'action.hover',
-                    },
-                  }}
-                >
-                  <Icon sx={{ fontSize: SIDE_TAB_ICON_SIZE }} />
-                </IconButton>
-              </Tooltip>
-            ))}
+            {SIDE_TABS.map(({ id, label, Icon }) => {
+              const tabCounts: Record<HomeViewTab, number> = {
+                patients: stats.patientsToday,
+                notes: stats.notesToSign,
+                tasks: stats.tasksOutstanding,
+                messages: stats.messagesUnread,
+              };
+              return (
+                <Tooltip key={id} title={label}>
+                  <IconButton
+                    onClick={() => setActiveTab(id)}
+                    aria-label={label}
+                    sx={{
+                      width: SIDE_TAB_ICON_CONTAINER,
+                      height: SIDE_TAB_ICON_CONTAINER,
+                      color: activeTab === id ? 'primary.main' : 'text.primary',
+                      borderRadius: 1,
+                      '&:hover': {
+                        bgcolor: 'action.hover',
+                      },
+                    }}
+                  >
+                    <Badge
+                      badgeContent={tabCounts[id]}
+                      color="primary"
+                      max={99}
+                      sx={{
+                        '& .MuiBadge-badge': {
+                          fontSize: 10,
+                          height: 16,
+                          minWidth: 16,
+                          padding: '0 3px',
+                        },
+                      }}
+                    >
+                      <Icon sx={{ fontSize: SIDE_TAB_ICON_SIZE }} />
+                    </Badge>
+                  </IconButton>
+                </Tooltip>
+              );
+            })}
           </Box>
           <Box sx={{ flex: 1, minHeight: 16 }} />
           <IconButton
@@ -1075,7 +1098,7 @@ export function HomePageContent() {
               flexShrink: 0,
               display: 'flex',
               flexDirection: 'column',
-              borderRadius: '0 16px 16px 0',
+              borderRadius: '0 0 16px 0',
               overflow: 'hidden',
               boxShadow: 'none',
               bgcolor: 'background.paper',
@@ -1111,6 +1134,10 @@ export function HomePageContent() {
               boxShadow: 'none',
               zIndex: 10,
               bgcolor: 'background.paper',
+              borderTop: 'none',
+              borderRight: 'none',
+              borderBottom: 'none',
+              borderLeft: '1px solid rgba(0, 0, 0, 0.1)',
             }}
           >
             {activeTab === 'patients' && <PatientVisitDetailPanel patient={selectedPatient} />}
