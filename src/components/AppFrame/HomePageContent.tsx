@@ -1000,7 +1000,7 @@ export function HomePageContent() {
           flex: 1,
           minHeight: 0,
           alignItems: 'stretch',
-          overflow: 'visible',
+          overflow: 'hidden',
           borderRadius: '16px',
           boxShadow: (theme) => theme.shadows[4],
         }}
@@ -1063,7 +1063,7 @@ export function HomePageContent() {
             flex: 1,
             minWidth: 0,
             display: 'flex',
-            gap: 0.75,
+            gap: 0,
             alignItems: 'stretch',
             overflow: 'hidden',
           }}
@@ -1079,6 +1079,10 @@ export function HomePageContent() {
               overflow: 'hidden',
               boxShadow: 'none',
               bgcolor: 'background.paper',
+              borderTop: 'none',
+              borderRight: 'none',
+              borderBottom: 'none',
+              borderLeft: '1px solid rgba(0, 0, 0, 0.1)',
             }}
           >
             {activeTab === 'patients' && (
@@ -1102,7 +1106,7 @@ export function HomePageContent() {
               minWidth: 0,
               display: 'flex',
               flexDirection: 'column',
-              borderRadius: 2,
+              borderRadius: 0,
               overflow: 'hidden',
               boxShadow: 'none',
               zIndex: 10,
