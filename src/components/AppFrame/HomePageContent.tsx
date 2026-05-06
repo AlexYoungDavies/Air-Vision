@@ -1098,7 +1098,7 @@ export function HomePageContent() {
               flexShrink: 0,
               display: 'flex',
               flexDirection: 'column',
-              borderRadius: '0 0 16px 0',
+              borderRadius: 0,
               overflow: 'hidden',
               boxShadow: 'none',
               bgcolor: 'background.paper',

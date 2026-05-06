@@ -199,7 +199,7 @@ export function ScribeAppointmentView({
               fullWidth
               startIcon={<MicrophoneIcon />}
               onClick={onBeginRecording}
-              sx={{ textTransform: 'none', fontWeight: 600, py: 1.25, borderRadius: 1.5 }}
+              sx={{ textTransform: 'none', fontWeight: 600, py: 1.25, borderRadius: '8px' }}
             >
               Begin Recording
             </Button>
@@ -214,7 +214,7 @@ export function ScribeAppointmentView({
                 fullWidth
                 startIcon={<PauseRecordingIcon />}
                 onClick={onPauseRecording}
-                sx={{ textTransform: 'none', fontWeight: 600, py: 1.25, borderRadius: 1.5 }}
+                sx={{ textTransform: 'none', fontWeight: 600, py: 1.25, borderRadius: '8px' }}
               >
                 Pause
               </Button>
@@ -225,7 +225,7 @@ export function ScribeAppointmentView({
                 fullWidth
                 startIcon={<StopRecordingIcon />}
                 onClick={onFinishRecording}
-                sx={{ textTransform: 'none', fontWeight: 600, py: 1.25, borderRadius: 1.5 }}
+                sx={{ textTransform: 'none', fontWeight: 600, py: 1.25, borderRadius: '8px' }}
               >
                 Finish
               </Button>
@@ -242,7 +242,7 @@ export function ScribeAppointmentView({
                   fullWidth
                   startIcon={<PlayRecordingIcon />}
                   onClick={onResumeRecording}
-                  sx={{ textTransform: 'none', fontWeight: 600, py: 1.25, borderRadius: 1.5, flex: 1 }}
+                  sx={{ textTransform: 'none', fontWeight: 600, py: 1.25, borderRadius: '8px', flex: 1 }}
                 >
                   Resume
                 </Button>
@@ -253,7 +253,7 @@ export function ScribeAppointmentView({
                   fullWidth
                   startIcon={<StopRecordingIcon />}
                   onClick={onFinishRecording}
-                  sx={{ textTransform: 'none', fontWeight: 600, py: 1.25, borderRadius: 1.5, flex: 1 }}
+                  sx={{ textTransform: 'none', fontWeight: 600, py: 1.25, borderRadius: '8px', flex: 1 }}
                 >
                   Finish
                 </Button>
