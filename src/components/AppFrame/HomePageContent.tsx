@@ -1346,7 +1346,7 @@ export function HomePageContent() {
               }}
             >
               <Icon sx={{ fontSize: 18 }} />
-              <Typography sx={{ fontSize: 13, fontWeight: isActive ? 600 : 500, color: 'inherit' }}>
+              <Typography sx={{ fontSize: 13, fontWeight: 500, color: 'inherit' }}>
                 {label}
               </Typography>
               <Box
