@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import {
-  Badge,
   Box,
   Button,
   IconButton,
@@ -107,18 +106,12 @@ function SettingsNavIcon(props: React.ComponentProps<typeof SvgIcon>) {
 }
 
 const ICON_SIZE = 18;
-const SIDE_TAB_WIDTH = 56;
-
-const SIDE_TAB_PADDING = 1; // 8px
-const SIDE_TAB_ICON_CONTAINER = 40; // 40x40px
-const SIDE_TAB_ICON_SIZE = 22; // 22x22px
-const SIDE_TAB_ITEM_GAP = '12px';
 
 type HomeViewTab = 'patients' | 'notes' | 'tasks' | 'messages';
 
 const SIDE_TABS: { id: HomeViewTab; label: string; Icon: typeof PatientsNavIcon }[] = [
-  { id: 'patients', label: 'Patients', Icon: PatientsNavIcon },
-  { id: 'notes', label: 'Notes', Icon: SignatureAltIcon },
+  { id: 'patients', label: 'Visits', Icon: PatientsNavIcon },
+  { id: 'notes', label: 'Notes to Sign', Icon: SignatureAltIcon },
   { id: 'tasks', label: 'Tasks', Icon: CheckListIcon },
   { id: 'messages', label: 'Messages', Icon: MessagesNavIcon },
 ];
@@ -965,6 +958,13 @@ export function HomePageContent() {
   const selectedPatient = selectedPatientId ? TODAYS_PATIENTS.find((p) => p.id === selectedPatientId) ?? null : null;
   const stats = getDaySummaryStats();
 
+  const tabCounts: Record<HomeViewTab, number> = {
+    patients: stats.patientsToday,
+    notes: stats.notesToSign,
+    tasks: stats.tasksOutstanding,
+    messages: stats.messagesUnread,
+  };
+
   return (
     <Box
       sx={{
@@ -976,121 +976,100 @@ export function HomePageContent() {
         },
         display: 'flex',
         flexDirection: 'column',
-        gap: 3,
+        gap: 1.5,
         pt: 3,
         pb: 8,
         px: 8,
       }}
     >
-      <Box sx={{ maxWidth: 578 }}>
+      {/* Page header: greeting only */}
+      <Box>
         <Typography
           variant="h2"
-          sx={{ fontSize: 26.08, fontWeight: 500, lineHeight: 38 / 26.08, color: 'text.primary', mb: 0.5 }}
+          sx={{ fontSize: 26.08, fontWeight: 500, lineHeight: 38 / 26.08, color: 'text.primary' }}
         >
           Morning, Dr. Garcia.
         </Typography>
-        <Typography sx={{ fontSize: 14, lineHeight: 22 / 14, color: 'text.primary' }}>
-          Today you have {stats.patientsToday} patients. You also have {stats.notesToSign} notes to sign and {stats.tasksOutstanding} outstanding tasks.
-        </Typography>
       </Box>
 
+      {/* Tab bar — sits above the card on the page background */}
       <Box
         sx={{
           display: 'flex',
-          gap: 0,
+          alignItems: 'center',
+          mt: 0,
+          mb: -0.5,
+          mx: 0,
+        }}
+      >
+        {SIDE_TABS.map(({ id, label, Icon }) => {
+          const isActive = activeTab === id;
+          const count = tabCounts[id];
+          return (
+            <Button
+              key={id}
+              className="visit-note-button-exempt"
+              onClick={() => setActiveTab(id)}
+              aria-label={label}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.75,
+                px: 1.5,
+                py: 1,
+                height: 'auto',
+                minHeight: 0,
+                color: isActive ? 'primary.main' : 'text.secondary',
+                bgcolor: isActive ? 'primary.light' : 'transparent',
+                borderRadius: '10px',
+                textTransform: 'none',
+                '&:hover': { bgcolor: isActive ? 'primary.light' : 'rgba(0,0,0,0.04)' },
+              }}
+            >
+              <Icon sx={{ fontSize: 18 }} />
+              <Typography sx={{ fontSize: 13, fontWeight: isActive ? 600 : 500, color: 'inherit' }}>
+                {label}
+              </Typography>
+              <Box
+                sx={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minWidth: 18,
+                  height: 18,
+                  px: isActive ? '6px' : 0,
+                  bgcolor: isActive ? 'primary.main' : 'transparent',
+                  color: isActive ? 'common.white' : 'text.secondary',
+                  borderRadius: '9px',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  lineHeight: 1,
+                }}
+              >
+                {count}
+              </Box>
+            </Button>
+          );
+        })}
+
+        <Box sx={{ flex: 1 }} />
+
+      </Box>
+
+      {/* Main card: content only */}
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
           flex: 1,
           minHeight: 0,
-          alignItems: 'stretch',
           overflow: 'hidden',
           borderRadius: '16px',
           boxShadow: (theme) => theme.shadows[4],
         }}
       >
-        {/* Side tab: icons only, 56px wide, 40x40 containers, 8px padding, settings at bottom */}
-        <Box
-          sx={{
-            width: SIDE_TAB_WIDTH,
-            flexShrink: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            py: SIDE_TAB_PADDING,
-            px: SIDE_TAB_PADDING,
-            bgcolor: (theme) => (theme.palette.background as { surfaceOverlay?: string }).surfaceOverlay,
-            borderRadius: '16px 0 0 16px',
-          }}
-        >
-          <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: SIDE_TAB_ITEM_GAP }}>
-            {SIDE_TABS.map(({ id, label, Icon }) => {
-              const tabCounts: Record<HomeViewTab, number> = {
-                patients: stats.patientsToday,
-                notes: stats.notesToSign,
-                tasks: stats.tasksOutstanding,
-                messages: stats.messagesUnread,
-              };
-              return (
-                <Tooltip key={id} title={label}>
-                  <IconButton
-                    onClick={() => setActiveTab(id)}
-                    aria-label={label}
-                    sx={{
-                      width: SIDE_TAB_ICON_CONTAINER,
-                      height: SIDE_TAB_ICON_CONTAINER,
-                      color: activeTab === id ? 'primary.main' : 'text.primary',
-                      borderRadius: 1,
-                      '&:hover': {
-                        bgcolor: 'action.hover',
-                      },
-                    }}
-                  >
-                    <Badge
-                      badgeContent={tabCounts[id]}
-                      color="primary"
-                      max={99}
-                      sx={{
-                        '& .MuiBadge-badge': {
-                          fontSize: 10,
-                          height: 16,
-                          minWidth: 16,
-                          padding: '0 3px',
-                        },
-                      }}
-                    >
-                      <Icon sx={{ fontSize: SIDE_TAB_ICON_SIZE }} />
-                    </Badge>
-                  </IconButton>
-                </Tooltip>
-              );
-            })}
-          </Box>
-          <Box sx={{ flex: 1, minHeight: 16 }} />
-          <IconButton
-            aria-label="Settings"
-            sx={{
-              width: SIDE_TAB_ICON_CONTAINER,
-              height: SIDE_TAB_ICON_CONTAINER,
-              color: 'text.primary',
-              borderRadius: 1,
-              '&:hover': {
-                bgcolor: 'action.hover',
-              },
-            }}
-          >
-            <SettingsNavIcon sx={{ fontSize: SIDE_TAB_ICON_SIZE }} />
-          </IconButton>
-        </Box>
-
-        {/* Container: left (list) + right (detail) panels */}
-        <Box
-          sx={{
-            flex: 1,
-            minWidth: 0,
-            display: 'flex',
-            gap: 0,
-            alignItems: 'stretch',
-            overflow: 'hidden',
-          }}
-        >
+        {/* Content row: list panel + detail panel */}
+        <Box sx={{ flex: 1, minHeight: 0, display: 'flex', overflow: 'hidden' }}>
           {/* Left panel: list content for current tab */}
           <Box
             sx={{
@@ -1098,14 +1077,8 @@ export function HomePageContent() {
               flexShrink: 0,
               display: 'flex',
               flexDirection: 'column',
-              borderRadius: 0,
               overflow: 'hidden',
-              boxShadow: 'none',
               bgcolor: 'background.paper',
-              borderTop: 'none',
-              borderRight: 'none',
-              borderBottom: 'none',
-              borderLeft: '1px solid rgba(0, 0, 0, 0.1)',
             }}
           >
             {activeTab === 'patients' && (
@@ -1122,21 +1095,15 @@ export function HomePageContent() {
             )}
           </Box>
 
-          {/* Right panel: detail content for current tab (no tabs inside) */}
+          {/* Right panel: detail content for current tab */}
           <Box
             sx={{
               flex: 1,
               minWidth: 0,
               display: 'flex',
               flexDirection: 'column',
-              borderRadius: 0,
               overflow: 'hidden',
-              boxShadow: 'none',
-              zIndex: 10,
               bgcolor: 'background.paper',
-              borderTop: 'none',
-              borderRight: 'none',
-              borderBottom: 'none',
               borderLeft: '1px solid rgba(0, 0, 0, 0.1)',
             }}
           >
