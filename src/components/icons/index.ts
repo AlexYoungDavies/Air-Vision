@@ -1,3 +1,4 @@
+export { AICheckIcon } from './AICheckIcon';
 export { SearchIcon } from './SearchIcon';
 export { UploadIcon } from './UploadIcon';
 export { MicrophoneIcon } from './MicrophoneIcon';

@@ -97,7 +97,7 @@ export function getReferralsAndPriorAuthsForPatient(patientId: string): Referral
 /** Full contact list per patient (5 contacts). One spouse = emergency, one Legal = case representative. */
 const CONTACTS_BY_PATIENT: Record<string, Omit<Contact, 'isEmergency'>[]> = {
   '1': [
-    { name: 'Sarah Johnson', phone: '(555) 201-3401', email: 'sarah.johnson@email.com', relationship: 'Spouse', type: 'Emergency' },
+    { name: 'Michelle Chen', phone: '(555) 201-3401', email: 'michelle.chen@email.com', relationship: 'Spouse', type: 'Emergency' },
     { name: 'David Martinez', phone: '(555) 201-3402', email: 'david.martinez@law.com', relationship: 'Attorney', type: 'Legal' },
     { name: 'Robert Johnson', phone: '(555) 201-3403', email: 'robert.johnson@email.com', relationship: 'Father', type: 'Family' },
     { name: 'Mary Johnson', phone: '(555) 201-3404', email: 'mary.johnson@email.com', relationship: 'Mother', type: 'Family' },

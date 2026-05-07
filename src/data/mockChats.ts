@@ -119,7 +119,7 @@ export const MOCK_CHAT_MESSAGES: Record<string, ChatMessage[]> = {
     { id: 'm2', senderName: 'You', senderRole: 'provider', content: 'Yes, confirmed. Thanks for the heads up.', time: '8:15 AM', isFromCurrentUser: true },
   ],
   'chat-4': [
-    { id: 'm1', senderName: 'Dr. James Wilson', senderRole: 'provider', content: 'Re: Sarah Johnson follow-up — labs are back. Everything looks good, no changes needed.', time: '4:28 PM', isFromCurrentUser: false },
+    { id: 'm1', senderName: 'Dr. James Wilson', senderRole: 'provider', content: 'Re: Michelle Chen follow-up — labs are back. Everything looks good, no changes needed.', time: '4:28 PM', isFromCurrentUser: false },
     { id: 'm2', senderName: 'You', senderRole: 'provider', content: 'Got it, I’ll note it in the chart. Thanks.', time: '4:30 PM', isFromCurrentUser: true },
     { id: 'm3', senderName: 'Dr. James Wilson', senderRole: 'provider', content: 'One more thing — did you want me to send the imaging report to her PCP as well?', time: '4:32 PM', isFromCurrentUser: false },
     { id: 'm4', senderName: 'You', senderRole: 'provider', content: 'Yes please, that would be helpful.', time: '4:35 PM', isFromCurrentUser: true },

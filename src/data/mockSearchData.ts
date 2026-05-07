@@ -4,7 +4,7 @@
  */
 
 export const SEARCHABLE_NOTES = [
-  { id: 'n1', patient: 'Sarah Johnson', date: 'Aug 8', template: 'Office Visit' },
+  { id: 'n1', patient: 'Michelle Chen', date: 'Aug 8', template: 'Office Visit' },
   { id: 'n2', patient: 'Michael Chen', date: 'Aug 8', template: 'Follow-up' },
   { id: 'n3', patient: 'Emily Davis', date: 'Aug 7', template: 'Annual Physical' },
 ];

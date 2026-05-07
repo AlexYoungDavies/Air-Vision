@@ -12,7 +12,17 @@ import {
   ListItemText,
   Tooltip,
   useTheme,
+  Avatar,
+  Tabs,
+  Tab,
+  Stack,
+  Table,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
 } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import ChevronLeftOutlined from '@mui/icons-material/ChevronLeftOutlined';
 import ChevronRightOutlined from '@mui/icons-material/ChevronRightOutlined';
 import ScienceOutlined from '@mui/icons-material/ScienceOutlined';
@@ -20,14 +30,17 @@ import ImageOutlined from '@mui/icons-material/ImageOutlined';
 import ContentPasteOutlined from '@mui/icons-material/ContentPasteOutlined';
 import PersonOutlined from '@mui/icons-material/PersonOutlined';
 import TaskAltOutlined from '@mui/icons-material/TaskAltOutlined';
+import AssignmentOutlined from '@mui/icons-material/AssignmentOutlined';
+import AssignmentLateOutlined from '@mui/icons-material/AssignmentLateOutlined';
 import { Link, useNavigate } from 'react-router-dom';
 import { MOCK_PATIENTS, TODAYS_PATIENTS, type Patient } from '../../data/mockPatients';
 import { getAppointmentsForPatient, type Appointment } from '../../data/mockAppointments';
 import { Callout } from './Callout';
-import { LabelValue } from './LabelValue';
-import { getPatientVisitPanelData } from '../../data/mockPatientVisitPanel';
+import { getPatientVisitPanelData, type ProfileInfoRow } from '../../data/mockPatientVisitPanel';
 import { MOCK_CHATS, getChatById, getMessagesForChat } from '../../data/mockChats';
 import { VisitNoteContent } from './VisitNoteContent';
+import { ThingsToReviewAlertItem } from './ThingsToReviewAlertItem';
+import { AICheckIcon } from '../icons';
 
 // Icons matching global nav: Patients (person/group), Messages (chat). Custom: Notes (signature), Tasks (checklist). Settings at bottom.
 function PatientsNavIcon(props: React.ComponentProps<typeof SvgIcon>) {
@@ -88,23 +101,6 @@ function MessagesNavIcon(props: React.ComponentProps<typeof SvgIcon>) {
   );
 }
 
-function SettingsNavIcon(props: React.ComponentProps<typeof SvgIcon>) {
-  return (
-    <SvgIcon {...props} viewBox="0 0 24 24">
-      <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M12 14.5C13.3807 14.5 14.5 13.3807 14.5 12C14.5 10.6193 13.3807 9.5 12 9.5C10.6193 9.5 9.5 10.6193 9.5 12C9.5 13.3807 10.6193 14.5 12 14.5ZM12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16Z"
-      />
-      <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M9.37139 3.31098C10.0302 2.26968 10.7678 1.25 12 1.25C13.2322 1.25 13.9698 2.26968 14.6286 3.31098C14.7897 3.56566 15.0197 3.77703 15.358 3.91776C15.6897 4.05571 15.9973 4.06798 16.2879 4.00176C17.4894 3.72805 18.7301 3.52735 19.6014 4.39865C20.4727 5.26996 20.272 6.51068 19.9983 7.71211C19.932 8.00278 19.9443 8.31033 20.0823 8.642C20.223 8.98034 20.4343 9.21027 20.689 9.3714C21.7303 10.0302 22.75 10.7678 22.75 12C22.75 13.2322 21.7303 13.9698 20.689 14.6286C20.4343 14.7898 20.223 15.0197 20.0822 15.358C19.9443 15.6897 19.932 15.9973 19.9982 16.2879C20.2719 17.4894 20.4727 18.7301 19.6013 19.6014C18.73 20.4727 17.4893 20.272 16.2879 19.9983C15.9972 19.932 15.6897 19.9443 15.358 20.0823C15.0197 20.223 14.7897 20.4343 14.6286 20.689C13.9698 21.7303 13.2322 22.75 12 22.75C10.7678 22.75 10.0302 21.7303 9.3714 20.689C9.21027 20.4343 8.98034 20.223 8.642 20.0823C8.31033 19.9443 8.00278 19.932 7.71211 19.9983C6.51068 20.272 5.26996 20.4727 4.39865 19.6014C3.52735 18.7301 3.72805 17.4894 4.00176 16.2879C4.06798 15.9973 4.05571 15.6897 3.91776 15.358C3.77703 15.0197 3.56566 14.7898 3.31098 14.6286C2.26968 13.9698 1.25 13.2322 1.25 12C1.25 10.7678 2.26968 10.0302 3.31098 9.37139C3.56566 9.21026 3.77703 8.98033 3.91775 8.64198C4.0557 8.3103 4.06797 8.00273 4.00173 7.71204C3.72798 6.51063 3.52729 5.2699 4.3986 4.39859C5.2699 3.52729 6.51063 3.72797 7.71205 4.00173C8.00273 4.06797 8.3103 4.0557 8.64198 3.91775C8.98033 3.77702 9.21026 3.56566 9.37139 3.31098ZM12 2.75C11.501 2.75 11.092 3.11882 10.9082 3.58265C10.6044 4.34898 10.0573 4.95368 9.21802 5.30273C8.38072 5.65098 7.57167 5.60522 6.81937 5.27732C6.36198 5.07795 5.81207 5.10644 5.45926 5.45925C5.10644 5.81207 5.07796 6.36197 5.27732 6.81937C5.60522 7.57166 5.65098 8.38072 5.30273 9.21802C4.95368 10.0573 4.34898 10.6044 3.58265 10.9082C3.11882 11.092 2.75 11.501 2.75 12C2.75 12.499 3.11882 12.908 3.58265 13.0918C4.34898 13.3956 4.95369 13.9428 5.30274 14.782C5.65098 15.6193 5.60525 16.4283 5.27737 17.1806C5.07802 17.638 5.1065 18.1879 5.45931 18.5407C5.81213 18.8936 6.36204 18.922 6.81943 18.7227C7.57171 18.3948 8.38075 18.349 9.21803 18.6973C10.0573 19.0463 10.6044 19.651 10.9082 20.4173C11.092 20.8812 11.501 21.25 12 21.25C12.499 21.25 12.908 20.8812 13.0918 20.4173C13.3956 19.651 13.9427 19.0463 14.782 18.6973C15.6193 18.349 16.4283 18.3948 17.1806 18.7227C17.638 18.922 18.1879 18.8936 18.5407 18.5407C18.8935 18.1879 18.922 17.638 18.7226 17.1806C18.3947 16.4283 18.349 15.6193 18.6973 14.782C19.0463 13.9428 19.651 13.3956 20.4173 13.0918C20.8812 12.908 21.25 12.499 21.25 12C21.25 11.501 20.8812 11.092 20.4173 10.9082C19.651 10.6044 19.0463 10.0573 18.6973 9.21803C18.349 8.38075 18.3948 7.57171 18.7227 6.81943C18.922 6.36204 18.8936 5.81213 18.5407 5.45931C18.1879 5.1065 17.638 5.07802 17.1806 5.27737C16.4283 5.60525 15.6193 5.65098 14.782 5.30274C13.9428 4.95369 13.3956 4.34898 13.0918 3.58265C12.908 3.11882 12.499 2.75 12 2.75Z"
-      />
-    </SvgIcon>
-  );
-}
-
 const ICON_SIZE = 18;
 
 type HomeViewTab = 'patients' | 'notes' | 'tasks' | 'messages';
@@ -117,7 +113,7 @@ const SIDE_TABS: { id: HomeViewTab; label: string; Icon: typeof PatientsNavIcon 
 ];
 
 const MOCK_NOTES = [
-  { id: 'n1', patient: 'Sarah Johnson', date: 'Aug 8', template: 'Office Visit' },
+  { id: 'n1', patient: 'Michelle Chen', date: 'Aug 8', template: 'Office Visit' },
   { id: 'n2', patient: 'Michael Chen', date: 'Aug 8', template: 'Follow-up' },
   { id: 'n3', patient: 'Emily Davis', date: 'Aug 7', template: 'Annual Physical' },
 ];
@@ -474,10 +470,129 @@ const PANEL_SUBSECTION = {
   borderColor: 'divider',
   '&:last-of-type': { borderBottom: 'none' },
 };
-const PANEL_SUB_LABEL = { fontSize: 11, fontWeight: 600, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5, mb: 0.5 };
 const PANEL_BODY = { fontSize: 12, color: 'text.primary', lineHeight: 1.5 };
 
 /** Day summary stats when no patient is selected. Derived from mock data. */
+function formatPatientDob(mmDdYyyy: string): string {
+  const parts = mmDdYyyy.split('/');
+  if (parts.length !== 3) return mmDdYyyy;
+  const month = Number(parts[0]);
+  const day = Number(parts[1]);
+  const year = Number(parts[2]);
+  if (!month || !day || !year) return mmDdYyyy;
+  const dt = new Date(year, month - 1, day);
+  return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+/** Column headers per Additional Patient Information tab (order matches ADDITIONAL_INFO_TABS). */
+const ADDITIONAL_INFO_TABLE_HEADERS = [
+  ['Date', 'Visit', 'Provider'],
+  ['Document', 'Status'],
+  ['Vaccine', 'Date given'],
+  ['Lab / order', 'Status'],
+  ['Medication', 'Instructions'],
+] as const;
+
+function buildAdditionalInfoBodyRows(tabIndex: number, rows: ProfileInfoRow[]): string[][] {
+  if (tabIndex === 0) {
+    return rows.map((r) => {
+      const sec = r.secondary?.trim() ?? '';
+      const sep = ' · ';
+      const i = sec.indexOf(sep);
+      if (i === -1) return [sec || '—', r.primary, '—'];
+      return [sec.slice(0, i).trim(), r.primary, sec.slice(i + sep.length).trim() || '—'];
+    });
+  }
+  return rows.map((r) => [r.primary, r.secondary ?? '—']);
+}
+
+const additionalInfoTableShellSx = {
+  border: '1px solid',
+  borderColor: 'divider',
+  borderRadius: '12px',
+  overflow: 'hidden',
+  bgcolor: 'background.paper',
+} as const;
+
+const additionalInfoHeaderCellSx = {
+  borderBottom: '1px solid',
+  borderColor: 'divider',
+  borderLeft: 'none',
+  borderRight: 'none',
+  py: 1.5,
+  px: 2,
+  fontSize: 12,
+  fontWeight: 600,
+  color: 'text.primary',
+  lineHeight: 1.4,
+  bgcolor: 'grey.50',
+} as const;
+
+const additionalInfoBodyCellSx = {
+  borderBottom: '1px solid',
+  borderColor: 'divider',
+  borderLeft: 'none',
+  borderRight: 'none',
+  py: 1.5,
+  px: 2,
+  fontSize: 13,
+  fontWeight: 400,
+  color: 'text.secondary',
+  lineHeight: 1.45,
+  verticalAlign: 'top',
+} as const;
+
+function AdditionalInfoDataTable({ columns, rows }: { columns: readonly string[]; rows: string[][] }) {
+  const colCount = columns.length;
+  return (
+    <Box sx={additionalInfoTableShellSx}>
+      <Table
+        size="small"
+        sx={{
+          width: '100%',
+          borderCollapse: 'collapse',
+          tableLayout: 'fixed',
+        }}
+      >
+        <TableHead>
+          <TableRow>
+            {columns.map((label) => (
+              <TableCell key={label} component="th" scope="col" sx={additionalInfoHeaderCellSx}>
+                {label}
+              </TableCell>
+            ))}
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {rows.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={colCount} sx={{ ...additionalInfoBodyCellSx, borderBottom: 'none' }}>
+                No items to show.
+              </TableCell>
+            </TableRow>
+          ) : (
+            rows.map((cells, i) => (
+              <TableRow
+                key={`row-${i}`}
+                sx={{
+                  bgcolor: 'background.paper',
+                  '&:last-of-type td': { borderBottom: 'none' },
+                }}
+              >
+                {cells.map((cell, j) => (
+                  <TableCell key={j} sx={additionalInfoBodyCellSx}>
+                    {cell}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))
+          )}
+        </TableBody>
+      </Table>
+    </Box>
+  );
+}
+
 function getDaySummaryStats() {
   const patientsToday = TODAYS_PATIENTS.length;
   const newLabsImages = TODAYS_PATIENTS.reduce(
@@ -531,175 +646,378 @@ function DaySummaryPanel() {
   );
 }
 
+const ADDITIONAL_INFO_TABS = ['Visit history', 'Files', 'Immunizations', 'Labs', 'Medications'] as const;
+
+/** Pre-visit panel: inner column max width (px). */
+const PRE_VISIT_CONTENT_MAX_WIDTH = 760;
+
+const visitDetailBlockSx = {
+  width: '100%',
+  pt: 2,
+  px: 3,
+  pb: 5,
+  borderBottom: '1px solid',
+  borderColor: 'divider',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'flex-start',
+  boxSizing: 'border-box',
+} as const;
+
+const visitDetailInnerSx = {
+  width: '100%',
+  maxWidth: PRE_VISIT_CONTENT_MAX_WIDTH,
+  minWidth: 0,
+} as const;
+
+/** Vertical rhythm inside the Pre-visit AI Summary content (24px). */
+const PRE_VISIT_AI_SUMMARY_STACK_GAP = 3;
+
+const preVisitAiBlockHeadingSx = {
+  fontSize: 18,
+  fontWeight: 500,
+  lineHeight: 1.3,
+  letterSpacing: -0.01,
+} as const;
+
+const preVisitAiSubsectionTitleSx = {
+  fontSize: 13,
+  fontWeight: 600,
+  color: 'text.primary',
+  mb: 1,
+} as const;
+
+/** Category label inside each Things to Review grid column */
+const thingsToReviewTopicSx = {
+  ...preVisitAiSubsectionTitleSx,
+  mb: 1.25,
+} as const;
+
 function PatientVisitDetailPanel({ patient }: { patient: Patient | null }) {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const [additionalTab, setAdditionalTab] = useState(0);
+
+  useEffect(() => {
+    if (patient) setAdditionalTab(0);
+  }, [patient?.id]);
+
   if (!patient) {
     return <DaySummaryPanel />;
   }
   const data = getPatientVisitPanelData(patient);
+
   return (
-    <Box sx={{ p: 2, overflow: 'auto', height: '100%' }}>
-      {/* Header row: name + visit info (left), actions (right) */}
+    <Box
+      sx={{
+        height: '100%',
+        minHeight: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}
+    >
+      {/* (1) Header — full width, stays visible */}
       <Box
         sx={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          justifyContent: 'space-between',
-          gap: 1.5,
-          mb: 2,
+          flexShrink: 0,
+          width: '100%',
+          boxSizing: 'border-box',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
         }}
       >
-        <Box sx={{ minWidth: 0, flex: 1 }}>
-          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 0.5, fontSize: 15 }}>
-            {patient.fullName}
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>
-            {patient.reasonForVisit ?? patient.case} · {patient.appointmentTime ?? '—'}
-          </Typography>
-        </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexShrink: 0 }}>
-          <Button
-            component={Link}
-            to={`/patients/${patient.id}`}
-            variant="text"
-            size="small"
-            startIcon={<PersonOutlined sx={{ fontSize: 18 }} />}
-            sx={{ textTransform: 'none', fontWeight: 500 }}
+        <Box
+          sx={{
+            width: '100%',
+            maxWidth: 'none',
+            minWidth: 0,
+            boxSizing: 'border-box',
+            display: 'flex',
+            flexDirection: 'row',
+            gap: '2px',
+            pt: '12px',
+            pb: '12px',
+            pl: '24px',
+            pr: '24px',
+          }}
+        >
+          <Box sx={{ display: 'flex', gap: 1.5, minWidth: 0, flex: 1 }}>
+            <Avatar src={patient.picture} alt="" sx={{ width: 44, height: 44, flexShrink: 0 }} />
+            <Box sx={{ minWidth: 0 }}>
+              <Typography sx={{ fontWeight: 600, fontSize: 16, lineHeight: 1.3, color: 'text.primary' }}>
+                {patient.fullName}, {patient.age}
+              </Typography>
+              <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.5 }}>
+                {formatPatientDob(patient.dateOfBirth)} · {patient.gender}
+                {data.lastSeenLabel !== '—' ? ` · Last seen ${data.lastSeenLabel}` : ''}
+              </Typography>
+            </Box>
+          </Box>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.75,
+              flexShrink: 0,
+              flexWrap: 'wrap',
+              width: 'fit-content',
+              justifyContent: 'flex-end',
+            }}
           >
-            Full Profile
-          </Button>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<ContentPasteOutlined sx={{ fontSize: 18, color: 'primary.main' }} />}
-            onClick={() => navigate(`/patients/${patient.id}?openNote=1`)}
-            sx={{ textTransform: 'none', fontWeight: 500 }}
-          >
-            Open Note
-          </Button>
-        </Box>
-      </Box>
-
-      {/* 1. Patient Summary */}
-      <Box sx={PANEL_SECTION}>
-        <Typography component="div" sx={PANEL_SECTION_HEADER}>
-          Patient Summary
-        </Typography>
-        <Box sx={PANEL_SUBSECTION}>
-          <Typography sx={PANEL_SUB_LABEL}>Detailed demo</Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
-            {data.demographics.map((d) => (
-              <LabelValue key={d.label} label={d.label} value={d.value} />
-            ))}
-          </Box>
-        </Box>
-        <Box sx={PANEL_SUBSECTION}>
-          <Typography sx={PANEL_SUB_LABEL}>Reason for visiting</Typography>
-          <Typography sx={PANEL_BODY}>{data.reasonForVisit}</Typography>
-        </Box>
-        <Box sx={PANEL_SUBSECTION}>
-          <Typography sx={PANEL_SUB_LABEL}>Treatment history</Typography>
-          {data.treatmentHistory.length === 0 ? (
-            <Typography sx={{ ...PANEL_BODY, color: 'text.secondary' }}>None recorded.</Typography>
-          ) : (
-            <Box component="ul" sx={{ m: 0, pl: 2, fontSize: 12 }}>
-              {data.treatmentHistory.map((t, i) => (
-                <li key={i}>
-                  <Typography sx={PANEL_BODY}>{t.date} — {t.description}{t.provider ? ` (${t.provider})` : ''}</Typography>
-                </li>
-              ))}
-            </Box>
-          )}
-        </Box>
-      </Box>
-
-      {/* 2. Needs attention before visit */}
-      <Box sx={PANEL_SECTION}>
-        <Typography component="div" sx={PANEL_SECTION_HEADER}>
-          Needs attention before visit
-        </Typography>
-        <Box sx={PANEL_SUBSECTION}>
-          <Typography sx={PANEL_SUB_LABEL}>New labs / imaging / etc</Typography>
-          {data.newLabsImaging.length === 0 ? (
-            <Typography sx={{ ...PANEL_BODY, color: 'text.secondary' }}>Nothing new.</Typography>
-          ) : (
-            <Box component="ul" sx={{ m: 0, pl: 2, fontSize: 12 }}>
-              {data.newLabsImaging.map((n, i) => (
-                <li key={i}>
-                  <Typography sx={PANEL_BODY}>{n.type}: {n.name}{n.date ? ` — ${n.date}` : ''}</Typography>
-                </li>
-              ))}
-            </Box>
-          )}
-        </Box>
-        <Box sx={PANEL_SUBSECTION}>
-          <Typography sx={PANEL_SUB_LABEL}>Patient comms</Typography>
-          <Box component="ul" sx={{ m: 0, pl: 2, fontSize: 12 }}>
-            {data.patientComms.map((c, i) => (
-              <li key={i}>
-                <Typography sx={PANEL_BODY}>{c.type} — {c.summary} ({c.date})</Typography>
-              </li>
-            ))}
-          </Box>
-        </Box>
-        <Box sx={PANEL_SUBSECTION}>
-          <Typography sx={PANEL_SUB_LABEL}>Relevant alerts (auth, visit type needed)</Typography>
-          <Box component="ul" sx={{ m: 0, pl: 2, fontSize: 12 }}>
-            {data.alerts.map((a, i) => (
-              <li key={i}>
-                <Typography sx={PANEL_BODY}>{a.type}: {a.message}</Typography>
-              </li>
-            ))}
+            <Button
+              component={Link}
+              to={`/patients/${patient.id}`}
+              variant="text"
+              size="small"
+              startIcon={<PersonOutlined sx={{ fontSize: 18 }} />}
+              sx={{ textTransform: 'none', fontWeight: 500 }}
+            >
+              Full Profile
+            </Button>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<ContentPasteOutlined sx={{ fontSize: 18, color: 'primary.main' }} />}
+              onClick={() => navigate(`/patients/${patient.id}?openNote=1`)}
+              sx={{ textTransform: 'none', fontWeight: 500 }}
+            >
+              Open Note
+            </Button>
           </Box>
         </Box>
       </Box>
 
-      {/* 3. Clinical Context */}
-      <Box sx={PANEL_SECTION}>
-        <Typography component="div" sx={PANEL_SECTION_HEADER}>
-          Clinical Context
-        </Typography>
-        <Box sx={PANEL_SUBSECTION}>
-          <Typography sx={PANEL_SUB_LABEL}>Active medications</Typography>
-          {data.medications.length === 0 ? (
-            <Typography sx={{ ...PANEL_BODY, color: 'text.secondary' }}>None listed.</Typography>
-          ) : (
-            <Box component="ul" sx={{ m: 0, pl: 2, fontSize: 12 }}>
-              {data.medications.map((m, i) => (
-                <li key={i}>
-                  <Typography sx={PANEL_BODY}>{m.name} {m.dose} — {m.frequency}</Typography>
-                </li>
-              ))}
-            </Box>
-          )}
+      {/* (2) Content — scrolls when needed */}
+      <Box
+        sx={{
+          flex: 1,
+          minHeight: 0,
+          overflow: 'auto',
+          width: '100%',
+        }}
+      >
+        {/* Block a — Pre-visit AI Summary (gradient band + flat content stack) */}
+        <Box
+          sx={[
+            visitDetailBlockSx,
+            (t) => ({
+              background: `linear-gradient(90deg, ${alpha(t.palette.primary.main, t.palette.mode === 'dark' ? 0.14 : 0.09)} 0%, ${t.palette.background.paper} 50%, ${t.palette.background.paper} 100%)`,
+            }),
+          ]}
+        >
+          <Box sx={visitDetailInnerSx}>
+            <Stack spacing={PRE_VISIT_AI_SUMMARY_STACK_GAP}>
+              {/* Heading: emblem + title; appointment subheading */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <AICheckIcon sx={{ fontSize: 20, flexShrink: 0 }} aria-hidden />
+                  <Typography
+                    component="h2"
+                    sx={{
+                      ...preVisitAiBlockHeadingSx,
+                      color: theme.palette.primary.dark,
+                    }}
+                  >
+                    Pre-visit AI Summary
+                  </Typography>
+                </Box>
+                <Typography
+                  sx={{
+                    fontSize: 12,
+                    fontWeight: 500,
+                    color: theme.palette.primary.dark,
+                    opacity: 0.88,
+                    mt: 0,
+                    pl: 0.25,
+                  }}
+                >
+                  {data.appointmentHeading}
+                </Typography>
+              </Box>
+
+              {/* AI narrative */}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                <Typography sx={{ ...PANEL_BODY, fontSize: 14, mb: 0 }}>{data.aiSummary}</Typography>
+              </Box>
+
+              {data.thingsToReviewBullets.length > 0 && (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                  <Typography sx={{ ...preVisitAiSubsectionTitleSx, mb: 0 }}>Things to Review</Typography>
+                  <Box component="ul" sx={{ m: 0, pl: 2.25, ...PANEL_BODY }}>
+                    {data.thingsToReviewBullets.map((line) => (
+                      <li key={line}>
+                        <Typography sx={PANEL_BODY}>{line}</Typography>
+                      </li>
+                    ))}
+                  </Box>
+                </Box>
+              )}
+
+              {data.highlightBullets.length > 0 && (
+                <Box>
+                  <Typography sx={preVisitAiSubsectionTitleSx}>Highlight</Typography>
+                  <Box component="ul" sx={{ m: 0, pl: 2.25, ...PANEL_BODY }}>
+                    {data.highlightBullets.map((line) => (
+                      <li key={line}>
+                        <Typography sx={PANEL_BODY}>{line}</Typography>
+                      </li>
+                    ))}
+                  </Box>
+                </Box>
+              )}
+
+              {/* Alerts — full-width rows, 4px radius (not chips) */}
+              {data.summaryAlerts.length > 0 && (
+                <Box>
+                  <Typography sx={preVisitAiSubsectionTitleSx}>Alerts</Typography>
+                  <Stack spacing={0} sx={{ width: '100%', gap: '2px' }}>
+                    {data.summaryAlerts.map((a) => {
+                      const isError = a.severity === 'error';
+                      const bg = isError
+                        ? alpha(theme.palette.error.main, 0.12)
+                        : alpha(theme.palette.warning.main, 0.22);
+                      const fg = isError ? theme.palette.error.dark : theme.palette.warning.dark;
+                      const iconColor = isError ? theme.palette.error.main : alpha(theme.palette.warning.dark, 0.95);
+                      const IconComponent = isError ? AssignmentLateOutlined : AssignmentOutlined;
+                      return (
+                        <Box
+                          key={a.message}
+                          sx={{
+                            pt: '6px',
+                            pb: 1.125,
+                            px: 1.5,
+                            borderRadius: '4px',
+                            bgcolor: bg,
+                            width: 'fit-content',
+                            boxSizing: 'border-box',
+                          }}
+                        >
+                          <Stack
+                            direction="row"
+                            alignItems="center"
+                            spacing={0}
+                            sx={{ gap: 1.25, minWidth: 0 }}
+                          >
+                            <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                              <IconComponent sx={{ fontSize: 20, color: iconColor }} />
+                            </Box>
+                            <Box sx={{ minWidth: 0 }}>
+                              <Typography sx={{ fontSize: 13, fontWeight: 500, color: fg, lineHeight: 1.4 }}>
+                                {a.message}
+                              </Typography>
+                            </Box>
+                          </Stack>
+                        </Box>
+                      );
+                    })}
+                  </Stack>
+                </Box>
+              )}
+            </Stack>
+          </Box>
         </Box>
-        <Box sx={PANEL_SUBSECTION}>
-          <Typography sx={PANEL_SUB_LABEL}>Allergies</Typography>
-          {data.allergies.length === 0 ? (
-            <Typography sx={{ ...PANEL_BODY, color: 'text.secondary' }}>None documented.</Typography>
-          ) : (
-            <Box component="ul" sx={{ m: 0, pl: 2, fontSize: 12 }}>
-              {data.allergies.map((a, i) => (
-                <li key={i}>
-                  <Typography sx={PANEL_BODY}>{a.allergen} — {a.reaction} ({a.severity})</Typography>
-                </li>
-              ))}
-            </Box>
-          )}
+
+        {/* Block b — Things to Review */}
+        <Box sx={visitDetailBlockSx}>
+          <Box sx={visitDetailInnerSx}>
+            <Stack spacing={PRE_VISIT_AI_SUMMARY_STACK_GAP}>
+              <Typography component="h2" sx={{ ...preVisitAiBlockHeadingSx, color: 'text.primary', mb: 0 }}>
+                Things to Review
+              </Typography>
+              {data.reviewColumns.length === 0 ? (
+                <Typography sx={{ ...PANEL_BODY, color: 'text.secondary' }}>
+                  Nothing flagged for expanded review. Open the chart if you need the full record.
+                </Typography>
+              ) : (
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', md: 'repeat(3, minmax(0, 1fr))' },
+                    columnGap: 3,
+                    rowGap: 3,
+                    width: '100%',
+                    minWidth: 0,
+                  }}
+                >
+                  {data.reviewColumns.map((col) => (
+                    <Box key={col.title} sx={{ minWidth: 0 }}>
+                      <Typography component="h3" sx={thingsToReviewTopicSx}>
+                        {col.title}
+                      </Typography>
+                      <Stack spacing={1.5} sx={{ width: '100%' }}>
+                        {col.cards.map((item) => (
+                          <ThingsToReviewAlertItem key={item.id} item={item} />
+                        ))}
+                      </Stack>
+                    </Box>
+                  ))}
+                </Box>
+              )}
+            </Stack>
+          </Box>
         </Box>
-        <Box sx={PANEL_SUBSECTION}>
-          <Typography sx={PANEL_SUB_LABEL}>Immunizations</Typography>
-          {data.immunizations.length === 0 ? (
-            <Typography sx={{ ...PANEL_BODY, color: 'text.secondary' }}>None recorded.</Typography>
-          ) : (
-            <Box component="ul" sx={{ m: 0, pl: 2, fontSize: 12 }}>
-              {data.immunizations.map((im, i) => (
-                <li key={i}>
-                  <Typography sx={PANEL_BODY}>{im.vaccine} — {im.date}{im.dose ? ` (dose ${im.dose})` : ''}</Typography>
-                </li>
-              ))}
-            </Box>
-          )}
+
+        {/* Block c — Additional Patient Information */}
+        <Box sx={visitDetailBlockSx}>
+          <Box sx={visitDetailInnerSx}>
+            <Stack spacing={PRE_VISIT_AI_SUMMARY_STACK_GAP}>
+              <Typography component="h2" sx={{ ...preVisitAiBlockHeadingSx, color: 'text.primary', mb: 0 }}>
+                Additional Patient Information
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <Tabs
+                  value={additionalTab}
+                  onChange={(_, v) => setAdditionalTab(v)}
+                  variant="scrollable"
+                  scrollButtons="auto"
+                  sx={{
+                    minHeight: 0,
+                    maxWidth: '100%',
+                    bgcolor: 'transparent',
+                    '& .MuiTabs-flexContainer': { gap: 1 },
+                    '& .MuiTabs-indicator': { display: 'none' },
+                    '& .MuiTab-root': {
+                      minHeight: 28,
+                      minWidth: 0,
+                      px: 1,
+                      py: 0.5,
+                      borderRadius: '8px',
+                      textTransform: 'none',
+                      fontSize: 12,
+                      fontWeight: 500,
+                      color: 'text.secondary',
+                      bgcolor: 'transparent',
+                      transition: (t) => t.transitions.create(['background-color', 'color'], { duration: 180 }),
+                      '&.Mui-selected': {
+                        color: 'primary.dark',
+                        bgcolor: (t) => alpha(t.palette.primary.main, t.palette.mode === 'dark' ? 0.22 : 0.14),
+                      },
+                    },
+                  }}
+                >
+                  {ADDITIONAL_INFO_TABS.map((label) => (
+                    <Tab key={label} label={label} disableRipple />
+                  ))}
+                </Tabs>
+                <Box sx={{ pt: 0 }}>
+                  <AdditionalInfoDataTable
+                    columns={ADDITIONAL_INFO_TABLE_HEADERS[additionalTab]}
+                    rows={buildAdditionalInfoBodyRows(
+                      additionalTab,
+                      [
+                        data.visitHistory,
+                        data.files,
+                        data.immunizations,
+                        data.labs,
+                        data.medications,
+                      ][additionalTab],
+                    )}
+                  />
+                </Box>
+              </Box>
+            </Stack>
+          </Box>
         </Box>
       </Box>
     </Box>
@@ -978,8 +1296,8 @@ export function HomePageContent() {
         flexDirection: 'column',
         gap: 1.5,
         pt: 3,
-        pb: 8,
-        px: 8,
+        pb: '32px',
+        px: '32px',
       }}
     >
       {/* Page header: greeting only */}
@@ -997,6 +1315,7 @@ export function HomePageContent() {
         sx={{
           display: 'flex',
           alignItems: 'center',
+          gap: '4px',
           mt: 0,
           mb: -0.5,
           mx: 0,
@@ -1035,6 +1354,7 @@ export function HomePageContent() {
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  width: 18,
                   minWidth: 18,
                   height: 18,
                   px: isActive ? '6px' : 0,
