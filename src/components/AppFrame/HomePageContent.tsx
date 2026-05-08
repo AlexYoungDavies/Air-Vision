@@ -107,7 +107,7 @@ type HomeViewTab = 'patients' | 'notes' | 'tasks' | 'messages';
 
 const SIDE_TABS: { id: HomeViewTab; label: string; Icon: typeof PatientsNavIcon }[] = [
   { id: 'patients', label: 'Visits', Icon: PatientsNavIcon },
-  { id: 'notes', label: 'Notes to Sign', Icon: SignatureAltIcon },
+  { id: 'notes', label: 'Notes', Icon: SignatureAltIcon },
   { id: 'tasks', label: 'Tasks', Icon: CheckListIcon },
   { id: 'messages', label: 'Messages', Icon: MessagesNavIcon },
 ];
@@ -1286,85 +1286,109 @@ export function HomePageContent() {
         display: 'flex',
         flexDirection: 'column',
         gap: 1.5,
-        pt: 3,
+        pt: 2,
         pb: '32px',
         px: '32px',
       }}
     >
-      {/* Page header: greeting only */}
-      <Box>
-        <Typography
-          variant="h2"
-          sx={{ fontSize: 26.08, fontWeight: 500, lineHeight: 38 / 26.08, color: 'text.primary' }}
-        >
-          Morning, Dr. Garcia.
-        </Typography>
-      </Box>
-
-      {/* Tab bar — sits above the card on the page background */}
+      {/* Header row: greeting (left) + tab bar (center) in one line */}
       <Box
         sx={{
           display: 'flex',
           alignItems: 'center',
-          gap: '4px',
-          mt: 0,
           mb: -0.5,
           mx: 0,
+          position: 'relative',
         }}
       >
-        {SIDE_TABS.map(({ id, label, Icon }) => {
-          const isActive = activeTab === id;
-          const count = tabCounts[id];
-          return (
-            <Button
-              key={id}
-              className="visit-note-button-exempt"
-              onClick={() => setActiveTab(id)}
-              aria-label={label}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 0.75,
-                px: 1.5,
-                py: 1,
-                height: 'auto',
-                minHeight: 0,
-                color: isActive ? 'primary.main' : 'text.secondary',
-                bgcolor: isActive ? 'primary.light' : 'transparent',
-                borderRadius: '10px',
-                textTransform: 'none',
-                '&:hover': { bgcolor: isActive ? 'primary.light' : 'rgba(0,0,0,0.04)' },
-              }}
-            >
-              <Icon sx={{ fontSize: 18 }} />
-              <Typography sx={{ fontSize: 13, fontWeight: 500, color: 'inherit' }}>
-                {label}
-              </Typography>
-              <Box
-                sx={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: 18,
-                  minWidth: 18,
-                  height: 18,
-                  px: isActive ? '6px' : 0,
-                  bgcolor: isActive ? 'primary.main' : 'transparent',
-                  color: isActive ? 'common.white' : 'text.secondary',
-                  borderRadius: '9px',
-                  fontSize: 11,
-                  fontWeight: 700,
-                  lineHeight: 1,
-                }}
-              >
-                {count}
-              </Box>
-            </Button>
-          );
-        })}
+        {/* Greeting — hidden when window is too narrow to avoid overlap */}
+        <Typography
+          variant="h2"
+          sx={{
+            fontSize: 20,
+            fontWeight: 500,
+            lineHeight: 38 / 20,
+            color: 'text.primary',
+            flexShrink: 0,
+            mr: 2,
+            '@media (max-width: 680px)': { display: 'none' },
+          }}
+        >
+          Morning, Dr. Garcia.
+        </Typography>
 
+        {/* Spacer so tabs sit in the center of the remaining space */}
         <Box sx={{ flex: 1 }} />
 
+        {/* Tab buttons */}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            position: 'absolute',
+            left: '50%',
+            transform: 'translateX(-50%)',
+          }}
+        >
+          {SIDE_TABS.map(({ id, label, Icon }) => {
+            const isActive = activeTab === id;
+            const count = tabCounts[id];
+            return (
+              <Button
+                key={id}
+                className="visit-note-button-exempt"
+                onClick={() => setActiveTab(id)}
+                aria-label={label}
+                sx={{
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.75,
+                  px: 1.5,
+                  py: 1,
+                  pr: 1.5,
+                  height: 'auto',
+                  minHeight: 0,
+                  color: isActive ? 'primary.main' : 'text.secondary',
+                  bgcolor: isActive ? 'primary.light' : 'transparent',
+                  borderRadius: '10px',
+                  textTransform: 'none',
+                  '&:hover': { bgcolor: isActive ? 'primary.light' : 'rgba(0,0,0,0.04)' },
+                }}
+              >
+                <Icon sx={{ fontSize: 18 }} />
+                <Typography sx={{ fontSize: 13, fontWeight: 500, color: 'inherit' }}>
+                  {label}
+                </Typography>
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: -4,
+                    right: -4,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minWidth: 16,
+                    height: 16,
+                    px: '4px',
+                    bgcolor: isActive ? 'primary.main' : 'action.selected',
+                    color: isActive ? 'common.white' : 'text.secondary',
+                    borderRadius: '8px',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    lineHeight: 1,
+                  }}
+                >
+                  {count}
+                </Box>
+              </Button>
+            );
+          })}
+        </Box>
+
+        {/* Right-side spacer to balance the greeting on the left */}
+        <Box sx={{ flex: 1 }} />
       </Box>
 
       {/* Main card: content only */}
