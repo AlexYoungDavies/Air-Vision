@@ -1,3 +1,16 @@
+export { AirLogo } from './AirLogo';
+export { SettingsCogIcon } from './SettingsCogIcon';
+export { HelpBoxIcon } from './HelpBoxIcon';
+export { MenuBookOpenIcon } from './MenuBookOpenIcon';
+export { MenuBookIcon } from './MenuBookIcon';
+export { MenuCopyIcon } from './MenuCopyIcon';
+export { MenuKeyIcon } from './MenuKeyIcon';
+export { MenuKeyboardIcon } from './MenuKeyboardIcon';
+export { MenuLifebuoyIcon } from './MenuLifebuoyIcon';
+export { MenuPaintbrushIcon } from './MenuPaintbrushIcon';
+export { MenuSchoolIcon } from './MenuSchoolIcon';
+export { MenuSecuritySettingsIcon } from './MenuSecuritySettingsIcon';
+export { MenuUserSettingsIcon } from './MenuUserSettingsIcon';
 export { AICheckIcon } from './AICheckIcon';
 export { SearchIcon } from './SearchIcon';
 export { UploadIcon } from './UploadIcon';

@@ -2,11 +2,12 @@ import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { Box, Fade } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { SwitchTransition } from 'react-transition-group';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { SideNav } from './SideNav';
 import { HeaderBar } from './HeaderBar';
 import { AppCanvas } from './AppCanvas';
 import { AIAssistantPanel } from './AIAssistantPanel';
+import { getAssistantShortcutsForPath } from './assistantPanelShortcuts';
 import { ScribePanel } from './ScribePanel';
 import { ColorPickerPopover } from './ColorPickerPopover';
 import { SpotlightSearch } from './SpotlightSearch';
@@ -40,6 +41,8 @@ export function AppFrame({ children }: AppFrameProps) {
   const colorPickerAnchorRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
   const { accentKey, setAccentKey } = useAccent();
+  const location = useLocation();
+  const assistantShortcuts = getAssistantShortcutsForPath(location.pathname);
 
   useLayoutEffect(() => {
     if (activePanel !== 'none') {
@@ -235,7 +238,10 @@ export function AppFrame({ children }: AppFrameProps) {
                       }}
                     >
                       {renderedPanel === 'assistant' && (
-                        <AIAssistantPanel onClose={() => setActivePanel('none')} />
+                        <AIAssistantPanel
+                          onClose={() => setActivePanel('none')}
+                          shortcuts={assistantShortcuts}
+                        />
                       )}
                       {renderedPanel === 'scribe' && (
                         <ScribePanel

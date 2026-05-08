@@ -27,6 +27,7 @@ import ChevronLeftOutlined from '@mui/icons-material/ChevronLeftOutlined';
 import ChevronRightOutlined from '@mui/icons-material/ChevronRightOutlined';
 import ScienceOutlined from '@mui/icons-material/ScienceOutlined';
 import ImageOutlined from '@mui/icons-material/ImageOutlined';
+import ReportProblemOutlined from '@mui/icons-material/ReportProblemOutlined';
 import ContentPasteOutlined from '@mui/icons-material/ContentPasteOutlined';
 import PersonOutlined from '@mui/icons-material/PersonOutlined';
 import TaskAltOutlined from '@mui/icons-material/TaskAltOutlined';
@@ -126,6 +127,11 @@ const MOCK_TASKS = [
 
 // ----- Left panel content per tab -----
 
+function patientHasDangerLevelAlerts(patient: Patient): boolean {
+  const panel = getPatientVisitPanelData(patient);
+  return panel.reviewColumns.some((col) => col.cards.some((card) => card.tone === 'danger'));
+}
+
 function PatientsListPanel({
   selectedId,
   onSelect,
@@ -171,6 +177,7 @@ function PatientsListPanel({
           const row2 = [p.case, p.appointmentType].filter(Boolean).join(' • ');
           const showLabs = p.hasNewLabs === true;
           const showImaging = p.hasNewImaging === true;
+          const showDangerAlerts = patientHasDangerLevelAlerts(p);
           const blockColor =
             p.appointmentType === 'Initial Eval'
               ? theme.palette.info.main
@@ -273,8 +280,15 @@ function PatientsListPanel({
                   <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
                     {p.appointmentTime ?? '—'}
                   </Typography>
-                  {(showLabs || showImaging) && (
+                  {(showDangerAlerts || showLabs || showImaging) && (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+                      {showDangerAlerts && (
+                        <Tooltip title="Danger level alerts — see Things to review">
+                          <ReportProblemOutlined
+                            sx={{ fontSize: 14, width: 14, height: 14, color: 'error.main' }}
+                          />
+                        </Tooltip>
+                      )}
                       {showLabs && (
                         <Tooltip title="New labs to review">
                           <ScienceOutlined sx={{ fontSize: 14, width: 14, height: 14, color: 'text.secondary' }} />
@@ -885,8 +899,9 @@ function PatientVisitDetailPanel({ patient }: { patient: Patient | null }) {
                           key={a.message}
                           sx={{
                             pt: '6px',
-                            pb: 1.125,
-                            px: 1.5,
+                            pb: '6px',
+                            pl: 1,
+                            pr: 1.5,
                             borderRadius: '4px',
                             bgcolor: bg,
                             width: 'fit-content',

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useRef, useState, type ReactElement } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Box,
   List,
@@ -8,13 +8,39 @@ import {
   ListItemText,
   Collapse,
   Tooltip,
+  Menu,
+  MenuItem,
+  MenuList,
+  Divider,
+  Avatar,
+  IconButton,
+  Typography,
 } from '@mui/material';
-import { alpha, type Theme } from '@mui/material/styles';
+import { alpha, useTheme, type Theme } from '@mui/material/styles';
 import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined';
 import ChevronRightOutlined from '@mui/icons-material/ChevronRightOutlined';
 import ChevronLeftOutlined from '@mui/icons-material/ChevronLeftOutlined';
+import PersonOutline from '@mui/icons-material/PersonOutline';
+import LogoutOutlined from '@mui/icons-material/LogoutOutlined';
 import SvgIcon from '@mui/material/SvgIcon';
 import type { SvgIconComponent } from '@mui/icons-material';
+import {
+  AirLogo,
+  HelpBoxIcon,
+  SettingsCogIcon,
+  MenuBookOpenIcon,
+  MenuBookIcon,
+  MenuSchoolIcon,
+  MenuKeyboardIcon,
+  MenuLifebuoyIcon,
+  MenuKeyIcon,
+  MenuSecuritySettingsIcon,
+  MenuCopyIcon,
+  MenuPaintbrushIcon,
+  MenuUserSettingsIcon,
+} from '../icons';
+import { useAccent } from '../../theme/AppThemeProvider';
+import { AppearancePickerPanel } from './AppearancePickerPanel';
 
 function HomeNavIcon(props: React.ComponentProps<typeof SvgIcon>) {
   return (
@@ -245,32 +271,6 @@ function StatementsNavIcon(props: React.ComponentProps<typeof SvgIcon>) {
   );
 }
 
-function SettingsFooterNavIcon(props: React.ComponentProps<typeof SvgIcon>) {
-  return (
-    <SvgIcon {...props} viewBox="0 0 24 24">
-      <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M12 14.5C13.3807 14.5 14.5 13.3807 14.5 12C14.5 10.6193 13.3807 9.5 12 9.5C10.6193 9.5 9.5 10.6193 9.5 12C9.5 13.3807 10.6193 14.5 12 14.5ZM12 16C14.2091 16 16 14.2091 16 12C16 9.79086 14.2091 8 12 8C9.79086 8 8 9.79086 8 12C8 14.2091 9.79086 16 12 16Z"
-      />
-      <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M9.37139 3.31098C10.0302 2.26968 10.7678 1.25 12 1.25C13.2322 1.25 13.9698 2.26968 14.6286 3.31098C14.7897 3.56566 15.0197 3.77703 15.358 3.91776C15.6897 4.05571 15.9973 4.06798 16.2879 4.00176C17.4894 3.72805 18.7301 3.52735 19.6014 4.39865C20.4727 5.26996 20.272 6.51068 19.9983 7.71211C19.932 8.00278 19.9443 8.31033 20.0823 8.642C20.223 8.98034 20.4343 9.21027 20.689 9.3714C21.7303 10.0302 22.75 10.7678 22.75 12C22.75 13.2322 21.7303 13.9698 20.689 14.6286C20.4343 14.7898 20.223 15.0197 20.0822 15.358C19.9443 15.6897 19.932 15.9973 19.9982 16.2879C20.2719 17.4894 20.4727 18.7301 19.6013 19.6014C18.73 20.4727 17.4893 20.272 16.2879 19.9983C15.9972 19.932 15.6897 19.9443 15.358 20.0823C15.0197 20.223 14.7897 20.4343 14.6286 20.689C13.9698 21.7303 13.2322 22.75 12 22.75C10.7678 22.75 10.0302 21.7303 9.3714 20.689C9.21027 20.4343 8.98034 20.223 8.642 20.0823C8.31033 19.9443 8.00278 19.932 7.71211 19.9983C6.51068 20.272 5.26996 20.4727 4.39865 19.6014C3.52735 18.7301 3.72805 17.4894 4.00176 16.2879C4.06798 15.9973 4.05571 15.6897 3.91776 15.358C3.77703 15.0197 3.56566 14.7898 3.31098 14.6286C2.26968 13.9698 1.25 13.2322 1.25 12C1.25 10.7678 2.26968 10.0302 3.31098 9.37139C3.56566 9.21026 3.77703 8.98033 3.91775 8.64198C4.0557 8.3103 4.06797 8.00273 4.00173 7.71204C3.72798 6.51063 3.52729 5.2699 4.3986 4.39859C5.2699 3.52729 6.51063 3.72797 7.71205 4.00173C8.00273 4.06797 8.3103 4.0557 8.64198 3.91775C8.98033 3.77702 9.21026 3.56566 9.37139 3.31098ZM12 2.75C11.501 2.75 11.092 3.11882 10.9082 3.58265C10.6044 4.34898 10.0573 4.95368 9.21802 5.30273C8.38072 5.65098 7.57167 5.60522 6.81937 5.27732C6.36198 5.07795 5.81207 5.10644 5.45926 5.45925C5.10644 5.81207 5.07796 6.36197 5.27732 6.81937C5.60522 7.57166 5.65098 8.38072 5.30273 9.21802C4.95368 10.0573 4.34898 10.6044 3.58265 10.9082C3.11882 11.092 2.75 11.501 2.75 12C2.75 12.499 3.11882 12.908 3.58265 13.0918C4.34898 13.3956 4.95369 13.9428 5.30274 14.782C5.65098 15.6193 5.60525 16.4283 5.27737 17.1806C5.07802 17.638 5.1065 18.1879 5.45931 18.5407C5.81213 18.8936 6.36204 18.922 6.81943 18.7227C7.57171 18.3948 8.38075 18.349 9.21803 18.6973C10.0573 19.0463 10.6044 19.651 10.9082 20.4173C11.092 20.8812 11.501 21.25 12 21.25C12.499 21.25 12.908 20.8812 13.0918 20.4173C13.3956 19.651 13.9427 19.0463 14.782 18.6973C15.6193 18.349 16.4283 18.3948 17.1806 18.7227C17.638 18.922 18.1879 18.8936 18.5407 18.5407C18.8935 18.1879 18.922 17.638 18.7226 17.1806C18.3947 16.4283 18.349 15.6193 18.6973 14.782C19.0463 13.9428 19.651 13.3956 20.4173 13.0918C20.8812 12.908 21.25 12.499 21.25 12C21.25 11.501 20.8812 11.092 20.4173 10.9082C19.651 10.6044 19.0463 10.0573 18.6973 9.21803C18.349 8.38075 18.3948 7.57171 18.7227 6.81943C18.922 6.36204 18.8936 5.81213 18.5407 5.45931C18.1879 5.1065 17.638 5.07802 17.1806 5.27737C16.4283 5.60525 15.6193 5.65098 14.782 5.30274C13.9428 4.95369 13.3956 4.34898 13.0918 3.58265C12.908 3.11882 12.499 2.75 12 2.75Z"
-      />
-    </SvgIcon>
-  );
-}
-
-function LogoutFooterNavIcon(props: React.ComponentProps<typeof SvgIcon>) {
-  return (
-    <SvgIcon {...props} viewBox="0 0 24 24">
-      <path d="M14.25 9C14.6642 9 15 8.66421 15 8.25V7C15 4.79086 13.2091 3 11 3H8.4C6.15979 3 5.03969 3 4.18404 3.43597C3.43139 3.81947 2.81947 4.43139 2.43597 5.18404C2 6.03969 2 7.15979 2 9.4V14.6C2 16.8402 2 17.9603 2.43597 18.816C2.81947 19.5686 3.43139 20.1805 4.18404 20.564C5.03969 21 6.15979 21 8.4 21H11C13.2091 21 15 19.2091 15 17V15.75C15 15.3358 14.6642 15 14.25 15C13.8358 15 13.5 15.3358 13.5 15.75V17C13.5 18.3807 12.3807 19.5 11 19.5H7.5C6.09987 19.5 5.3998 19.5 4.86502 19.2275C4.39462 18.9878 4.01217 18.6054 3.77248 18.135C3.5 17.6002 3.5 16.9001 3.5 15.5V8.5C3.5 7.09987 3.5 6.3998 3.77248 5.86502C4.01217 5.39462 4.39462 5.01217 4.86502 4.77248C5.3998 4.5 6.09987 4.5 7.5 4.5H11C12.3807 4.5 13.5 5.61929 13.5 7V8.25C13.5 8.66421 13.8358 9 14.25 9Z" />
-      <path d="M17.4999 15.5C17.207 15.2071 17.207 14.7322 17.4999 14.4393L18.6747 13.2646C18.7475 13.1917 18.784 13.1552 18.7997 13.1292C18.8867 12.985 18.8092 12.7977 18.6457 12.7573C18.6161 12.75 18.5646 12.75 18.4615 12.75H7.74989C7.33567 12.75 6.99989 12.4142 6.99989 12C6.99989 11.5858 7.33567 11.25 7.74989 11.25H18.4615C18.5646 11.25 18.6161 11.25 18.6457 11.2427C18.8092 11.2023 18.8867 11.015 18.7997 10.8708C18.784 10.8447 18.7475 10.8083 18.6747 10.7354L17.4999 9.56066C17.207 9.26776 17.207 8.79289 17.4999 8.5C17.7928 8.2071 18.2677 8.2071 18.5605 8.5L20.9292 10.8686C21.3252 11.2646 21.5232 11.4627 21.5974 11.691C21.6626 11.8918 21.6626 12.1082 21.5974 12.309C21.5232 12.5373 21.3252 12.7353 20.9292 13.1314L18.5605 15.5C18.2677 15.7929 17.7928 15.7929 17.4999 15.5Z" />
-    </SvgIcon>
-  );
-}
-
 const NAV_ICONS: Record<string, SvgIconComponent> = {
   home: HomeNavIcon as SvgIconComponent,
   calendar_month: CalendarNavIcon as SvgIconComponent,
@@ -288,8 +288,6 @@ const NAV_ICONS: Record<string, SvgIconComponent> = {
   description: DocumentNavIcon as SvgIconComponent,
   credit_card: WalletAltNavIcon as SvgIconComponent,
   request_quote: StatementsNavIcon as SvgIconComponent,
-  settings: SettingsFooterNavIcon as SvgIconComponent,
-  logout: LogoutFooterNavIcon as SvgIconComponent,
   keyboard_arrow_down: KeyboardArrowDownOutlined,
   chevron_right: ChevronRightOutlined,
   chevron_left: ChevronLeftOutlined,
@@ -335,11 +333,6 @@ const revenueCycleItems: NavItemConfig[] = [
   { id: 'eobs', label: 'EoBs', icon: 'description', path: '/eobs' },
   { id: 'payments', label: 'Payments', icon: 'credit_card', path: '/payments' },
   { id: 'statements', label: 'Statements', icon: 'request_quote', path: '/statements' },
-];
-
-const bottomNavItems: NavItemConfig[] = [
-  { id: 'preferences', label: 'Preferences', icon: 'settings', path: '/preferences' },
-  { id: 'logout', label: 'Log Out', icon: 'logout' },
 ];
 
 function NavItem({
@@ -506,6 +499,399 @@ function SectionHeaderButton({
   );
 }
 
+/** Sidebar footer avatar (screenshots: orange circle, “A”). */
+const FOOTER_AVATAR_ORANGE = '#FF6F00';
+
+function collapsedFooterTooltip(collapsed: boolean, title: string, child: ReactElement) {
+  if (!collapsed) return child;
+  return (
+    <Tooltip title={title} placement="right" arrow enterDelay={200}>
+      {child}
+    </Tooltip>
+  );
+}
+
+const PREFERENCES_PATH = '/preferences';
+
+function SideNavFooter({ collapsed }: { collapsed: boolean }) {
+  const theme = useTheme();
+  const location = useLocation();
+  const { mode, setMode, accentKey, setAccentKey } = useAccent();
+  const navigate = useNavigate();
+  const [helpAnchor, setHelpAnchor] = useState<null | HTMLElement>(null);
+  const [accountAnchor, setAccountAnchor] = useState<null | HTMLElement>(null);
+  const [appearanceAnchorEl, setAppearanceAnchorEl] = useState<HTMLElement | null>(null);
+  const [appearanceOpen, setAppearanceOpen] = useState(false);
+  const appearanceCloseTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const settingsActive = location.pathname === PREFERENCES_PATH;
+
+  const helpOpen = Boolean(helpAnchor);
+  const accountOpen = Boolean(accountAnchor);
+  const menuIconColor = theme.palette.primary.dark;
+
+  const avatarSize = collapsed ? 26 : 32;
+  const footerIconBtnSize = collapsed ? 30 : 36;
+
+  const menuPaperSx = {
+    borderRadius: '12px',
+    boxShadow: theme.shadows[8],
+    minWidth: 216,
+    py: 0.5,
+    border: '1px solid',
+    borderColor: 'divider',
+  } as const;
+
+  const closeHelp = () => setHelpAnchor(null);
+
+  const clearAppearanceCloseTimer = () => {
+    if (appearanceCloseTimerRef.current !== undefined) {
+      clearTimeout(appearanceCloseTimerRef.current);
+      appearanceCloseTimerRef.current = undefined;
+    }
+  };
+
+  const scheduleAppearanceClose = () => {
+    clearAppearanceCloseTimer();
+    appearanceCloseTimerRef.current = setTimeout(() => {
+      setAppearanceOpen(false);
+      appearanceCloseTimerRef.current = undefined;
+    }, 200);
+  };
+
+  const closeAccount = () => {
+    clearAppearanceCloseTimer();
+    setAppearanceOpen(false);
+    setAppearanceAnchorEl(null);
+    setAccountAnchor(null);
+  };
+
+  /** Match `NavItem` ListItemButton: subtle hover / pressed backgrounds, same corner radius. */
+  const footerNavIconSx = {
+    width: footerIconBtnSize,
+    height: footerIconBtnSize,
+    borderRadius: 1,
+    color: 'text.secondary',
+    '&:hover': {
+      bgcolor: 'action.hover',
+    },
+    '&:active': {
+      bgcolor: 'action.selected',
+    },
+  } as const;
+
+  /** Same active treatment as `NavItem` when this route is current. */
+  const settingsIconSx = settingsActive
+    ? {
+        width: footerIconBtnSize,
+        height: footerIconBtnSize,
+        borderRadius: 1,
+        color: 'primary.dark',
+        bgcolor: (t: Theme) => alpha(t.palette.primary.main, 0.2),
+        '&:hover': {
+          bgcolor: (t: Theme) => alpha(t.palette.primary.main, 0.25),
+        },
+        '&:active': {
+          bgcolor: (t: Theme) => alpha(t.palette.primary.main, 0.25),
+        },
+      }
+    : footerNavIconSx;
+
+  const footerRow = (
+    <Box
+      sx={{
+        borderTop: 1,
+        borderColor: 'divider',
+        px: collapsed ? 0.5 : 1,
+        pt: 3,
+        pb: 1,
+        display: 'flex',
+        flexDirection: collapsed ? 'column' : 'row',
+        alignItems: collapsed ? 'stretch' : 'center',
+        justifyContent: collapsed ? 'flex-start' : 'space-between',
+        gap: collapsed ? 0.75 : 0,
+        width: '100%',
+        minWidth: 0,
+      }}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 1,
+          minWidth: 0,
+          ...(collapsed && { alignSelf: 'flex-start' }),
+        }}
+      >
+        {collapsedFooterTooltip(
+          collapsed,
+          'Account',
+          <IconButton
+            size="small"
+            onClick={(e) => setAccountAnchor(e.currentTarget)}
+            aria-label="Account menu"
+            aria-controls={accountOpen ? 'account-menu' : undefined}
+            aria-haspopup="true"
+            aria-expanded={accountOpen ? 'true' : undefined}
+            sx={{ p: 0.25 }}
+          >
+            <Avatar
+              sx={{
+                width: avatarSize,
+                height: avatarSize,
+                bgcolor: FOOTER_AVATAR_ORANGE,
+                color: '#000',
+                fontSize: collapsed ? 13 : 15,
+                fontWeight: 700,
+              }}
+            >
+              A
+            </Avatar>
+          </IconButton>,
+        )}
+
+        {collapsedFooterTooltip(
+          collapsed,
+          'Settings',
+          <IconButton
+            component={Link}
+            to={PREFERENCES_PATH}
+            size="small"
+            aria-label="Settings"
+            aria-current={settingsActive ? 'page' : undefined}
+            sx={settingsIconSx}
+          >
+            <SettingsCogIcon sx={{ fontSize: 22 }} />
+          </IconButton>,
+        )}
+      </Box>
+
+      <Box sx={collapsed ? { alignSelf: 'flex-end' } : { flexShrink: 0 }}>
+        {collapsedFooterTooltip(
+          collapsed,
+          'Help',
+          <IconButton
+            size="small"
+            onClick={(e) => setHelpAnchor(e.currentTarget)}
+            aria-label="Help menu"
+            aria-controls={helpOpen ? 'help-menu' : undefined}
+            aria-haspopup="true"
+            aria-expanded={helpOpen ? 'true' : undefined}
+            sx={footerNavIconSx}
+          >
+            <HelpBoxIcon sx={{ fontSize: 22 }} />
+          </IconButton>,
+        )}
+      </Box>
+    </Box>
+  );
+
+  return (
+    <>
+      {footerRow}
+
+      <Menu
+        id="help-menu"
+        anchorEl={helpAnchor}
+        open={helpOpen}
+        onClose={closeHelp}
+        anchorOrigin={{
+          /** Negative px nudges anchor above the button so the menu clears the trigger */
+          vertical: -8,
+          horizontal: collapsed ? 'center' : 'right',
+        }}
+        transformOrigin={{ vertical: 'bottom', horizontal: collapsed ? 'center' : 'right' }}
+        slotProps={{
+          paper: {
+            sx: { ...menuPaperSx, minWidth: 200 },
+          },
+        }}
+      >
+        <MenuItem onClick={closeHelp}>
+          <ListItemIcon>
+            <MenuBookOpenIcon sx={{ fontSize: 20, color: menuIconColor }} />
+          </ListItemIcon>
+          <ListItemText primary="Documentation" primaryTypographyProps={{ fontSize: 14, fontWeight: 500 }} />
+        </MenuItem>
+        <MenuItem onClick={closeHelp}>
+          <ListItemIcon>
+            <MenuSchoolIcon sx={{ fontSize: 20, color: menuIconColor }} />
+          </ListItemIcon>
+          <ListItemText primary="Learning Center" primaryTypographyProps={{ fontSize: 14, fontWeight: 500 }} />
+        </MenuItem>
+        <MenuItem onClick={closeHelp}>
+          <ListItemIcon>
+            <MenuBookIcon sx={{ fontSize: 20, color: menuIconColor }} />
+          </ListItemIcon>
+          <ListItemText primary="Changelog" primaryTypographyProps={{ fontSize: 14, fontWeight: 500 }} />
+        </MenuItem>
+        <MenuItem onClick={closeHelp}>
+          <ListItemIcon>
+            <MenuKeyboardIcon sx={{ fontSize: 20, color: menuIconColor }} />
+          </ListItemIcon>
+          <ListItemText primary="Shortcuts" primaryTypographyProps={{ fontSize: 14, fontWeight: 500 }} />
+        </MenuItem>
+        <MenuItem onClick={closeHelp}>
+          <ListItemIcon>
+            <MenuLifebuoyIcon sx={{ fontSize: 20, color: menuIconColor }} />
+          </ListItemIcon>
+          <ListItemText primary="Get Help" primaryTypographyProps={{ fontSize: 14, fontWeight: 500 }} />
+        </MenuItem>
+      </Menu>
+
+      <Menu
+        id="account-menu"
+        anchorEl={accountAnchor}
+        open={accountOpen}
+        onClose={closeAccount}
+        anchorOrigin={{
+          vertical: -8,
+          horizontal: collapsed ? 'center' : 'left',
+        }}
+        transformOrigin={{ vertical: 'bottom', horizontal: collapsed ? 'center' : 'left' }}
+        slotProps={{
+          paper: {
+            sx: { ...menuPaperSx, minWidth: 268 },
+          },
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 1.5 }}>
+          <Avatar sx={{ width: 40, height: 40, bgcolor: 'primary.main', color: 'primary.contrastText' }}>
+            <PersonOutline sx={{ fontSize: 24 }} />
+          </Avatar>
+          <Box sx={{ minWidth: 0 }}>
+            <Typography sx={{ fontSize: 14, fontWeight: 600, lineHeight: 1.3 }}>Dhruv Parthasarathy</Typography>
+            <Typography sx={{ fontSize: 12, color: 'text.secondary', lineHeight: 1.3 }}>Super User</Typography>
+          </Box>
+        </Box>
+        <Divider sx={{ my: 0.5 }} />
+        <Box
+          sx={{
+            bgcolor: alpha(theme.palette.primary.main, 0.1),
+            borderRadius: 1.5,
+            py: 0.5,
+            px: 0.5,
+            mx: 1,
+            mb: 0.5,
+          }}
+        >
+          <MenuItem onClick={closeAccount}>
+            <ListItemIcon>
+              <MenuKeyIcon sx={{ fontSize: 20, color: menuIconColor }} />
+            </ListItemIcon>
+            <ListItemText primary="Impersonate" primaryTypographyProps={{ fontSize: 14, fontWeight: 500 }} />
+          </MenuItem>
+          <MenuItem onClick={closeAccount}>
+            <ListItemIcon>
+              <MenuSecuritySettingsIcon sx={{ fontSize: 20, color: menuIconColor }} />
+            </ListItemIcon>
+            <ListItemText primary="Super User Settings" primaryTypographyProps={{ fontSize: 14, fontWeight: 500 }} />
+          </MenuItem>
+          <MenuItem
+            onClick={() => {
+              void navigator.clipboard?.writeText('mock-access-token');
+              closeAccount();
+            }}
+          >
+            <ListItemIcon>
+              <MenuCopyIcon sx={{ fontSize: 20, color: menuIconColor }} />
+            </ListItemIcon>
+            <ListItemText primary="Copy Token" primaryTypographyProps={{ fontSize: 14, fontWeight: 500 }} />
+          </MenuItem>
+        </Box>
+        <MenuItem
+          onMouseEnter={(e) => {
+            clearAppearanceCloseTimer();
+            setAppearanceAnchorEl(e.currentTarget);
+            setAppearanceOpen(true);
+          }}
+          onMouseLeave={scheduleAppearanceClose}
+          onClick={(e) => {
+            e.stopPropagation();
+            clearAppearanceCloseTimer();
+            if (appearanceOpen && appearanceAnchorEl === e.currentTarget) {
+              setAppearanceOpen(false);
+            } else {
+              setAppearanceAnchorEl(e.currentTarget);
+              setAppearanceOpen(true);
+            }
+          }}
+          aria-haspopup="true"
+          aria-expanded={appearanceOpen ? 'true' : undefined}
+          aria-controls={appearanceOpen ? 'account-appearance-menu' : undefined}
+        >
+          <ListItemIcon>
+            <MenuPaintbrushIcon sx={{ fontSize: 20, color: menuIconColor }} />
+          </ListItemIcon>
+          <ListItemText primary="Appearance" primaryTypographyProps={{ fontSize: 14, fontWeight: 500 }} />
+          <ChevronRightOutlined sx={{ fontSize: 18, color: 'text.secondary', ml: 'auto' }} />
+        </MenuItem>
+        <Divider sx={{ my: 0.5 }} />
+        <MenuItem component={Link} to={PREFERENCES_PATH} onClick={closeAccount}>
+          <ListItemIcon>
+            <MenuUserSettingsIcon sx={{ fontSize: 20, color: menuIconColor }} />
+          </ListItemIcon>
+          <ListItemText primary="Account Settings" primaryTypographyProps={{ fontSize: 14, fontWeight: 500 }} />
+        </MenuItem>
+        <MenuItem
+          onClick={() => {
+            closeAccount();
+            navigate('/');
+          }}
+        >
+          <ListItemIcon>
+            <LogoutOutlined sx={{ fontSize: 20, color: menuIconColor }} />
+          </ListItemIcon>
+          <ListItemText primary="Sign Out" primaryTypographyProps={{ fontSize: 14, fontWeight: 500 }} />
+        </MenuItem>
+      </Menu>
+
+      <Menu
+        id="account-appearance-menu"
+        anchorEl={appearanceAnchorEl}
+        open={accountOpen && appearanceOpen && Boolean(appearanceAnchorEl)}
+        onClose={() => {
+          clearAppearanceCloseTimer();
+          setAppearanceOpen(false);
+        }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        disableAutoFocus
+        slotProps={{
+          paper: {
+            onMouseEnter: clearAppearanceCloseTimer,
+            onMouseLeave: scheduleAppearanceClose,
+            sx: {
+              ml: 0.75,
+              borderRadius: '12px',
+              boxShadow: theme.shadows[8],
+              border: '1px solid',
+              borderColor: 'divider',
+              overflow: 'hidden',
+            },
+          },
+        }}
+      >
+        <MenuList
+          autoFocusItem={false}
+          disablePadding
+          onMouseEnter={clearAppearanceCloseTimer}
+          onMouseLeave={scheduleAppearanceClose}
+          sx={{ p: 0 }}
+        >
+          <AppearancePickerPanel
+            accentKey={accentKey}
+            onAccentChange={setAccentKey}
+            mode={mode}
+            onModeChange={setMode}
+            compact
+          />
+        </MenuList>
+      </Menu>
+    </>
+  );
+}
+
 export interface SideNavProps {
   collapsed: boolean;
   onToggle: () => void;
@@ -545,17 +931,19 @@ export function SideNav({ collapsed, onToggle: _onToggle }: SideNavProps) {
           justifyContent: collapsed ? 'center' : 'flex-start',
         }}
       >
-        {!collapsed && (
-          <Box
-            sx={{
-              width: 32,
-              height: 32,
-              flexShrink: 0,
-              borderRadius: 1,
-              bgcolor: 'primary.main',
-            }}
+        <Box
+          component="span"
+          role="img"
+          aria-label="Air Scribe"
+          sx={{ flexShrink: 0, display: 'flex', alignItems: 'center', lineHeight: 0 }}
+        >
+          <AirLogo
+            preserveAspectRatio="xMidYMid meet"
+            width={collapsed ? 26 : (28 * 86) / 40}
+            height={collapsed ? (26 * 40) / 86 : 28}
+            style={{ display: 'block' }}
           />
-        )}
+        </Box>
       </Box>
 
       {/* Menu groups: 12px between groups; 24px bottom padding inside each list (only visible when expanded) */}
@@ -564,6 +952,7 @@ export function SideNav({ collapsed, onToggle: _onToggle }: SideNavProps) {
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
+          gap: '12px',
           minHeight: 0,
           px: 1,
           py: 3,
@@ -695,18 +1084,9 @@ export function SideNav({ collapsed, onToggle: _onToggle }: SideNavProps) {
           )}
         </Box>
 
-        <List disablePadding sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, flexShrink: 0 }}>
-          {bottomNavItems.map((item) => (
-            <NavItem
-              key={item.id}
-              label={item.label}
-              icon={item.icon}
-              path={item.path}
-              active={item.path === location.pathname}
-              collapsed={collapsed}
-            />
-          ))}
-        </List>
+        <Box sx={{ flexShrink: 0 }}>
+          <SideNavFooter collapsed={collapsed} />
+        </Box>
       </Box>
     </Box>
   );
