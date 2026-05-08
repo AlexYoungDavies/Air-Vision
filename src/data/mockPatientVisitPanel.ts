@@ -153,18 +153,18 @@ function defaultImmunizationRows(): ProfileInfoRow[] {
 }
 
 /**
- * Michelle Chen — first slot on Today’s Patients: post-op follow-up (8:30–9:00 AM).
+ * Michelle Chen — TKA post-operative follow-up on Today’s Patients schedule.
  */
 function panelForMichelleChenPostOp(patient: Patient): PatientVisitPanelData {
   const history = treatmentHistoryFor(patient);
   return {
     lastSeenLabel: lastSeenFromHistory(history),
-    appointmentHeading: 'Post-op follow-up • 8:30 AM – 9:00 AM',
+    appointmentHeading: appointmentHeading(patient),
     aiSummary:
-      'Michelle Chen, 59F, here for a follow-up on her right knee after a Grade II MCL sprain. Occurred 6 weeks ago from a backyard fall. Surgery 2 weeks ago, has completed 2/8 week PT program. MRI imaging is available for review.',
+      'Michelle Chen, 59F, routine post-operative visit after right total knee arthroplasty (TKA), now 4 weeks from surgery. Weight-bearing as tolerated with assistive device; progressing through outpatient PT. New knee imaging available to review component position and rule out effusion or loosening.',
     thingsToReviewBullets: [
       'Medication Risk: Patient taking anticoagulant',
-      'New MRI imaging',
+      'New knee imaging',
       'Workers compensation case',
     ],
     highlightBullets: [],
@@ -190,11 +190,11 @@ function panelForMichelleChenPostOp(patient: Patient): PatientVisitPanelData {
         title: 'Imaging & Diagnostic',
         cards: [
           {
-            id: 'mri-right-knee',
+            id: 'xr-right-knee',
             kind: 'actionable',
             tone: 'info',
-            title: 'MRI — Right knee',
-            subheading: 'New results available for review; correlate with post-operative course and PT progress.',
+            title: 'Radiograph — Right knee',
+            subheading: 'New results available for review; correlate with post-operative course, ROM, and PT milestones.',
             actions: [
               { id: 'see-report', label: 'See report', onClick: () => undefined },
               { id: 'images', label: 'Images', onClick: () => undefined },
@@ -209,9 +209,9 @@ function panelForMichelleChenPostOp(patient: Patient): PatientVisitPanelData {
             id: 'mcl-repair',
             kind: 'static',
             tone: 'info',
-            title: 'Right MCL repair',
-            subheading: 'Feb 2022',
-            blurb: 'Shanghai Central Hospital',
+            title: 'Right TKA',
+            subheading: 'Feb 2026',
+            blurb: 'Regional Medical Center',
           },
         ],
       },
@@ -220,7 +220,7 @@ function panelForMichelleChenPostOp(patient: Patient): PatientVisitPanelData {
       primary: h.description,
       secondary: `${formatHistoryDate(h.date)}${h.provider ? ` · ${h.provider}` : ''}`,
     })),
-    files: [{ primary: 'MRI — Right knee', secondary: 'Available for review' }],
+    files: [{ primary: 'Radiograph — Right knee', secondary: 'Available for review' }],
     medications: [
       { primary: 'Warfarin', secondary: '5 mg daily · anticoagulant' },
       { primary: 'Acetaminophen', secondary: '500 mg PRN pain' },
@@ -374,7 +374,7 @@ function panelForGenericPatient(patient: Patient): PatientVisitPanelData {
   const thingsToReviewBullets: string[] = [];
   if (patient.hasNewImaging) thingsToReviewBullets.push('New imaging results since last visit');
   if (patient.hasNewLabs) thingsToReviewBullets.push('New laboratory results to reconcile');
-  if (patient.appointmentType === 'Initial Eval') {
+  if (patient.appointmentType === 'Initial Consultation' || patient.appointmentType === 'New Patient') {
     thingsToReviewBullets.push('New patient intake — confirm visit type and benefits');
   }
 
@@ -384,7 +384,7 @@ function panelForGenericPatient(patient: Patient): PatientVisitPanelData {
   }
 
   const summaryAlerts: PreVisitSummaryAlert[] = [];
-  if (patient.appointmentType === 'Initial Eval') {
+  if (patient.appointmentType === 'Initial Consultation' || patient.appointmentType === 'New Patient') {
     summaryAlerts.push({
       severity: 'warning',
       message: 'Prior authorization may be required for new patient visit',

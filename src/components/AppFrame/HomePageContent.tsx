@@ -34,7 +34,7 @@ import TaskAltOutlined from '@mui/icons-material/TaskAltOutlined';
 import AssignmentOutlined from '@mui/icons-material/AssignmentOutlined';
 import AssignmentLateOutlined from '@mui/icons-material/AssignmentLateOutlined';
 import { Link, useNavigate } from 'react-router-dom';
-import { MOCK_PATIENTS, TODAYS_PATIENTS, type Patient } from '../../data/mockPatients';
+import { MOCK_PATIENTS, TODAYS_PATIENTS, getNextUpcomingTodayPatientId, type Patient } from '../../data/mockPatients';
 import { getAppointmentsForPatient, type Appointment } from '../../data/mockAppointments';
 import { Callout } from './Callout';
 import { getPatientVisitPanelData, type ProfileInfoRow } from '../../data/mockPatientVisitPanel';
@@ -179,11 +179,11 @@ function PatientsListPanel({
           const showImaging = p.hasNewImaging === true;
           const showDangerAlerts = patientHasDangerLevelAlerts(p);
           const blockColor =
-            p.appointmentType === 'Initial Eval'
+            p.appointmentType === 'Initial Consultation' || p.appointmentType === 'New Patient'
               ? theme.palette.info.main
-              : p.appointmentType === 'Follow up'
+              : p.appointmentType === 'Follow-up Visit'
                 ? theme.palette.success.main
-                : p.appointmentType === 'Progress Note'
+                : p.appointmentType === 'Post-op Visit'
                   ? theme.palette.warning.main
                   : theme.palette.divider;
           return (
@@ -623,7 +623,13 @@ function getDaySummaryStats() {
   };
 }
 
-function DaySummaryPanel() {
+function DaySummaryPanel({
+  onSelectTab,
+  onOpenNextVisit,
+}: {
+  onSelectTab: (tab: HomeViewTab) => void;
+  onOpenNextVisit: () => void;
+}) {
   const stats = getDaySummaryStats();
   return (
     <Box
@@ -644,14 +650,24 @@ function DaySummaryPanel() {
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           {/* Top row: 2 large callouts */}
           <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
-            <Callout variant="large" value={stats.patientsToday} label="Patients Today" />
-            <Callout variant="large" value={stats.notesToSign} label="Notes to Close" />
+            <Callout variant="large" value={stats.patientsToday} label="Patients Today" onClick={onOpenNextVisit} />
+            <Callout
+              variant="large"
+              value={stats.notesToSign}
+              label="Notes to Close"
+              onClick={() => onSelectTab('notes')}
+            />
           </Box>
 
           {/* Bottom row: 3 small callouts */}
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 2 }}>
-            <Callout variant="small" value={stats.tasksOutstanding} label="Pending Tasks" />
-            <Callout variant="small" value={stats.messagesUnread} label="New Messages" />
+          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1 }}>
+            <Callout
+              variant="small"
+              value={stats.tasksOutstanding}
+              label="Pending Tasks"
+              onClick={() => onSelectTab('tasks')}
+            />
+            <Callout variant="small" value={stats.messagesUnread} label="New Messages" onClick={() => onSelectTab('messages')} />
             <Callout variant="small" value={stats.newLabsImages} label="New Documents" />
           </Box>
         </Box>
@@ -707,7 +723,15 @@ const thingsToReviewTopicSx = {
   mb: 1.25,
 } as const;
 
-function PatientVisitDetailPanel({ patient }: { patient: Patient | null }) {
+function PatientVisitDetailPanel({
+  patient,
+  onPreviewNavigateTab,
+  onOpenNextVisit,
+}: {
+  patient: Patient | null;
+  onPreviewNavigateTab: (tab: HomeViewTab) => void;
+  onOpenNextVisit: () => void;
+}) {
   const navigate = useNavigate();
   const theme = useTheme();
   const [additionalTab, setAdditionalTab] = useState(0);
@@ -717,7 +741,7 @@ function PatientVisitDetailPanel({ patient }: { patient: Patient | null }) {
   }, [patient?.id]);
 
   if (!patient) {
-    return <DaySummaryPanel />;
+    return <DaySummaryPanel onSelectTab={onPreviewNavigateTab} onOpenNextVisit={onOpenNextVisit} />;
   }
   const data = getPatientVisitPanelData(patient);
 
@@ -1298,6 +1322,12 @@ export function HomePageContent() {
     messages: stats.messagesUnread,
   };
 
+  const openNextUpcomingVisit = () => {
+    setActiveTab('patients');
+    const id = getNextUpcomingTodayPatientId(TODAYS_PATIENTS);
+    if (id) setSelectedPatientId(id);
+  };
+
   return (
     <Box
       sx={{
@@ -1442,7 +1472,13 @@ export function HomePageContent() {
               borderLeft: '1px solid rgba(0, 0, 0, 0.1)',
             }}
           >
-            {activeTab === 'patients' && <PatientVisitDetailPanel patient={selectedPatient} />}
+            {activeTab === 'patients' && (
+              <PatientVisitDetailPanel
+                patient={selectedPatient}
+                onPreviewNavigateTab={setActiveTab}
+                onOpenNextVisit={openNextUpcomingVisit}
+              />
+            )}
             {activeTab === 'notes' && <NotePreviewPanel noteId={selectedNoteId} />}
             {activeTab === 'tasks' && <TaskDetailPanel taskId={selectedTaskId} />}
             {activeTab === 'messages' && <OpenChatPanel chatId={selectedChatId} />}

@@ -30,6 +30,8 @@ export interface CalloutProps {
   label: string;
   /** Size variant: large (80/20px) or small (40/16px). */
   variant: CalloutVariant;
+  /** When set, the callout is keyboard-focusable and activates this handler (e.g. switch main tab). */
+  onClick?: () => void;
 }
 
 /**
@@ -37,11 +39,14 @@ export interface CalloutProps {
  * - large: value 80px, label 20px (e.g. Patients Today, Notes to close)
  * - small: value 40px, label 16px (e.g. Pending Tasks, New Messages)
  */
-export function Callout({ value, label, variant }: CalloutProps) {
+export function Callout({ value, label, variant, onClick }: CalloutProps) {
   const { minHeight, valueFontSize, labelFontSize } = VARIANTS[variant];
   return (
     <Paper
       variant="outlined"
+      component={onClick ? 'button' : 'div'}
+      type={onClick ? 'button' : undefined}
+      onClick={onClick}
       sx={{
         ...CALLOUT_BASE,
         display: 'flex',
@@ -49,6 +54,19 @@ export function Callout({ value, label, variant }: CalloutProps) {
         alignItems: 'center',
         justifyContent: 'center',
         minHeight,
+        ...(onClick && {
+          cursor: 'pointer',
+          width: '100%',
+          textAlign: 'center',
+          font: 'inherit',
+          fontFamily: 'inherit',
+          '&:hover': { bgcolor: 'action.hover' },
+          '&:focus-visible': {
+            outline: '2px solid',
+            outlineColor: 'primary.main',
+            outlineOffset: 2,
+          },
+        }),
       }}
     >
       <Typography sx={{ fontSize: valueFontSize, fontWeight: 700, lineHeight: 1.1, color: 'primary.main' }}>

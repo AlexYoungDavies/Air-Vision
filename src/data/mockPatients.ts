@@ -37,8 +37,8 @@ export interface Patient {
   reasonForVisit?: string;
   /** Appointment time for schedule display */
   appointmentTime?: string;
-  /** Appointment type for list display: Initial Eval, Follow up, or Progress Note */
-  appointmentType?: 'Initial Eval' | 'Follow up' | 'Progress Note';
+  /** Appointment type for list display (orthopedic practice visit categories) */
+  appointmentType?: 'Initial Consultation' | 'Follow-up Visit' | 'Post-op Visit' | 'New Patient';
   /** Patient has new labs to review (show labs icon on list item) */
   hasNewLabs?: boolean;
   /** Patient has new imaging to review (show imaging icon on list item) */
@@ -61,7 +61,7 @@ export const MOCK_PATIENTS: Patient[] = [
     gender: 'Female',
     insurance: { provider: 'Aetna', memberId: 'AET-8829102', groupNumber: 'GP-4421' },
     picture: 'https://i.pravatar.cc/150?img=45',
-    case: 'Post-op knee',
+    case: 'Total knee arthroplasty follow-up',
     homeAddress: { line1: '124 Oak Lane', city: 'Portland', state: 'OR', zip: '97201' },
     emergencyContact: { name: 'David Chen', relationship: 'Spouse', phone: '(555) 201-3402' },
     language: 'English',
@@ -78,7 +78,7 @@ export const MOCK_PATIENTS: Patient[] = [
     gender: 'Male',
     insurance: { provider: 'Blue Cross', memberId: 'BC-7734521', groupNumber: 'GP-8892' },
     picture: 'https://i.pravatar.cc/150?img=3',
-    case: 'Knee sprain',
+    case: 'ACL reconstruction rehab',
     homeAddress: { line1: '89 Pine Street', line2: 'Apt 4B', city: 'Seattle', state: 'WA', zip: '98101' },
     emergencyContact: { name: 'Lisa Chen', relationship: 'Spouse', phone: '(555) 202-4503' },
   },
@@ -93,7 +93,7 @@ export const MOCK_PATIENTS: Patient[] = [
     gender: 'Female',
     insurance: { provider: 'UnitedHealthcare', memberId: 'UHC-9921834', groupNumber: 'GP-1123' },
     picture: 'https://i.pravatar.cc/150?img=5',
-    case: 'Hypertension follow-up',
+    case: 'Rotator cuff repair post-op',
     homeAddress: { line1: '456 Maple Ave', city: 'Denver', state: 'CO', zip: '80202' },
     emergencyContact: { name: 'Carlos Rodriguez', relationship: 'Spouse', phone: '(555) 203-5604' },
   },
@@ -108,7 +108,7 @@ export const MOCK_PATIENTS: Patient[] = [
     gender: 'Male',
     insurance: { provider: 'Cigna', memberId: 'CIG-5543201', groupNumber: 'GP-7765' },
     picture: 'https://i.pravatar.cc/150?img=12',
-    case: 'Consultation',
+    case: 'Hip impingement evaluation',
     homeAddress: { line1: '201 Cedar Blvd', city: 'Austin', state: 'TX', zip: '78701' },
     emergencyContact: { name: 'Grace Kim', relationship: 'Sister', phone: '(555) 204-6705' },
   },
@@ -123,7 +123,7 @@ export const MOCK_PATIENTS: Patient[] = [
     gender: 'Male',
     insurance: { provider: 'Humana', memberId: 'HUM-2219876', groupNumber: 'GP-3344' },
     picture: 'https://i.pravatar.cc/150?img=11',
-    case: 'Lab review',
+    case: 'Distal radius fracture care',
     homeAddress: { line1: '78 Birch Rd', city: 'Nashville', state: 'TN', zip: '37201' },
     emergencyContact: { name: 'Mary Thompson', relationship: 'Spouse', phone: '(555) 205-7806' },
   },
@@ -138,7 +138,7 @@ export const MOCK_PATIENTS: Patient[] = [
     gender: 'Female',
     insurance: { provider: 'Kaiser Permanente', memberId: 'KP-6654321', groupNumber: 'GP-9988' },
     picture: 'https://i.pravatar.cc/150?img=9',
-    case: 'Migraine management',
+    case: 'Patellofemoral pain syndrome',
     homeAddress: { line1: '312 Elm St', city: 'Phoenix', state: 'AZ', zip: '85001' },
     emergencyContact: { name: 'Jose Martinez', relationship: 'Brother', phone: '(555) 206-8907' },
   },
@@ -153,7 +153,7 @@ export const MOCK_PATIENTS: Patient[] = [
     gender: 'Male',
     insurance: { provider: 'Aetna', memberId: 'AET-1122334', groupNumber: 'GP-4421' },
     picture: 'https://i.pravatar.cc/150?img=13',
-    case: 'Annual physical',
+    case: 'Meniscus repair post-op',
     homeAddress: { line1: '55 Walnut Dr', city: 'Boston', state: 'MA', zip: '02101' },
     emergencyContact: { name: 'Amy Wilson', relationship: 'Spouse', phone: '(555) 207-9018' },
   },
@@ -168,7 +168,7 @@ export const MOCK_PATIENTS: Patient[] = [
     gender: 'Female',
     insurance: { provider: 'Blue Cross', memberId: 'BC-9988776', groupNumber: 'GP-8892' },
     picture: 'https://i.pravatar.cc/150?img=20',
-    case: 'Diabetes check',
+    case: 'Chronic shoulder instability',
     homeAddress: { line1: '167 Spruce Ave', city: 'Chicago', state: 'IL', zip: '60601' },
     emergencyContact: { name: 'Tom Anderson', relationship: 'Spouse', phone: '(555) 208-0129' },
   },
@@ -183,7 +183,7 @@ export const MOCK_PATIENTS: Patient[] = [
     gender: 'Female',
     insurance: { provider: 'UnitedHealthcare', memberId: 'UHC-4455667', groupNumber: 'GP-1123' },
     picture: 'https://i.pravatar.cc/150?img=25',
-    case: 'Prenatal care',
+    case: 'Achilles tendinopathy',
     homeAddress: { line1: '90 Ash Lane', city: 'Miami', state: 'FL', zip: '33101' },
     emergencyContact: { name: 'Pedro Garcia', relationship: 'Spouse', phone: '(555) 209-1240' },
   },
@@ -198,7 +198,7 @@ export const MOCK_PATIENTS: Patient[] = [
     gender: 'Male',
     insurance: { provider: 'Cigna', memberId: 'CIG-7788990', groupNumber: 'GP-7765' },
     picture: 'https://i.pravatar.cc/150?img=15',
-    case: 'Sports physical',
+    case: 'Carpal tunnel release post-op',
     homeAddress: { line1: '234 Hickory Way', city: 'Atlanta', state: 'GA', zip: '30301' },
     emergencyContact: { name: 'Susan Brown', relationship: 'Mother', phone: '(555) 210-2341' },
   },
@@ -213,7 +213,7 @@ export const MOCK_PATIENTS: Patient[] = [
     gender: 'Female',
     insurance: { provider: 'Humana', memberId: 'HUM-3344556', groupNumber: 'GP-3344' },
     picture: 'https://i.pravatar.cc/150?img=26',
-    case: 'Thyroid follow-up',
+    case: 'Medial epicondylitis',
     homeAddress: { line1: '45 Magnolia St', city: 'Charlotte', state: 'NC', zip: '28201' },
     emergencyContact: { name: 'Kevin Foster', relationship: 'Spouse', phone: '(555) 211-3452' },
   },
@@ -228,7 +228,7 @@ export const MOCK_PATIENTS: Patient[] = [
     gender: 'Male',
     insurance: { provider: 'Kaiser Permanente', memberId: 'KP-6677889', groupNumber: 'GP-9988' },
     picture: 'https://i.pravatar.cc/150?img=14',
-    case: 'Allergy testing',
+    case: 'Ankle ORIF post-op',
     homeAddress: { line1: '678 Dogwood Rd', city: 'San Diego', state: 'CA', zip: '92101' },
     emergencyContact: { name: 'Rachel Taylor', relationship: 'Sister', phone: '(555) 212-4563' },
   },
@@ -354,26 +354,130 @@ export const MOCK_PATIENTS: Patient[] = [
   },
 ];
 
-/** Subset of patients with today's schedule for "Today's Patients" view */
+function parseAppointmentStartMinutes(appointmentTime: string): number | null {
+  const startPart = appointmentTime.split(/\s*[–-]\s*/)[0].trim();
+  const match = startPart.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/i);
+  if (!match) return null;
+  let h = parseInt(match[1], 10);
+  const m = match[2] ? parseInt(match[2], 10) : 0;
+  const ap = match[3].toUpperCase();
+  if (ap === 'PM' && h !== 12) h += 12;
+  if (ap === 'AM' && h === 12) h = 0;
+  return h * 60 + m;
+}
+
+function comparePatientsByAppointmentStart(a: Patient, b: Patient): number {
+  const ma = parseAppointmentStartMinutes(a.appointmentTime ?? '');
+  const mb = parseAppointmentStartMinutes(b.appointmentTime ?? '');
+  return (ma ?? 24 * 60) - (mb ?? 24 * 60);
+}
+
+/**
+ * Pick today's patient whose visit starts next (≥ now), using `appointmentTime` start.
+ * If every visit has already started, returns the chronologically first visit of the day.
+ */
+export function getNextUpcomingTodayPatientId(patients: readonly Patient[], now: Date = new Date()): string | null {
+  if (patients.length === 0) return null;
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+  let upcoming: { id: string; minutes: number } | null = null;
+  let earliest: { id: string; minutes: number } | null = null;
+
+  for (const p of patients) {
+    if (!p.appointmentTime) continue;
+    const minutes = parseAppointmentStartMinutes(p.appointmentTime);
+    if (minutes === null) continue;
+    if (!earliest || minutes < earliest.minutes) earliest = { id: p.id, minutes };
+    if (minutes >= nowMinutes && (!upcoming || minutes < upcoming.minutes)) upcoming = { id: p.id, minutes };
+  }
+
+  return upcoming?.id ?? earliest?.id ?? patients[0].id;
+}
+
+/** Subset of patients with today's schedule for "Today's Patients" view (sorted by appointment start time). */
 export const TODAYS_PATIENTS = ((): Patient[] => {
   const byId = (id: string) => MOCK_PATIENTS.find((p) => p.id === id)!;
-  return [
+  const rows: Patient[] = [
     {
-      ...byId('1'),
-      reasonForVisit: 'Post-op follow-up',
-      appointmentTime: '8:30 AM – 9:00 AM',
-      appointmentType: 'Follow up',
+      ...byId('2'),
+      reasonForVisit: 'Post-op ACL reconstruction follow-up',
+      appointmentTime: '7:30 AM – 8:00 AM',
+      appointmentType: 'Follow-up Visit',
+      hasNewLabs: true,
+    },
+    {
+      ...byId('3'),
+      reasonForVisit: 'Rotator cuff repair wound check & ROM',
+      appointmentTime: '8:00 AM – 8:30 AM',
+      appointmentType: 'Post-op Visit',
       hasNewImaging: true,
     },
-    { ...byId('2'), reasonForVisit: 'Knee sprain', appointmentTime: '7:30 AM', appointmentType: 'Follow up', hasNewLabs: true },
-    { ...byId('3'), reasonForVisit: 'Hypertension follow-up', appointmentTime: '8:00 AM', appointmentType: 'Progress Note', hasNewImaging: true },
-    { ...byId('4'), reasonForVisit: 'Consultation', appointmentTime: '9:00 AM', appointmentType: 'Initial Eval', hasNewLabs: true, hasNewImaging: true },
-    { ...byId('5'), reasonForVisit: 'Lab review', appointmentTime: '9:30 AM', appointmentType: 'Follow up' },
-    { ...byId('7'), reasonForVisit: 'Annual physical', appointmentTime: '11:00 AM', appointmentType: 'Progress Note' },
-    { ...byId('8'), reasonForVisit: 'Consultation', appointmentTime: '12:00 PM', appointmentType: 'Initial Eval' },
-    { ...byId('9'), reasonForVisit: 'Follow-up', appointmentTime: '12:30 PM', appointmentType: 'Follow up', hasNewLabs: true },
-    { ...byId('10'), reasonForVisit: 'Lab review', appointmentTime: '1:00 PM', appointmentType: 'Progress Note' },
-    { ...byId('11'), reasonForVisit: 'Consultation', appointmentTime: '2:00 PM', appointmentType: 'Follow up' },
-    { ...byId('12'), reasonForVisit: 'Follow-up', appointmentTime: '2:30 PM', appointmentType: 'Progress Note', hasNewLabs: true, hasNewImaging: true },
+    {
+      ...byId('1'),
+      reasonForVisit: 'TKA post-operative clinical visit',
+      appointmentTime: '8:30 AM – 9:00 AM',
+      appointmentType: 'Follow-up Visit',
+      hasNewImaging: true,
+    },
+    {
+      ...byId('4'),
+      reasonForVisit: 'New hip pain — structural evaluation',
+      appointmentTime: '9:00 AM – 9:45 AM',
+      appointmentType: 'Initial Consultation',
+      hasNewLabs: true,
+      hasNewImaging: true,
+    },
+    {
+      ...byId('5'),
+      reasonForVisit: 'Distal radius fracture — cast check & X-ray review',
+      appointmentTime: '9:45 AM – 10:15 AM',
+      appointmentType: 'Follow-up Visit',
+    },
+    {
+      ...byId('7'),
+      reasonForVisit: 'Meniscal repair post-op assessment',
+      appointmentTime: '11:00 AM – 11:30 AM',
+      appointmentType: 'Post-op Visit',
+    },
+    {
+      ...byId('8'),
+      reasonForVisit: 'Recurrent shoulder instability — surgical consult',
+      appointmentTime: '12:00 PM – 12:45 PM',
+      appointmentType: 'Initial Consultation',
+    },
+    {
+      ...byId('9'),
+      reasonForVisit: 'Mid-portion Achilles tendinopathy follow-up',
+      appointmentTime: '12:45 PM – 1:15 PM',
+      appointmentType: 'Follow-up Visit',
+      hasNewLabs: true,
+    },
+    {
+      ...byId('10'),
+      reasonForVisit: 'Carpal tunnel release suture removal & strength check',
+      appointmentTime: '1:15 PM – 1:45 PM',
+      appointmentType: 'Post-op Visit',
+    },
+    {
+      ...byId('11'),
+      reasonForVisit: 'Medial epicondylitis — injection follow-up',
+      appointmentTime: '2:00 PM – 2:30 PM',
+      appointmentType: 'Follow-up Visit',
+    },
+    {
+      ...byId('12'),
+      reasonForVisit: 'Ankle ORIF hardware & wound check',
+      appointmentTime: '2:30 PM – 3:15 PM',
+      appointmentType: 'Post-op Visit',
+      hasNewLabs: true,
+      hasNewImaging: true,
+    },
+    {
+      ...byId('6'),
+      reasonForVisit: 'New patient — acute knee injury after soccer',
+      appointmentTime: '4:30 PM – 5:15 PM',
+      appointmentType: 'New Patient',
+    },
   ];
+  return [...rows].sort(comparePatientsByAppointmentStart);
 })();

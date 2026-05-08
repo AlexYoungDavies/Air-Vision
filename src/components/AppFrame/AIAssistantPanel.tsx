@@ -340,6 +340,7 @@ export function AIAssistantPanel({
               gap: 1.25,
               minHeight: '100%',
               boxSizing: 'border-box',
+              px: 1,
             }}
           >
             {messages.map((msg) => (

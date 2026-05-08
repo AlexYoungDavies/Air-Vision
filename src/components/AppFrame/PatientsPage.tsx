@@ -15,9 +15,10 @@ import PersonAddOutlined from '@mui/icons-material/PersonAddOutlined';
 import { MOCK_PATIENTS, type Patient } from '../../data/mockPatients';
 
 const APPOINTMENT_TYPE_COLORS: Record<NonNullable<Patient['appointmentType']>, string> = {
-  'Initial Eval': '#1976d2',
-  'Follow up': '#2e7d32',
-  'Progress Note': '#ed6c02',
+  'Initial Consultation': '#1976d2',
+  'Follow-up Visit': '#2e7d32',
+  'Post-op Visit': '#ed6c02',
+  'New Patient': '#01579b',
 };
 const DEFAULT_APPOINTMENT_BORDER_COLOR = 'rgba(0, 0, 0, 0.2)';
 
