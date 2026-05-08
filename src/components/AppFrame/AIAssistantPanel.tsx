@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Box, Chip, TextField, Typography } from '@mui/material';
+import { Box, Chip, Menu, MenuItem, SvgIcon, TextField, Tooltip, Typography } from '@mui/material';
 import { keyframes } from '@mui/system';
-import CloseOutlined from '@mui/icons-material/CloseOutlined';
 import AttachFileOutlined from '@mui/icons-material/AttachFileOutlined';
 import SendOutlined from '@mui/icons-material/SendOutlined';
+import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined';
 import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
 import hoverAnimationData from '../../assets/hover.json';
 import { AppIconButton } from '../AppIconButton';
@@ -63,6 +63,111 @@ interface ChatMessage {
 
 type DemoPhase = 'greeting' | 'awaiting_rule_update' | 'complete';
 
+type ViewMode = 'chat' | 'all-chats';
+
+interface ChatHistoryItem {
+  id: string;
+  title: string;
+  lastAccessed: Date;
+  messages: ChatMessage[];
+}
+
+function formatChatTimestamp(date: Date): string {
+  const now = new Date();
+  const isToday = date.toDateString() === now.toDateString();
+  if (isToday) {
+    return date
+      .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+      .toLowerCase()
+      .replace(' ', '');
+  }
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+let historyId = 0;
+function nextHistoryId(): string {
+  historyId += 1;
+  return `ch-${historyId}`;
+}
+
+function buildInitialHistory(): ChatHistoryItem[] {
+  const now = new Date();
+  const at = (daysAgo: number, hour: number, min: number) => {
+    const d = new Date(now);
+    d.setDate(d.getDate() - daysAgo);
+    d.setHours(hour, min, 0, 0);
+    return d;
+  };
+  return [
+    {
+      id: nextHistoryId(),
+      title: "Today's Schedule Overview",
+      lastAccessed: at(0, 9, 15),
+      messages: [
+        { id: 'h1-m1', role: 'user', text: "Today's Overview" },
+        { id: 'h1-m2', role: 'assistant', text: AI_DAY_OVERVIEW },
+        { id: 'h1-m3', role: 'user', text: 'Can you move the new patient slot earlier in the day?' },
+        { id: 'h1-m4', role: 'assistant', text: "The earliest open slot for a New Patient visit (45 min) before your current one is 10:15 AM. Want me to move it there, or would you prefer to adjust the duration instead?" },
+      ],
+    },
+    {
+      id: nextHistoryId(),
+      title: 'Scheduling Rules Update',
+      lastAccessed: at(0, 11, 42),
+      messages: [
+        { id: 'h2-m1', role: 'user', text: 'Update my scheduling rules so new patients can only book 9–12' },
+        { id: 'h2-m2', role: 'assistant', text: AI_RULES_CONFIRMED },
+        { id: 'h2-m3', role: 'user', text: 'Perfect, thanks' },
+        { id: 'h2-m4', role: 'assistant', text: "You're welcome. The rule is live—any new patient booking attempts outside that window will be blocked automatically." },
+      ],
+    },
+    {
+      id: nextHistoryId(),
+      title: "My Todo's",
+      lastAccessed: at(1, 14, 30),
+      messages: [
+        { id: 'h3-m1', role: 'user', text: "What's waiting on me?" },
+        { id: 'h3-m2', role: 'assistant', text: AI_WAITING },
+        { id: 'h3-m3', role: 'user', text: 'Open the lab result' },
+        { id: 'h3-m4', role: 'assistant', text: "Opening the lab result for James Hartley (CBC, drawn this morning). Flagged: Hemoglobin 9.2 g/dL — low. You may want to review before his 2 PM visit." },
+      ],
+    },
+    {
+      id: nextHistoryId(),
+      title: 'Patient Alerts',
+      lastAccessed: at(2, 10, 0),
+      messages: [
+        { id: 'h4-m1', role: 'user', text: 'Key alerts for today' },
+        { id: 'h4-m2', role: 'assistant', text: AI_KEY_ALERTS },
+        { id: 'h4-m3', role: 'user', text: 'Which patients have open pre-visit tasks?' },
+        { id: 'h4-m4', role: 'assistant', text: "Three patients have open tasks: Sarah M. (med reconciliation), David R. (consent form unsigned), and Emily T. (pre-visit questionnaire incomplete). All are scheduled before noon." },
+      ],
+    },
+    {
+      id: nextHistoryId(),
+      title: 'Lab Results Review',
+      lastAccessed: at(3, 16, 20),
+      messages: [
+        { id: 'h5-m1', role: 'user', text: 'Any lab results I need to review?' },
+        { id: 'h5-m2', role: 'assistant', text: "You have 4 pending lab results: two are routine follow-ups (lipid panel, HbA1c), one is flagged critical — potassium 6.1 mEq/L for Robert Chen, and one is a pre-op CBC still pending sign-off." },
+        { id: 'h5-m3', role: 'user', text: 'Flag the critical one for a callback' },
+        { id: 'h5-m4', role: 'assistant', text: "Done. Robert Chen's chart is flagged for an urgent callback regarding the potassium result. His contact number on file is (555) 304-1182. Want me to draft a message to your nurse as well?" },
+      ],
+    },
+    {
+      id: nextHistoryId(),
+      title: 'End of Day Summary',
+      lastAccessed: at(5, 17, 0),
+      messages: [
+        { id: 'h6-m1', role: 'user', text: 'Give me an end of day summary' },
+        { id: 'h6-m2', role: 'assistant', text: "Here's your summary: you saw 14 patients, completed 12 notes (2 still open), signed 3 prescriptions, and had 1 no-show. Average visit ran 2 minutes over the booked time. Reminder: you have a prior auth due tomorrow for Maria L." },
+        { id: 'h6-m3', role: 'user', text: 'Remind me about the prior auth tomorrow morning' },
+        { id: 'h6-m4', role: 'assistant', text: "Got it—I'll surface that reminder when you open the app tomorrow. Prior auth for Maria L., due by end of day." },
+      ],
+    },
+  ];
+}
+
 const AI_DAY_OVERVIEW =
   "Here's what's worth knowing about today's visits: several patients on your schedule have open pre-visit tasks or results to review before you see them.\n\nHeads-up: your last appointment is a New Patient visit. With the booked duration, it runs about 15 minutes past your published end-of-day availability—worth adjusting that block or your rules if you need to protect your end time.";
 
@@ -97,6 +202,60 @@ function looksLikeSchedulingRuleUpdate(text: string): boolean {
     lower.includes('noon');
   const mentionsNewPatient = lower.includes('new patient');
   return mentionsNewPatient && mentionsWindow;
+}
+
+function NewChatIcon(props: React.ComponentProps<typeof SvgIcon>) {
+  return (
+    <SvgIcon {...props} viewBox="0 0 24 24" fill="none">
+      <path
+        d="M12 7.5C12.4142 7.5 12.75 7.83579 12.75 8.25V10.5C12.75 10.6381 12.8619 10.75 13 10.75H15.25C15.6642 10.75 16 11.0858 16 11.5C16 11.9142 15.6642 12.25 15.25 12.25H13C12.8619 12.25 12.75 12.3619 12.75 12.5V14.75C12.75 15.1642 12.4142 15.5 12 15.5C11.5858 15.5 11.25 15.1642 11.25 14.75V12.5C11.25 12.3619 11.1381 12.25 11 12.25H8.75C8.33579 12.25 8 11.9142 8 11.5C8 11.0858 8.33579 10.75 8.75 10.75H11C11.1381 10.75 11.25 10.6381 11.25 10.5V8.25C11.25 7.83579 11.5858 7.5 12 7.5Z"
+        fill="currentColor"
+      />
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M15.3496 3C17.5898 3 18.7108 2.99957 19.5664 3.43555C20.3189 3.81902 20.931 4.43109 21.3145 5.18359C21.7504 6.03924 21.75 7.16018 21.75 9.40039V13.0996C21.75 15.3398 21.7504 16.4608 21.3145 17.3164C20.931 18.0689 20.3189 18.681 19.5664 19.0645C18.7108 19.5004 17.5898 19.5 15.3496 19.5H9.96778C9.35633 19.5 9.0504 19.5003 8.7627 19.5693C8.50767 19.6306 8.26368 19.7311 8.04004 19.8682C7.78775 20.0228 7.57105 20.2395 7.13867 20.6719L5.94434 21.8662C5.89737 21.9132 5.87399 21.937 5.85059 21.959C5.49616 22.2913 5.03245 22.4833 4.54688 22.499C4.51465 22.5001 4.48091 22.5 4.41407 22.5C4.26169 22.5 4.18545 22.5003 4.1211 22.4961C3.11806 22.4313 2.31868 21.6319 2.25391 20.6289C2.24975 20.5646 2.25 20.4883 2.25 20.3359V9.40039C2.25 7.16018 2.24958 6.03924 2.68555 5.18359C3.06902 4.43109 3.68109 3.81902 4.4336 3.43555C5.28924 2.99957 6.41018 3 8.65039 3H15.3496ZM7.75 4.5C6.35003 4.5 5.64999 4.50007 5.11524 4.77246C4.64483 5.01214 4.26215 5.39483 4.02246 5.86523C3.75007 6.39999 3.75 7.10002 3.75 8.5V20.3359C3.75 20.4885 3.75007 20.5653 3.7666 20.6279C3.81259 20.8017 3.94832 20.9374 4.12207 20.9834C4.18475 20.9999 4.26146 21 4.41407 21C4.48094 21 4.51486 21.0002 4.54688 20.9961C4.63431 20.9847 4.71722 20.9502 4.78711 20.8965C4.81266 20.8768 4.83661 20.8528 4.88379 20.8057L5.81446 19.875C6.50602 19.1834 6.85238 18.8372 7.25586 18.5898C7.61368 18.3706 8.00406 18.2083 8.41211 18.1104C8.87239 17.9998 9.36179 18 10.3398 18H16.25C17.65 18 18.35 17.9999 18.8848 17.7275C19.3552 17.4879 19.7379 17.1052 19.9775 16.6348C20.2499 16.1 20.25 15.4 20.25 14V8.5C20.25 7.10002 20.2499 6.39999 19.9775 5.86523C19.7379 5.39483 19.3552 5.01214 18.8848 4.77246C18.35 4.50007 17.65 4.5 16.25 4.5H7.75Z"
+        fill="currentColor"
+      />
+    </SvgIcon>
+  );
+}
+
+function AllChatsIcon(props: React.ComponentProps<typeof SvgIcon>) {
+  return (
+    <SvgIcon {...props} viewBox="0 0 24 24" fill="none">
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M8.5 5.75C8.5 5.33579 8.83579 5 9.25 5H20.25C20.6642 5 21 5.33579 21 5.75C21 6.16421 20.6642 6.5 20.25 6.5H9.25C8.83579 6.5 8.5 6.16421 8.5 5.75Z"
+        fill="currentColor"
+      />
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M8.5 18.245C8.5 17.8335 8.83355 17.5 9.245 17.5H20.255C20.6665 17.5 21 17.8335 21 18.245C21 18.6565 20.6665 18.99 20.255 18.99H9.245C8.83355 18.99 8.5 18.6565 8.5 18.245Z"
+        fill="currentColor"
+      />
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M5.245 5C5.66197 5 6 5.33802 6 5.755C6 6.17198 5.66197 6.51 5.245 6.51H4.755C4.33803 6.51 4 6.17198 4 5.755C4 5.33802 4.33803 5 4.755 5H5.245Z"
+        fill="currentColor"
+      />
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M5.25 17.5C5.66421 17.5 6 17.8358 6 18.25C6 18.6642 5.66421 19 5.25 19H4.75C4.33579 19 4 18.6642 4 18.25C4 17.8358 4.33579 17.5 4.75 17.5H5.25Z"
+        fill="currentColor"
+      />
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M6 12C6 12.4142 5.66421 12.75 5.25 12.75H4.75C4.33579 12.75 4 12.4142 4 12C4 11.5858 4.33579 11.25 4.75 11.25H5.25C5.66421 11.25 6 11.5858 6 12ZM21 12C21 12.4142 20.6642 12.75 20.25 12.75H9.25C8.83579 12.75 8.5 12.4142 8.5 12C8.5 11.5858 8.83579 11.25 9.25 11.25H20.25C20.6642 11.25 21 11.5858 21 12Z"
+        fill="currentColor"
+      />
+    </SvgIcon>
+  );
 }
 
 const shortcutChipSx = {
@@ -153,12 +312,18 @@ export function AIAssistantPanel({
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [demoPhase, setDemoPhase] = useState<DemoPhase>('greeting');
   const [isAssistantThinking, setIsAssistantThinking] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>('chat');
+  const [chatHistory, setChatHistory] = useState<ChatHistoryItem[]>(() => buildInitialHistory());
+  const [chatMenuAnchor, setChatMenuAnchor] = useState<HTMLElement | null>(null);
   const greetingLottieRef = useRef<LottieRefCurrentProps | null>(null);
   const directionRef = useRef(1);
   const transcriptEndRef = useRef<HTMLDivElement | null>(null);
   const thinkingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const hasConversation = messages.length > 0;
+
+  const rawChatTitle = messages.find((m) => m.role === 'user')?.text ?? '';
+  const chatTitle = rawChatTitle.length > 24 ? rawChatTitle.slice(0, 24) + '…' : rawChatTitle;
 
   useEffect(() => {
     const lottie = greetingLottieRef.current;
@@ -254,6 +419,26 @@ export function AIAssistantPanel({
     [appendExchange, demoPhase, hasConversation, isAssistantThinking, onShortcutClick],
   );
 
+  const handleNewChat = useCallback(() => {
+    clearThinkingTimer();
+    setMessages((prev) => {
+      const firstUserMsg = prev.find((m) => m.role === 'user');
+      if (firstUserMsg) {
+        const raw = firstUserMsg.text;
+        const title = raw.length > 40 ? raw.slice(0, 40) + '…' : raw;
+        setChatHistory((h) => [
+          { id: nextHistoryId(), title, lastAccessed: new Date() },
+          ...h,
+        ]);
+      }
+      return [];
+    });
+    setDemoPhase('greeting');
+    setInputValue('');
+    setIsAssistantThinking(false);
+    setViewMode('chat');
+  }, [clearThinkingTimer]);
+
   const handleSend = () => {
     const text = inputValue.trim();
     if (!text) return;
@@ -323,22 +508,204 @@ export function AIAssistantPanel({
           flexShrink: 0,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'flex-end',
-          px: 2,
-          py: 1.5,
+          gap: 0.25,
+          px: 1,
+          py: 0.5,
         }}
       >
-        <AppIconButton
-          tooltip="Close"
-          aria-label="Close"
-          onClick={onClose}
-          sx={{ color: 'text.secondary' }}
+        {(hasConversation || viewMode === 'all-chats') && (
+          <AppIconButton
+            tooltip="New chat"
+            aria-label="New chat"
+            onClick={handleNewChat}
+            sx={{ color: 'text.secondary', flexShrink: 0 }}
+          >
+            <NewChatIcon sx={{ fontSize: 18 }} />
+          </AppIconButton>
+        )}
+
+        <Box
+          sx={{
+            flex: 1,
+            minWidth: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
-          <CloseOutlined sx={{ fontSize: 20 }} />
+          {viewMode === 'all-chats' ? (
+            <Typography sx={{ fontSize: 13, fontWeight: 500, color: 'text.primary' }}>
+              All Chats
+            </Typography>
+          ) : hasConversation ? (
+            <Box
+              component="button"
+              onClick={(e: React.MouseEvent<HTMLElement>) => setChatMenuAnchor(e.currentTarget)}
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 0.25,
+                overflow: 'hidden',
+                cursor: 'pointer',
+                userSelect: 'none',
+                background: 'none',
+                border: 'none',
+                p: 0,
+                borderRadius: 1,
+                maxWidth: '100%',
+                '&:hover': { opacity: 0.7 },
+              }}
+            >
+              <Typography
+                sx={{
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: 'text.primary',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {chatTitle}
+              </Typography>
+              <KeyboardArrowDownOutlined
+                sx={{
+                  fontSize: 15,
+                  color: 'text.secondary',
+                  flexShrink: 0,
+                  transition: 'transform 0.15s',
+                  transform: chatMenuAnchor ? 'rotate(180deg)' : 'rotate(0deg)',
+                }}
+              />
+            </Box>
+          ) : null}
+        </Box>
+
+        <AppIconButton
+          tooltip={viewMode === 'all-chats' ? 'Back to chat' : 'All chats'}
+          aria-label={viewMode === 'all-chats' ? 'Back to chat' : 'All chats'}
+          onClick={() => setViewMode((v) => (v === 'all-chats' ? 'chat' : 'all-chats'))}
+          sx={{
+            color: viewMode === 'all-chats' ? 'primary.main' : 'text.secondary',
+            flexShrink: 0,
+          }}
+        >
+          <AllChatsIcon sx={{ fontSize: 18 }} />
         </AppIconButton>
       </Box>
 
-      {hasConversation ? (
+      <Menu
+        anchorEl={chatMenuAnchor}
+        open={Boolean(chatMenuAnchor)}
+        onClose={() => setChatMenuAnchor(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'center' }}
+        slotProps={{
+          paper: {
+            sx: {
+              width: PANEL_WIDTH - 16,
+              maxHeight: 320,
+              mt: 0.5,
+              boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+              borderRadius: 2,
+            },
+          },
+        }}
+      >
+        {chatHistory.map((item) => (
+          <MenuItem
+            key={item.id}
+            onClick={() => {
+              clearThinkingTimer();
+              setMessages(item.messages);
+              setDemoPhase('complete');
+              setIsAssistantThinking(false);
+              setViewMode('chat');
+              setChatMenuAnchor(null);
+            }}
+            sx={{
+              px: 1.5,
+              py: 0.75,
+              borderRadius: 1,
+              mx: 0.5,
+              gap: 1,
+              '&:first-of-type': { mt: 0.5 },
+              '&:last-of-type': { mb: 0.5 },
+            }}
+          >
+            <Box sx={{ minWidth: 0, flex: 1 }}>
+              <Typography
+                sx={{
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: 'text.primary',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {item.title}
+              </Typography>
+              <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.25 }}>
+                {formatChatTimestamp(item.lastAccessed)}
+              </Typography>
+            </Box>
+          </MenuItem>
+        ))}
+      </Menu>
+
+      {viewMode === 'all-chats' ? (
+        <Box
+          sx={{
+            flex: 1,
+            minHeight: 0,
+            overflow: 'auto',
+            py: 0.5,
+          }}
+        >
+          {chatHistory.map((item) => (
+            <Box
+              key={item.id}
+              onClick={() => {
+                setMessages(item.messages);
+                setDemoPhase('complete');
+                setViewMode('chat');
+              }}
+              sx={{
+                px: 1,
+                py: 0.75,
+                borderRadius: 1,
+                cursor: 'pointer',
+                '&:hover': { bgcolor: 'action.hover' },
+              }}
+            >
+              <Typography
+                sx={{
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: 'text.primary',
+                  lineHeight: 1.4,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {item.title}
+              </Typography>
+              <Typography
+                sx={{
+                  fontSize: 11,
+                  color: 'text.secondary',
+                  mt: 0.25,
+                  lineHeight: 1.4,
+                }}
+              >
+                {formatChatTimestamp(item.lastAccessed)}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
+      ) : hasConversation ? (
         <Box
           sx={{
             flex: 1,
@@ -532,7 +899,7 @@ export function AIAssistantPanel({
         </Box>
       )}
 
-      <Box
+      {viewMode !== 'all-chats' && <Box
         sx={{
           flexShrink: 0,
           pl: 0,
@@ -632,7 +999,7 @@ export function AIAssistantPanel({
             </AppIconButton>
           </Box>
         </Box>
-      </Box>
+      </Box>}
     </Box>
   );
 }
