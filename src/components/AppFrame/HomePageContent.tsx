@@ -36,7 +36,6 @@ import AssignmentLateOutlined from '@mui/icons-material/AssignmentLateOutlined';
 import { Link, useNavigate } from 'react-router-dom';
 import { MOCK_PATIENTS, TODAYS_PATIENTS, getNextUpcomingTodayPatientId, type Patient } from '../../data/mockPatients';
 import { getAppointmentsForPatient, type Appointment } from '../../data/mockAppointments';
-import { Callout } from './Callout';
 import { getPatientVisitPanelData, type ProfileInfoRow } from '../../data/mockPatientVisitPanel';
 import { MOCK_CHATS, getChatById, getMessagesForChat } from '../../data/mockChats';
 import { VisitNoteContent } from './VisitNoteContent';
@@ -623,59 +622,6 @@ function getDaySummaryStats() {
   };
 }
 
-function DaySummaryPanel({
-  onSelectTab,
-  onOpenNextVisit,
-}: {
-  onSelectTab: (tab: HomeViewTab) => void;
-  onOpenNextVisit: () => void;
-}) {
-  const stats = getDaySummaryStats();
-  return (
-    <Box
-      sx={{
-        p: 3,
-        height: '100%',
-        overflow: 'auto',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'stretch', width: 500 }}>
-        <Typography variant="h2" sx={{ fontSize: 20, fontWeight: 500, color: 'text.primary', mb: 0.5 }}>
-          Today’s Preview
-        </Typography>
-
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-          {/* Top row: 2 large callouts */}
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1 }}>
-            <Callout variant="large" value={stats.patientsToday} label="Patients Today" onClick={onOpenNextVisit} />
-            <Callout
-              variant="large"
-              value={stats.notesToSign}
-              label="Notes to Close"
-              onClick={() => onSelectTab('notes')}
-            />
-          </Box>
-
-          {/* Bottom row: 3 small callouts */}
-          <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 1 }}>
-            <Callout
-              variant="small"
-              value={stats.tasksOutstanding}
-              label="Pending Tasks"
-              onClick={() => onSelectTab('tasks')}
-            />
-            <Callout variant="small" value={stats.messagesUnread} label="New Messages" onClick={() => onSelectTab('messages')} />
-            <Callout variant="small" value={stats.newLabsImages} label="New Documents" />
-          </Box>
-        </Box>
-      </Box>
-    </Box>
-  );
-}
-
 const ADDITIONAL_INFO_TABS = ['Visit history', 'Files', 'Immunizations', 'Labs', 'Medications'] as const;
 
 /** Pre-visit panel: inner column max width (px). */
@@ -723,15 +669,7 @@ const thingsToReviewTopicSx = {
   mb: 1.25,
 } as const;
 
-function PatientVisitDetailPanel({
-  patient,
-  onPreviewNavigateTab,
-  onOpenNextVisit,
-}: {
-  patient: Patient | null;
-  onPreviewNavigateTab: (tab: HomeViewTab) => void;
-  onOpenNextVisit: () => void;
-}) {
+function PatientVisitDetailPanel({ patient }: { patient: Patient | null }) {
   const navigate = useNavigate();
   const theme = useTheme();
   const [additionalTab, setAdditionalTab] = useState(0);
@@ -741,7 +679,19 @@ function PatientVisitDetailPanel({
   }, [patient?.id]);
 
   if (!patient) {
-    return <DaySummaryPanel onSelectTab={onPreviewNavigateTab} onOpenNextVisit={onOpenNextVisit} />;
+    return (
+      <Box
+        sx={{
+          p: 3,
+          height: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Typography sx={{ fontSize: 14, color: 'text.secondary' }}>No visits scheduled for today.</Typography>
+      </Box>
+    );
   }
   const data = getPatientVisitPanelData(patient);
 
@@ -1297,7 +1247,9 @@ function getFirstChatId(): string | null {
 
 export function HomePageContent() {
   const [activeTab, setActiveTab] = useState<HomeViewTab>('patients');
-  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
+  const [selectedPatientId, setSelectedPatientId] = useState<string | null>(() =>
+    getNextUpcomingTodayPatientId(TODAYS_PATIENTS)
+  );
   const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
@@ -1320,12 +1272,6 @@ export function HomePageContent() {
     notes: stats.notesToSign,
     tasks: stats.tasksOutstanding,
     messages: stats.messagesUnread,
-  };
-
-  const openNextUpcomingVisit = () => {
-    setActiveTab('patients');
-    const id = getNextUpcomingTodayPatientId(TODAYS_PATIENTS);
-    if (id) setSelectedPatientId(id);
   };
 
   return (
@@ -1472,13 +1418,7 @@ export function HomePageContent() {
               borderLeft: '1px solid rgba(0, 0, 0, 0.1)',
             }}
           >
-            {activeTab === 'patients' && (
-              <PatientVisitDetailPanel
-                patient={selectedPatient}
-                onPreviewNavigateTab={setActiveTab}
-                onOpenNextVisit={openNextUpcomingVisit}
-              />
-            )}
+            {activeTab === 'patients' && <PatientVisitDetailPanel patient={selectedPatient} />}
             {activeTab === 'notes' && <NotePreviewPanel noteId={selectedNoteId} />}
             {activeTab === 'tasks' && <TaskDetailPanel taskId={selectedTaskId} />}
             {activeTab === 'messages' && <OpenChatPanel chatId={selectedChatId} />}

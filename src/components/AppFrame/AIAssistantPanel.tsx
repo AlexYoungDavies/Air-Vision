@@ -78,6 +78,16 @@ const AI_RULES_CONFIRMED =
 const AI_DEMO_WRAP_UP =
   "Thanks for walking through the demo. In the full product, I can keep helping with scheduling, alerts, and more.";
 
+const HOME_DEMO_SHORTCUT_IDS = new Set([
+  'tell-me-about-my-day',
+  'whats-waiting-on-me',
+  'key-alerts-today',
+]);
+
+function placeholderShortcutReply(label: string): string {
+  return `I’ll help with **${label}** here in the full product—for now this is a quick preview of the assistant.`;
+}
+
 function looksLikeSchedulingRuleUpdate(text: string): boolean {
   const lower = text.toLowerCase();
   const mentionsWindow =
@@ -220,7 +230,9 @@ export function AIAssistantPanel({
     (shortcut: AIAssistantShortcut) => {
       if (hasConversation && isAssistantThinking) return;
       onShortcutClick?.(shortcut.id);
-      if (demoPhase === 'complete') return;
+
+      const isHomeDemoShortcut = HOME_DEMO_SHORTCUT_IDS.has(shortcut.id);
+      if (isHomeDemoShortcut && demoPhase === 'complete') return;
 
       if (shortcut.id === 'tell-me-about-my-day') {
         appendExchange("Today's Overview", AI_DAY_OVERVIEW, true);
@@ -232,6 +244,11 @@ export function AIAssistantPanel({
       }
       if (shortcut.id === 'whats-waiting-on-me') {
         appendExchange("My Todo's", AI_WAITING, false);
+        return;
+      }
+
+      if (!isHomeDemoShortcut) {
+        appendExchange(shortcut.label, placeholderShortcutReply(shortcut.label), false);
       }
     },
     [appendExchange, demoPhase, hasConversation, isAssistantThinking, onShortcutClick],

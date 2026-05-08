@@ -65,6 +65,11 @@ import {
   type SubsectionDef,
 } from '../../data/visitNoteSections';
 import { AICheckIcon } from '../icons';
+import { useAssistantShortcutOverrideOptional } from './AssistantShortcutsContext';
+import {
+  VISIT_NOTE_SIGNED_ASSISTANT_SHORTCUTS,
+  VISIT_NOTE_UNSIGNED_ASSISTANT_SHORTCUTS,
+} from './assistantPanelShortcuts';
 
 // Signature icon (same as Notes tab on home page)
 function SignatureAltIcon(props: React.ComponentProps<typeof SvgIcon>) {
@@ -1217,11 +1222,21 @@ export function VisitNoteContent({
   const [clinicalStage, setClinicalStage] = useState(appointment.clinicalStage);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [collapsedSubsections, setCollapsedSubsections] = useState<Set<string>>(new Set());
+  const assistantShortcutOverride = useAssistantShortcutOverrideOptional();
 
   useEffect(() => {
     setNoteTemplate(appointment.template);
     setClinicalStage(appointment.clinicalStage);
   }, [appointment.id, appointment.template, appointment.clinicalStage]);
+
+  useEffect(() => {
+    if (!assistantShortcutOverride) return;
+    const { setShortcutOverride } = assistantShortcutOverride;
+    setShortcutOverride(
+      data.signStatus === 'signed' ? VISIT_NOTE_SIGNED_ASSISTANT_SHORTCUTS : VISIT_NOTE_UNSIGNED_ASSISTANT_SHORTCUTS,
+    );
+    return () => setShortcutOverride(null);
+  }, [data.signStatus, assistantShortcutOverride]);
   const [activeAnchorId, setActiveAnchorId] = useState<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 

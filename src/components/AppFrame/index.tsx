@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useLayoutEffect } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, type ReactNode } from 'react';
 import { Box, Fade } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { SwitchTransition } from 'react-transition-group';
@@ -8,6 +8,7 @@ import { HeaderBar } from './HeaderBar';
 import { AppCanvas } from './AppCanvas';
 import { AIAssistantPanel } from './AIAssistantPanel';
 import { getAssistantShortcutsForPath } from './assistantPanelShortcuts';
+import { AssistantShortcutsProvider, useAssistantShortcutOverride } from './AssistantShortcutsContext';
 import { ScribePanel } from './ScribePanel';
 import { ColorPickerPopover } from './ColorPickerPopover';
 import { SpotlightSearch } from './SpotlightSearch';
@@ -27,6 +28,101 @@ export interface AppFrameProps {
   children?: React.ReactNode;
 }
 
+function AppFrameMainWorkspace({
+  children,
+  theme,
+  activePanel,
+  renderedPanel,
+  onPanelTransitionEnd,
+  onCloseAssistant,
+  scribeSelectedVisit,
+  onScribeSelectedVisitChange,
+  activeScribeRecording,
+  onActiveScribeRecordingChange,
+}: {
+  children: ReactNode;
+  theme: ReturnType<typeof useTheme>;
+  activePanel: SidePanel;
+  renderedPanel: SidePanel;
+  onPanelTransitionEnd: (e: React.TransitionEvent<HTMLDivElement>) => void;
+  onCloseAssistant: () => void;
+  scribeSelectedVisit: MockScribeVisit | null;
+  onScribeSelectedVisitChange: (v: MockScribeVisit | null) => void;
+  activeScribeRecording: ActiveScribeRecordingSession | null;
+  onActiveScribeRecordingChange: (v: ActiveScribeRecordingSession | null) => void;
+}) {
+  const location = useLocation();
+  const { shortcutOverride } = useAssistantShortcutOverride();
+  const assistantShortcuts = shortcutOverride ?? getAssistantShortcutsForPath(location.pathname);
+
+  return (
+    <Box
+      sx={{
+        flex: 1,
+        minHeight: 0,
+        minWidth: 0,
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'stretch',
+        overflow: 'hidden',
+      }}
+    >
+      <AppCanvas>{children}</AppCanvas>
+      <Box
+        onTransitionEnd={onPanelTransitionEnd}
+        sx={{
+          width: activePanel !== 'none' ? PANEL_WIDTH : 0,
+          flexShrink: 0,
+          overflow: 'hidden',
+          minHeight: 0,
+          height: '100%',
+          transition: (t) =>
+            t.transitions.create('width', {
+              duration: PANEL_TRANSITION_MS,
+              easing: t.transitions.easing.easeInOut,
+            }),
+        }}
+      >
+        {renderedPanel !== 'none' && (
+          <SwitchTransition mode="out-in">
+            <Fade
+              key={renderedPanel}
+              timeout={PANEL_CROSSFADE_MS}
+              easing={{
+                enter: theme.transitions.easing.easeInOut,
+                exit: theme.transitions.easing.easeInOut,
+              }}
+            >
+              <Box
+                sx={{
+                  width: PANEL_WIDTH,
+                  height: '100%',
+                  minHeight: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflow: 'hidden',
+                }}
+              >
+                {renderedPanel === 'assistant' && (
+                  <AIAssistantPanel onClose={onCloseAssistant} shortcuts={assistantShortcuts} />
+                )}
+                {renderedPanel === 'scribe' && (
+                  <ScribePanel
+                    selectedVisit={scribeSelectedVisit}
+                    onSelectedVisitChange={onScribeSelectedVisitChange}
+                    activeRecording={activeScribeRecording}
+                    onActiveRecordingChange={onActiveScribeRecordingChange}
+                  />
+                )}
+              </Box>
+            </Fade>
+          </SwitchTransition>
+        )}
+      </Box>
+    </Box>
+  );
+}
+
 export function AppFrame({ children }: AppFrameProps) {
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [activePanel, setActivePanel] = useState<SidePanel>('none');
@@ -41,8 +137,6 @@ export function AppFrame({ children }: AppFrameProps) {
   const colorPickerAnchorRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
   const { accentKey, setAccentKey } = useAccent();
-  const location = useLocation();
-  const assistantShortcuts = getAssistantShortcutsForPath(location.pathname);
 
   useLayoutEffect(() => {
     if (activePanel !== 'none') {
@@ -190,73 +284,21 @@ export function AppFrame({ children }: AppFrameProps) {
             }}
             onSearchClick={() => setSpotlightOpen(true)}
           />
-          <Box
-            sx={{
-              flex: 1,
-              minHeight: 0,
-              minWidth: 0,
-              display: 'flex',
-              flexDirection: 'row',
-              alignItems: 'stretch',
-              overflow: 'hidden',
-            }}
-          >
-            <AppCanvas>{children ?? <Outlet />}</AppCanvas>
-            <Box
-              onTransitionEnd={handlePanelWidthTransitionEnd}
-              sx={{
-                width: activePanel !== 'none' ? PANEL_WIDTH : 0,
-                flexShrink: 0,
-                overflow: 'hidden',
-                minHeight: 0,
-                height: '100%',
-                transition: (t) =>
-                  t.transitions.create('width', {
-                    duration: PANEL_TRANSITION_MS,
-                    easing: t.transitions.easing.easeInOut,
-                  }),
-              }}
+          <AssistantShortcutsProvider>
+            <AppFrameMainWorkspace
+              theme={theme}
+              activePanel={activePanel}
+              renderedPanel={renderedPanel}
+              onPanelTransitionEnd={handlePanelWidthTransitionEnd}
+              onCloseAssistant={() => setActivePanel('none')}
+              scribeSelectedVisit={scribeSelectedVisit}
+              onScribeSelectedVisitChange={setScribeSelectedVisit}
+              activeScribeRecording={activeScribeRecording}
+              onActiveScribeRecordingChange={setActiveScribeRecording}
             >
-              {renderedPanel !== 'none' && (
-                <SwitchTransition mode="out-in">
-                  <Fade
-                    key={renderedPanel}
-                    timeout={PANEL_CROSSFADE_MS}
-                    easing={{
-                      enter: theme.transitions.easing.easeInOut,
-                      exit: theme.transitions.easing.easeInOut,
-                    }}
-                  >
-                    <Box
-                      sx={{
-                        width: PANEL_WIDTH,
-                        height: '100%',
-                        minHeight: 0,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        overflow: 'hidden',
-                      }}
-                    >
-                      {renderedPanel === 'assistant' && (
-                        <AIAssistantPanel
-                          onClose={() => setActivePanel('none')}
-                          shortcuts={assistantShortcuts}
-                        />
-                      )}
-                      {renderedPanel === 'scribe' && (
-                        <ScribePanel
-                          selectedVisit={scribeSelectedVisit}
-                          onSelectedVisitChange={setScribeSelectedVisit}
-                          activeRecording={activeScribeRecording}
-                          onActiveRecordingChange={setActiveScribeRecording}
-                        />
-                      )}
-                    </Box>
-                  </Fade>
-                </SwitchTransition>
-              )}
-            </Box>
-          </Box>
+              {children ?? <Outlet />}
+            </AppFrameMainWorkspace>
+          </AssistantShortcutsProvider>
         </Box>
       </Box>
       <ColorPickerPopover
