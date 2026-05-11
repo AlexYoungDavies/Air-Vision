@@ -818,9 +818,10 @@ function PatientVisitDetailPanel({ patient }: { patient: Patient | null }) {
               Full Profile
             </Button>
             <Button
-              variant="outlined"
+              variant="contained"
+              color="primary"
               size="small"
-              startIcon={<ContentPasteOutlined sx={{ fontSize: 18, color: 'primary.main' }} />}
+              startIcon={<ContentPasteOutlined sx={{ fontSize: 18 }} />}
               onClick={() => navigate(`/patients/${patient.id}?openNote=1`)}
               sx={{ textTransform: 'none', fontWeight: 500 }}
             >
@@ -1137,9 +1138,10 @@ function NotePreviewPanel({ noteId }: { noteId: string | null }) {
               Full Profile
             </Button>
             <Button
-              variant="outlined"
+              variant="contained"
+              color="primary"
               size="small"
-              startIcon={<ContentPasteOutlined sx={{ fontSize: 18, color: 'primary.main' }} />}
+              startIcon={<ContentPasteOutlined sx={{ fontSize: 18 }} />}
               onClick={() => navigate(`/patients/${patient.id}?openNote=1`)}
               sx={{ textTransform: 'none', fontWeight: 500 }}
             >
