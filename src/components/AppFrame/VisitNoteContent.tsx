@@ -1193,6 +1193,9 @@ function VisitNoteFloatingToolbar({
               fontWeight: 500,
               textTransform: 'none',
               minWidth: 0,
+              width: 'auto',
+              flexShrink: 0,
+              whiteSpace: 'nowrap',
               '&:hover': { bgcolor: 'action.hover' },
             }}
           >
