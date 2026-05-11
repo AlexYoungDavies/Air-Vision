@@ -19,6 +19,7 @@ export function AppCanvas({ children }: AppCanvasProps) {
         pr: 0,
         pb: 1,
         pl: 0,
+        mr: 1,
       }}
     >
       <Box
