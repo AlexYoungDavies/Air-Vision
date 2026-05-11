@@ -19,8 +19,10 @@ import {
   ToggleButtonGroup,
   Chip,
   Divider,
+  alpha,
 } from '@mui/material';
 import AddOutlined from '@mui/icons-material/AddOutlined';
+import CheckOutlined from '@mui/icons-material/CheckOutlined';
 import CloseOutlined from '@mui/icons-material/CloseOutlined';
 import ImageOutlined from '@mui/icons-material/ImageOutlined';
 import HealingOutlined from '@mui/icons-material/HealingOutlined';
@@ -32,6 +34,7 @@ import ContentCopyOutlined from '@mui/icons-material/ContentCopyOutlined';
 import DeleteOutlineOutlined from '@mui/icons-material/DeleteOutlineOutlined';
 import CloudUploadOutlined from '@mui/icons-material/CloudUploadOutlined';
 import MoreHorizOutlined from '@mui/icons-material/MoreHorizOutlined';
+import PictureAsPdfOutlined from '@mui/icons-material/PictureAsPdfOutlined';
 import type { OrthoOrder } from '../../../data/mockOrthoNoteData';
 import { baseInputSx } from './visitNoteFieldStyles';
 
@@ -395,13 +398,15 @@ function DetailRow({ label, children }: { label: string; children: React.ReactNo
 function OrderItem({
   order,
   onRemove,
+  readOnly,
 }: {
   order: OrthoOrder;
   onRemove: (id: string) => void;
+  readOnly?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
 
-  if (expanded) {
+  if (expanded && !readOnly) {
     return (
       <Box>
         <OrderExpandedDetail order={order} onCollapse={() => setExpanded(false)} />
@@ -409,7 +414,10 @@ function OrderItem({
     );
   }
 
-  const openOrder = () => setExpanded(true);
+  const openOrder = () => {
+    if (readOnly) return;
+    setExpanded(true);
+  };
 
   return (
     <Box>
@@ -428,28 +436,32 @@ function OrderItem({
         }}
       >
         <Box
-          role="button"
-          tabIndex={0}
-          aria-label={`Open ${order.name}`}
-          onClick={openOrder}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              openOrder();
-            }
-          }}
+          role={readOnly ? undefined : 'button'}
+          tabIndex={readOnly ? undefined : 0}
+          aria-label={readOnly ? undefined : `Open ${order.name}`}
+          onClick={readOnly ? undefined : openOrder}
+          onKeyDown={
+            readOnly
+              ? undefined
+              : (e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    openOrder();
+                  }
+                }
+          }
           sx={{
             flex: 1,
             minWidth: 0,
             display: 'flex',
             alignItems: 'flex-start',
             gap: 1,
-            cursor: 'pointer',
+            cursor: readOnly ? 'default' : 'pointer',
             py: 1,
             pl: 1,
             pr: 0.5,
             transition: (theme) => theme.transitions.create(['background-color'], { duration: theme.transitions.duration.shortest }),
-            '&:hover': { bgcolor: 'action.hover' },
+            ...(readOnly ? {} : { '&:hover': { bgcolor: 'action.hover' } }),
           }}
         >
           <Box sx={{ pt: '2px', flexShrink: 0 }}>
@@ -460,7 +472,9 @@ function OrderItem({
               <Typography sx={{ fontSize: 14, fontWeight: 500, color: 'text.primary' }}>
                 {order.name}
               </Typography>
-              <KeyboardArrowDownOutlined sx={{ fontSize: 16, color: 'text.secondary', flexShrink: 0 }} />
+              {!readOnly && (
+                <KeyboardArrowDownOutlined sx={{ fontSize: 16, color: 'text.secondary', flexShrink: 0 }} />
+              )}
             </Box>
             <Typography sx={{ fontSize: 12, color: 'text.secondary', mt: 0.125 }}>
               Created on {order.createdAt}{' '}
@@ -469,21 +483,45 @@ function OrderItem({
             </Typography>
           </Box>
         </Box>
-        <IconButton
-          size="small"
-          aria-label="Remove order"
-          onClick={(e) => {
-            e.stopPropagation();
-            onRemove(order.id);
-          }}
-          sx={{
-            flexShrink: 0,
-            mt: '6px',
-            '&:hover': { bgcolor: 'action.hover' },
-          }}
-        >
-          <CloseOutlined sx={{ fontSize: 16 }} />
-        </IconButton>
+        {readOnly ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0, mt: '4px', mr: '2px' }}>
+            <Chip
+              icon={<CheckOutlined sx={{ fontSize: 14 }} />}
+              label="Submitted"
+              size="small"
+              sx={{
+                height: 24,
+                fontSize: 12,
+                fontWeight: 500,
+                bgcolor: (theme) => alpha(theme.palette.success.main, 0.12),
+                color: 'success.dark',
+                border: '1px solid',
+                borderColor: (theme) => alpha(theme.palette.success.main, 0.24),
+                '& .MuiChip-icon': { color: 'success.dark', ml: '6px', mr: '-4px' },
+                '& .MuiChip-label': { px: 1 },
+              }}
+            />
+            <IconButton size="small" aria-label="Open PDF" sx={{ flexShrink: 0 }}>
+              <PictureAsPdfOutlined sx={{ fontSize: 18, color: 'text.secondary' }} />
+            </IconButton>
+          </Box>
+        ) : (
+          <IconButton
+            size="small"
+            aria-label="Remove order"
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove(order.id);
+            }}
+            sx={{
+              flexShrink: 0,
+              mt: '6px',
+              '&:hover': { bgcolor: 'action.hover' },
+            }}
+          >
+            <CloseOutlined sx={{ fontSize: 16 }} />
+          </IconButton>
+        )}
       </Box>
     </Box>
   );
@@ -494,9 +532,11 @@ function OrderItem({
 export interface VisitNoteOrdersSectionProps {
   orders: OrthoOrder[];
   onOrdersChange: (orders: OrthoOrder[]) => void;
+  /** Render the section without action buttons and with each order as a non-interactive submitted entry. */
+  readOnly?: boolean;
 }
 
-export function VisitNoteOrdersSection({ orders, onOrdersChange }: VisitNoteOrdersSectionProps) {
+export function VisitNoteOrdersSection({ orders, onOrdersChange, readOnly }: VisitNoteOrdersSectionProps) {
   const handleRemove = (id: string) => {
     onOrdersChange(orders.filter((o) => o.id !== id));
   };
@@ -517,32 +557,34 @@ export function VisitNoteOrdersSection({ orders, onOrdersChange }: VisitNoteOrde
         <Typography variant="h6" sx={{ fontWeight: 700, fontSize: 20 }}>
           Orders
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-          <Button
-            variant="outlined"
-            size="small"
-            sx={{ textTransform: 'none', fontSize: 13, height: 28 }}
-          >
-            Submit All
-          </Button>
-          <IconButton size="small">
-            <ContentCopyOutlined sx={{ fontSize: 16 }} />
-          </IconButton>
-          <IconButton size="small">
-            <DeleteOutlineOutlined sx={{ fontSize: 16 }} />
-          </IconButton>
-          <Button
-            variant="contained"
-            size="small"
-            startIcon={<AddOutlined sx={{ fontSize: 14 }} />}
-            sx={{ textTransform: 'none', fontSize: 13, height: 28 }}
-          >
-            Add Order
-          </Button>
-          <IconButton size="small">
-            <MoreHorizOutlined sx={{ fontSize: 16 }} />
-          </IconButton>
-        </Box>
+        {!readOnly && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+            <Button
+              variant="outlined"
+              size="small"
+              sx={{ textTransform: 'none', fontSize: 13, height: 28 }}
+            >
+              Submit All
+            </Button>
+            <IconButton size="small">
+              <ContentCopyOutlined sx={{ fontSize: 16 }} />
+            </IconButton>
+            <IconButton size="small">
+              <DeleteOutlineOutlined sx={{ fontSize: 16 }} />
+            </IconButton>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<AddOutlined sx={{ fontSize: 14 }} />}
+              sx={{ textTransform: 'none', fontSize: 13, height: 28 }}
+            >
+              Add Order
+            </Button>
+            <IconButton size="small">
+              <MoreHorizOutlined sx={{ fontSize: 16 }} />
+            </IconButton>
+          </Box>
+        )}
       </Box>
 
       {/* Order list */}
@@ -553,7 +595,7 @@ export function VisitNoteOrdersSection({ orders, onOrdersChange }: VisitNoteOrde
       ) : (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
           {orders.map((order) => (
-            <OrderItem key={order.id} order={order} onRemove={handleRemove} />
+            <OrderItem key={order.id} order={order} onRemove={handleRemove} readOnly={readOnly} />
           ))}
         </Box>
       )}

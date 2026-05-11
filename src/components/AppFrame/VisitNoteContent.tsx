@@ -547,18 +547,11 @@ const SOAP_READ_VIEW_CONTENT_ORTHO: Record<string, string> = {
     'M17.11 — Unilateral primary osteoarthritis, right knee.\n\n' +
     'Continued care: patient will follow up for repeat viscosupplement injection as indicated and ongoing management of right knee osteoarthritis. Radiographic results will be reviewed at next visit to determine degree of joint space narrowing and guide further treatment planning.\n\n' +
     "Additional notes: patient tolerated today's visit well. Weight loss counseling provided. Instructed to use prescribed knee orthosis during weight-bearing activity and to follow up if symptoms acutely worsen prior to scheduled return.",
+  // Plan narrative — Orders and Services are rendered as visual sections below the
+  // plan block (see read view rendering), not duplicated in this narrative text.
   plan:
     'Intra-articular viscosupplement injection using hylan G-F 20 (Synvisc) 16 mg was ordered for symptomatic management of right knee osteoarthritis following inadequate response to conservative therapy. The injection is intended to improve joint lubrication, reduce pain, and enhance functional mobility.\n\n' +
-    'A prefabricated knee brace was ordered to provide joint stabilization and support during ambulation and daily activities. The orthosis is intended to reduce mechanical stress on the right knee joint, improve stability, and assist with pain management in the setting of degenerative joint disease.\n\n' +
-    'Orders:\n' +
-    '• Radiologic examination, knee; 3 views.\n' +
-    '• Arthrocentesis, aspiration and/or injection; major joint (knee).\n' +
-    '• Knee orthosis, elastic with joints, prefabricated.\n\n' +
-    'Services Billed:\n' +
-    '• Evaluations — 99214: office/outpatient E/M, established patient.\n' +
-    '• Procedures — 20610: arthrocentesis, knee; J7325: hylan G-F 20 (Synvisc), per 1 mg.\n' +
-    '• Radiology & Imaging — 73562: radiologic examination, knee, 3 views.\n' +
-    '• DME — L1810 (RT): knee orthosis, elastic with joints, prefabricated.',
+    'A prefabricated knee brace was ordered to provide joint stabilization and support during ambulation and daily activities. The orthosis is intended to reduce mechanical stress on the right knee joint, improve stability, and assist with pain management in the setting of degenerative joint disease.',
 };
 
 /** SOAP narrative content for Read view (concise formatted summary). */
@@ -1879,6 +1872,32 @@ export function VisitNoteContent({
                     />
                   );
                 })}
+                {/* Ortho-only: Orders and Services rendered as read-only visual sections.
+                    Edit-mode counterparts live inside the Plan section block; here they
+                    appear after the Plan narrative as standalone sections (matching the
+                    edit view layout, minus header/per-row controls). */}
+                {isOrthoPatient && orthoExtras && (
+                  <>
+                    <Box sx={{ mb: 1 }}>
+                      <VisitNoteOrdersSection
+                        readOnly
+                        orders={orthoExtras.orders}
+                        onOrdersChange={(orders) =>
+                          setOrthoExtras((prev) => (prev ? { ...prev, orders } : prev))
+                        }
+                      />
+                    </Box>
+                    <Box>
+                      <VisitNoteServicesSection
+                        readOnly
+                        categories={orthoExtras.services}
+                        onCategoriesChange={(services) =>
+                          setOrthoExtras((prev) => (prev ? { ...prev, services } : prev))
+                        }
+                      />
+                    </Box>
+                  </>
+                )}
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 2, fontSize: 14, lineHeight: 1.6 }}>
                     Primary provider is Daniel McGuffie, PT, DPT, OCS. Referring provider on file is Lauren Chambers (fax: +1 (585) 784-7981). Plan of Care PDF to be faxed to referring provider upon signing.

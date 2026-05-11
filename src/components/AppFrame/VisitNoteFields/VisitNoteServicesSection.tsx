@@ -105,6 +105,87 @@ const unitInputSx = {
   },
 } as const;
 
+// ─── Read-only variants (no hover, no pointer) ─────────────────────────────────
+
+const READ_ONLY_SELECT_SX = {
+  ...baseInputSx,
+  backgroundColor: 'action.hover',
+  cursor: 'default',
+  '&:hover': {
+    backgroundColor: 'action.hover',
+    '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+  },
+  '& .MuiSelect-icon': { color: 'text.secondary' },
+} as const;
+
+const readOnlyCptSelectSx = {
+  ...READ_ONLY_SELECT_SX,
+  width: COL_CPT_W,
+  '& .MuiSelect-select': {
+    py: 0,
+    px: 1,
+    pr: '20px !important',
+    fontSize: 13,
+    fontWeight: 500,
+    height: 28,
+    display: 'flex',
+    alignItems: 'center',
+    boxSizing: 'border-box',
+  },
+} as const;
+
+const readOnlyModSelectSx = {
+  ...READ_ONLY_SELECT_SX,
+  width: COL_MOD_W,
+  '& .MuiSelect-select': {
+    py: 0,
+    px: 1,
+    pr: '20px !important',
+    fontSize: 13,
+    height: 28,
+    display: 'flex',
+    alignItems: 'center',
+    boxSizing: 'border-box',
+  },
+} as const;
+
+const readOnlyIcdSelectSx = {
+  ...READ_ONLY_SELECT_SX,
+  width: COL_ICD_W,
+  '& .MuiSelect-select': {
+    py: 0,
+    px: 1,
+    pr: '20px !important',
+    fontSize: 13,
+    height: 28,
+    display: 'flex',
+    alignItems: 'center',
+    boxSizing: 'border-box',
+  },
+} as const;
+
+const readOnlyUnitInputSx = {
+  width: COL_UNITS_W,
+  '& .MuiInputBase-root': {
+    ...baseInputSx,
+    backgroundColor: 'action.hover',
+    height: 28,
+    cursor: 'default',
+    '&:hover': {
+      backgroundColor: 'action.hover',
+      '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+    },
+  },
+  '& .MuiInputBase-input': {
+    py: 0,
+    px: 1.5,
+    fontSize: 13,
+    height: 28,
+    boxSizing: 'border-box' as const,
+    cursor: 'default',
+  },
+} as const;
+
 // ─── ICD+Units pairs — stacked vertically ────────────────────────────────────
 
 function IcdUnitsPairs({
@@ -112,11 +193,13 @@ function IcdUnitsPairs({
   units,
   onIcdChange,
   onUnitsChange,
+  readOnly,
 }: {
   icdCodes: string[];
   units: string;
   onIcdChange: (codes: string[]) => void;
   onUnitsChange: (value: string) => void;
+  readOnly?: boolean;
 }) {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
@@ -131,28 +214,31 @@ function IcdUnitsPairs({
               next[idx] = String(e.target.value);
               onIcdChange(next);
             }}
-            sx={icdSelectSx}
+            readOnly={readOnly}
+            sx={readOnly ? readOnlyIcdSelectSx : icdSelectSx}
           >
             <MenuItem value={code}>{code}</MenuItem>
           </Select>
 
-          {/* Remove ICD */}
-          <IconButton
-            size="small"
-            onClick={() => onIcdChange(icdCodes.filter((_, i) => i !== idx))}
-            sx={{ width: 20, height: 20, border: '1px solid', borderColor: 'divider', borderRadius: '50%', p: 0 }}
-          >
-            <Typography sx={{ fontSize: 13, lineHeight: 1, userSelect: 'none' }}>−</Typography>
-          </IconButton>
-
-          {/* Add ICD */}
-          <IconButton
-            size="small"
-            onClick={() => onIcdChange([...icdCodes, ''])}
-            sx={{ width: 20, height: 20, border: '1px solid', borderColor: 'divider', borderRadius: '50%', p: 0 }}
-          >
-            <Typography sx={{ fontSize: 13, lineHeight: 1, userSelect: 'none' }}>+</Typography>
-          </IconButton>
+          {/* Remove / Add ICD — edit only */}
+          {!readOnly && (
+            <>
+              <IconButton
+                size="small"
+                onClick={() => onIcdChange(icdCodes.filter((_, i) => i !== idx))}
+                sx={{ width: 20, height: 20, border: '1px solid', borderColor: 'divider', borderRadius: '50%', p: 0 }}
+              >
+                <Typography sx={{ fontSize: 13, lineHeight: 1, userSelect: 'none' }}>−</Typography>
+              </IconButton>
+              <IconButton
+                size="small"
+                onClick={() => onIcdChange([...icdCodes, ''])}
+                sx={{ width: 20, height: 20, border: '1px solid', borderColor: 'divider', borderRadius: '50%', p: 0 }}
+              >
+                <Typography sx={{ fontSize: 13, lineHeight: 1, userSelect: 'none' }}>+</Typography>
+              </IconButton>
+            </>
+          )}
 
           {/* Units — shown alongside each ICD row; only first row has the input, rest share */}
           {idx === 0 && (
@@ -161,14 +247,15 @@ function IcdUnitsPairs({
               placeholder="Units"
               value={units}
               onChange={(e) => onUnitsChange(e.target.value)}
-              sx={unitInputSx}
+              InputProps={{ readOnly: !!readOnly }}
+              sx={readOnly ? readOnlyUnitInputSx : unitInputSx}
             />
           )}
           {idx > 0 && <Box sx={{ width: COL_UNITS_W }} />}
         </Box>
       ))}
 
-      {icdCodes.length === 0 && (
+      {!readOnly && icdCodes.length === 0 && (
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <Box sx={{ width: COL_ICD_W }} />
           <IconButton
@@ -190,10 +277,12 @@ function ServiceRow({
   row,
   onChange,
   onDelete,
+  readOnly,
 }: {
   row: OrthoServiceRow;
   onChange: (updated: OrthoServiceRow) => void;
   onDelete: () => void;
+  readOnly?: boolean;
 }) {
   return (
     <Box
@@ -206,10 +295,20 @@ function ServiceRow({
     >
       {/* CPT + Modifier */}
       <Box sx={{ display: 'flex', gap: 0.5, flexShrink: 0, pt: '1px' }}>
-        <Select size="small" value={row.cptCode} sx={cptSelectSx}>
+        <Select
+          size="small"
+          value={row.cptCode}
+          readOnly={readOnly}
+          sx={readOnly ? readOnlyCptSelectSx : cptSelectSx}
+        >
           <MenuItem value={row.cptCode}>{row.cptCode}</MenuItem>
         </Select>
-        <Select size="small" value={row.modifier} sx={modSelectSx}>
+        <Select
+          size="small"
+          value={row.modifier}
+          readOnly={readOnly}
+          sx={readOnly ? readOnlyModSelectSx : modSelectSx}
+        >
           <MenuItem value={row.modifier}>{row.modifier}</MenuItem>
         </Select>
       </Box>
@@ -235,18 +334,21 @@ function ServiceRow({
           units={row.units}
           onIcdChange={(codes) => onChange({ ...row, icdCodes: codes })}
           onUnitsChange={(units) => onChange({ ...row, units })}
+          readOnly={readOnly}
         />
       </Box>
 
-      {/* Actions */}
-      <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0, width: COL_ACTIONS_W, pt: '1px' }}>
-        <IconButton size="small" aria-label="Comment">
-          <CommentOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
-        </IconButton>
-        <IconButton size="small" aria-label="Delete" onClick={onDelete}>
-          <DeleteOutlineOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
-        </IconButton>
-      </Box>
+      {/* Actions — edit only */}
+      {!readOnly && (
+        <Box sx={{ display: 'flex', alignItems: 'center', flexShrink: 0, width: COL_ACTIONS_W, pt: '1px' }}>
+          <IconButton size="small" aria-label="Comment">
+            <CommentOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
+          </IconButton>
+          <IconButton size="small" aria-label="Delete" onClick={onDelete}>
+            <DeleteOutlineOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
+          </IconButton>
+        </Box>
+      )}
     </Box>
   );
 }
@@ -256,9 +358,11 @@ function ServiceRow({
 function ServiceCategoryBlock({
   category,
   onChange,
+  readOnly,
 }: {
   category: OrthoServiceCategory;
   onChange: (updated: OrthoServiceCategory) => void;
+  readOnly?: boolean;
 }) {
   const handleRowChange = (idx: number, updated: OrthoServiceRow) => {
     const rows = [...category.rows];
@@ -295,21 +399,47 @@ function ServiceCategoryBlock({
           {category.label}
         </Typography>
 
-        {/* ICD-10 header — aligns with ICD selects */}
-        <Typography
-          sx={{
-            fontSize: 12,
-            fontWeight: 700,
-            color: 'text.secondary',
-            width: COL_ICD_W + 20 + 20 + 8 + 8 + COL_UNITS_W, // ICD + buttons + units
-            flexShrink: 0,
-          }}
-        >
-          ICD-10
-        </Typography>
-
-        {/* Actions spacer */}
-        <Box sx={{ width: COL_ACTIONS_W, flexShrink: 0 }} />
+        {readOnly ? (
+          // Read view: separate "ICD-10" and "Units" labels aligned over their fields.
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+            <Typography
+              sx={{
+                fontSize: 12,
+                fontWeight: 700,
+                color: 'text.secondary',
+                width: COL_ICD_W,
+              }}
+            >
+              ICD-10
+            </Typography>
+            <Typography
+              sx={{
+                fontSize: 12,
+                fontWeight: 700,
+                color: 'text.secondary',
+                width: COL_UNITS_W,
+              }}
+            >
+              Units
+            </Typography>
+          </Box>
+        ) : (
+          <>
+            {/* Edit view: single ICD-10 header spans the ICD select + +/- buttons + Units */}
+            <Typography
+              sx={{
+                fontSize: 12,
+                fontWeight: 700,
+                color: 'text.secondary',
+                width: COL_ICD_W + 20 + 20 + 8 + 8 + COL_UNITS_W,
+                flexShrink: 0,
+              }}
+            >
+              ICD-10
+            </Typography>
+            <Box sx={{ width: COL_ACTIONS_W, flexShrink: 0 }} />
+          </>
+        )}
       </Box>
 
       {/* Service rows */}
@@ -319,6 +449,7 @@ function ServiceCategoryBlock({
           row={row}
           onChange={(updated) => handleRowChange(idx, updated)}
           onDelete={() => handleRowDelete(idx)}
+          readOnly={readOnly}
         />
       ))}
     </Box>
@@ -330,11 +461,14 @@ function ServiceCategoryBlock({
 export interface VisitNoteServicesSectionProps {
   categories: OrthoServiceCategory[];
   onCategoriesChange: (categories: OrthoServiceCategory[]) => void;
+  /** Render the section without header actions and with each row's controls non-interactive. */
+  readOnly?: boolean;
 }
 
 export function VisitNoteServicesSection({
   categories,
   onCategoriesChange,
+  readOnly,
 }: VisitNoteServicesSectionProps) {
   const handleCategoryChange = (idx: number, updated: OrthoServiceCategory) => {
     const next = [...categories];
@@ -359,30 +493,32 @@ export function VisitNoteServicesSection({
         <Typography variant="h6" sx={{ fontWeight: 700, fontSize: 20 }}>
           Services
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-          <Button variant="outlined" size="small" sx={{ textTransform: 'none', fontSize: 13, height: 28 }}>
-            Clear All
-          </Button>
-          <IconButton size="small">
-            <ContentCopyOutlined sx={{ fontSize: 16 }} />
-          </IconButton>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<SyncAltOutlined sx={{ fontSize: 14 }} />}
-            sx={{ textTransform: 'none', fontSize: 13, height: 28 }}
-          >
-            Apply all ICD to all Services
-          </Button>
-          <Button
-            variant="contained"
-            size="small"
-            startIcon={<AddOutlined sx={{ fontSize: 14 }} />}
-            sx={{ textTransform: 'none', fontSize: 13, height: 28 }}
-          >
-            Add Service
-          </Button>
-        </Box>
+        {!readOnly && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+            <Button variant="outlined" size="small" sx={{ textTransform: 'none', fontSize: 13, height: 28 }}>
+              Clear All
+            </Button>
+            <IconButton size="small">
+              <ContentCopyOutlined sx={{ fontSize: 16 }} />
+            </IconButton>
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<SyncAltOutlined sx={{ fontSize: 14 }} />}
+              sx={{ textTransform: 'none', fontSize: 13, height: 28 }}
+            >
+              Apply all ICD to all Services
+            </Button>
+            <Button
+              variant="contained"
+              size="small"
+              startIcon={<AddOutlined sx={{ fontSize: 14 }} />}
+              sx={{ textTransform: 'none', fontSize: 13, height: 28 }}
+            >
+              Add Service
+            </Button>
+          </Box>
+        )}
       </Box>
 
       {/* Category blocks */}
@@ -397,6 +533,7 @@ export function VisitNoteServicesSection({
             <ServiceCategoryBlock
               category={cat}
               onChange={(updated) => handleCategoryChange(categoryIndex, updated)}
+              readOnly={readOnly}
             />
           </Box>
         ))}
