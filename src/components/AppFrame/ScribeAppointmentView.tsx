@@ -14,12 +14,16 @@ import {
 import { alpha } from '@mui/material/styles';
 import ChevronLeftOutlined from '@mui/icons-material/ChevronLeftOutlined';
 import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined';
-import InfoOutlined from '@mui/icons-material/InfoOutlined';
 import BoltOutlined from '@mui/icons-material/BoltOutlined';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
+import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
+import CheckRounded from '@mui/icons-material/CheckRounded';
+import AssignmentTurnedInOutlined from '@mui/icons-material/AssignmentTurnedInOutlined';
 import {
+  getMidVisitSummaryForVisit,
   getPreVisitSummaryForVisit,
+  type MockScribeMidVisitSummary,
   type MockScribeVisit,
 } from '../../data/mockTodaysVisits';
 import {
@@ -27,7 +31,6 @@ import {
   MicrophoneIcon,
   PauseRecordingIcon,
   PlayRecordingIcon,
-  StopBlockedRecordingIcon,
   StopRecordingIcon,
   UploadIcon,
 } from '../icons';
@@ -89,17 +92,84 @@ function AudioLevelMock() {
   );
 }
 
+/**
+ * Pixel height of the top/bottom fade gradients applied to the Scribe
+ * scrollable content area. Kept small so the gradient feels like a soft mask
+ * rather than a heavy overlay.
+ */
+const SCROLL_FADE_HEIGHT = 24;
+
+/**
+ * Wraps content in a flex-column scroll container with subtle gradient masks
+ * pinned to the top and bottom of the visible area, so content visually fades
+ * in and out of the scroll viewport. The gradients fade from the Scribe panel
+ * background (`background.default`) to transparent.
+ *
+ * Place inside a flex-column parent (it claims `flex: 1; minHeight: 0`).
+ */
+function ScrollFadeArea({ children }: { children: React.ReactNode }) {
+  return (
+    <Box sx={{ flex: 1, minHeight: 0, position: 'relative', display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+        {children}
+      </Box>
+      <Box
+        aria-hidden
+        sx={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: SCROLL_FADE_HEIGHT,
+          background: (t) =>
+            `linear-gradient(to bottom, ${t.palette.background.default} 0%, ${alpha(
+              t.palette.background.default,
+              0,
+            )} 100%)`,
+          pointerEvents: 'none',
+          zIndex: 1,
+        }}
+      />
+      <Box
+        aria-hidden
+        sx={{
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: SCROLL_FADE_HEIGHT,
+          background: (t) =>
+            `linear-gradient(to top, ${t.palette.background.default} 0%, ${alpha(
+              t.palette.background.default,
+              0,
+            )} 100%)`,
+          pointerEvents: 'none',
+          zIndex: 1,
+        }}
+      />
+    </Box>
+  );
+}
+
 interface CollapsibleCardProps {
-  icon: React.ReactNode;
+  icon?: React.ReactNode;
   title: string;
   open: boolean;
   onToggle: () => void;
   children?: React.ReactNode;
   /** When true, the title gets the brand color (used by the AI summary card). */
   emphasizeTitle?: boolean;
+  /** Override the title font-size (px). Defaults to 14. */
+  titleFontSize?: number;
+  /**
+   * Max height (px) for the expanded body. When set, the body becomes
+   * vertically scrollable once content exceeds this height so the card
+   * itself stays a predictable size on screen.
+   */
+  maxBodyHeight?: number;
 }
 
-function CollapsibleCard({ icon, title, open, onToggle, children, emphasizeTitle }: CollapsibleCardProps) {
+function CollapsibleCard({ icon, title, open, onToggle, children, emphasizeTitle, titleFontSize = 14, maxBodyHeight }: CollapsibleCardProps) {
   return (
     <Box
       sx={{
@@ -130,13 +200,15 @@ function CollapsibleCard({ icon, title, open, onToggle, children, emphasizeTitle
           '&:hover': { bgcolor: 'rgba(0, 0, 0, 0.02)' },
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', color: emphasizeTitle ? 'primary.main' : 'text.secondary' }}>
-          {icon}
-        </Box>
+        {icon ? (
+          <Box sx={{ display: 'flex', alignItems: 'center', color: emphasizeTitle ? 'primary.main' : 'text.secondary' }}>
+            {icon}
+          </Box>
+        ) : null}
         <Typography
           sx={{
             flex: 1,
-            fontSize: 14,
+            fontSize: titleFontSize,
             fontWeight: 600,
             color: emphasizeTitle ? 'primary.main' : 'text.primary',
           }}
@@ -153,9 +225,121 @@ function CollapsibleCard({ icon, title, open, onToggle, children, emphasizeTitle
         />
       </Box>
       <Collapse in={open} timeout={200} unmountOnExit>
-        <Box sx={{ px: 1.5, py: 1.25 }}>{children}</Box>
+        <Box
+          sx={{
+            px: 1.5,
+            py: 1.25,
+            ...(maxBodyHeight !== undefined && {
+              maxHeight: maxBodyHeight,
+              overflowY: 'auto',
+            }),
+          }}
+        >
+          {children}
+        </Box>
       </Collapse>
     </Box>
+  );
+}
+
+interface MidVisitSummaryCardProps {
+  summary: MockScribeMidVisitSummary;
+  open: boolean;
+  onToggle: () => void;
+}
+
+/**
+ * Card surfaced while the recording is paused. Uses the same visual shell as
+ * the Pre-visit Summary so the two AI surfaces feel like a pair: rounded
+ * white card, soft shadow, brand-tinted header, with a left-rule subsection
+ * for orders that the scribe has staged so far.
+ */
+function MidVisitSummaryCard({ summary, open, onToggle }: MidVisitSummaryCardProps) {
+  return (
+    <CollapsibleCard
+      icon={<AICheckIcon sx={{ fontSize: 18 }} />}
+      title="This visit so far…"
+      open={open}
+      onToggle={onToggle}
+      emphasizeTitle
+      maxBodyHeight={400}
+    >
+      <Box
+        component="ul"
+        sx={{
+          m: 0,
+          pl: 2.25,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 0.5,
+        }}
+      >
+        {summary.bullets.map((line) => (
+          <Box
+            key={line}
+            component="li"
+            sx={{ fontSize: 13, color: 'text.primary', lineHeight: 1.55 }}
+          >
+            {line}
+          </Box>
+        ))}
+      </Box>
+
+      {summary.orders.length > 0 && (
+        <Box sx={{ mt: 1.5 }}>
+          <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'text.primary', mb: 0.5 }}>
+            Orders
+          </Typography>
+          <Box
+            sx={{
+              pl: 1.25,
+              borderLeft: 2,
+              borderColor: (t) => alpha(t.palette.text.secondary, 0.25),
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 0.75,
+            }}
+          >
+            {summary.orders.map((order) => (
+              <Box
+                key={order.name}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  gap: 1,
+                }}
+              >
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'text.primary', lineHeight: 1.4 }}>
+                    {order.name}
+                  </Typography>
+                  <Typography sx={{ fontSize: 12, color: 'text.secondary', lineHeight: 1.4 }}>
+                    {order.provider}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25, flexShrink: 0, mt: 0.125 }}>
+                  <IconButton
+                    size="small"
+                    aria-label={`Confirm order ${order.name}`}
+                    sx={{ color: 'primary.main' }}
+                  >
+                    <CheckRounded sx={{ fontSize: 18 }} />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    aria-label={`Remove order ${order.name}`}
+                    sx={{ color: 'text.secondary' }}
+                  >
+                    <DeleteOutlineRounded sx={{ fontSize: 18 }} />
+                  </IconButton>
+                </Box>
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      )}
+    </CollapsibleCard>
   );
 }
 
@@ -165,9 +349,13 @@ interface PreVisitIdleViewProps {
   onBeginRecording: () => void;
 }
 
+type PreVisitOpenCard = 'summary' | 'precharting' | null;
+
 function PreVisitIdleView({ visit, scheduleDate, onBeginRecording }: PreVisitIdleViewProps) {
-  const [summaryOpen, setSummaryOpen] = useState(true);
-  const [precharOpen, setPrecharOpen] = useState(false);
+  // Only one card may be open at a time; opening one auto-collapses the other.
+  const [openCard, setOpenCard] = useState<PreVisitOpenCard>('summary');
+  const toggleCard = (card: Exclude<PreVisitOpenCard, null>) =>
+    setOpenCard((current) => (current === card ? null : card));
   const [precharText, setPrecharText] = useState('');
   const [fastTranscription, setFastTranscription] = useState(false);
 
@@ -176,17 +364,18 @@ function PreVisitIdleView({ visit, scheduleDate, onBeginRecording }: PreVisitIdl
 
   return (
     <>
-      <Box
-        sx={{
-          flex: 1,
-          minHeight: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          gap: 2,
-          py: 2,
-        }}
-      >
+      <ScrollFadeArea>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2,
+            py: 2,
+            // Centers content vertically when it fits, scrolls naturally
+            // (top-anchored) when content exceeds the viewport.
+            m: 'auto 0',
+          }}
+        >
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
           <Typography sx={{ fontWeight: 700, color: 'primary.main', fontSize: 17, lineHeight: 1.3 }}>
             {visit.patientName}
@@ -203,9 +392,10 @@ function PreVisitIdleView({ visit, scheduleDate, onBeginRecording }: PreVisitIdl
           <CollapsibleCard
             icon={<AICheckIcon sx={{ fontSize: 18 }} />}
             title="Pre-visit Summary"
-            open={summaryOpen}
-            onToggle={() => setSummaryOpen((o) => !o)}
+            open={openCard === 'summary'}
+            onToggle={() => toggleCard('summary')}
             emphasizeTitle
+            maxBodyHeight={400}
           >
             <Typography sx={{ fontSize: 13, color: 'text.primary', lineHeight: 1.55 }}>
               {summary.body}
@@ -244,10 +434,10 @@ function PreVisitIdleView({ visit, scheduleDate, onBeginRecording }: PreVisitIdl
           </CollapsibleCard>
 
           <CollapsibleCard
-            icon={<InfoOutlined sx={{ fontSize: 18 }} />}
             title="Pre-charting Note (Optional)"
-            open={precharOpen}
-            onToggle={() => setPrecharOpen((o) => !o)}
+            open={openCard === 'precharting'}
+            onToggle={() => toggleCard('precharting')}
+            titleFontSize={13}
           >
             <TextField
               value={precharText}
@@ -289,7 +479,8 @@ function PreVisitIdleView({ visit, scheduleDate, onBeginRecording }: PreVisitIdl
             />
           </Box>
         </Box>
-      </Box>
+        </Box>
+      </ScrollFadeArea>
 
       <Box sx={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, pt: 1.5 }}>
         <Button
@@ -316,8 +507,8 @@ function PreVisitIdleView({ visit, scheduleDate, onBeginRecording }: PreVisitIdl
           sx={{
             textTransform: 'none',
             fontWeight: 600,
-            height: 56,
-            minHeight: 56,
+            height: 48,
+            minHeight: 48,
             borderRadius: '999px',
             fontSize: 15,
           }}
@@ -354,12 +545,15 @@ export function ScribeAppointmentView({
   onCancelRecording,
 }: ScribeAppointmentViewProps) {
   const [mic, setMic] = useState('MacBook Pro Microphone');
+  const [midVisitSummaryOpen, setMidVisitSummaryOpen] = useState(true);
 
   const phase = recordingForVisit ? recordingForVisit.phase : 'idle';
   const seconds = recordingForVisit?.seconds ?? 0;
   const emblemPhase = recordingForVisit?.phase === 'recording' ? 'pulse' : 'flower';
   const timerLabel = useMemo(() => formatTimer(seconds), [seconds]);
   const effectiveDate = scheduleDate ?? dayjs();
+  const dateLabel = useMemo(() => formatVisitDate(effectiveDate), [effectiveDate]);
+  const midVisitSummary = useMemo(() => getMidVisitSummaryForVisit(visit), [visit]);
 
   const handleMicChange = (e: SelectChangeEvent<string>) => setMic(e.target.value);
 
@@ -370,7 +564,7 @@ export function ScribeAppointmentView({
         minHeight: 0,
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'auto',
+        overflow: 'hidden',
         px: 1.5,
         pb: 2,
       }}
@@ -405,16 +599,19 @@ export function ScribeAppointmentView({
         </Box>
       ) : (
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-          <Box
-            sx={{
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              minHeight: 0,
-              py: 2,
-            }}
-          >
+          <ScrollFadeArea>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'stretch',
+                py: phase === 'paused' ? 0 : 2,
+                gap: phase === 'paused' ? 1.5 : 0,
+                // Center vertically while recording; let the mid-visit summary
+                // card sit at the top (and scroll) when paused.
+                ...(phase !== 'paused' && { m: 'auto 0' }),
+              }}
+            >
             <Box
               sx={{
                 display: 'flex',
@@ -422,16 +619,55 @@ export function ScribeAppointmentView({
                 alignItems: 'center',
                 textAlign: 'center',
                 maxWidth: '100%',
+                flexShrink: 0,
               }}
             >
               <Typography variant="body1" sx={{ fontWeight: 700, color: 'primary.main', fontSize: 17, lineHeight: 1.3 }}>
                 {visit.patientName}
               </Typography>
-              <Typography variant="caption" sx={{ color: 'text.secondary', mt: 0.5, mb: 2.5, display: 'block' }}>
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary',
+                  mt: 0.5,
+                  mb: phase === 'paused' ? 0 : 2.5,
+                  display: 'block',
+                  fontSize: 12.5,
+                }}
+              >
                 {visit.visitType}
               </Typography>
+              {phase === 'paused' && (
+                <Typography
+                  variant="caption"
+                  sx={{ color: 'text.secondary', display: 'block', fontSize: 12.5 }}
+                >
+                  {dateLabel} • {visit.time}
+                </Typography>
+              )}
+            </Box>
 
-              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', my: 1 }}>
+            {phase === 'paused' && (
+              <Box sx={{ flexShrink: 0 }}>
+                <MidVisitSummaryCard
+                  summary={midVisitSummary}
+                  open={midVisitSummaryOpen}
+                  onToggle={() => setMidVisitSummaryOpen((o) => !o)}
+                />
+              </Box>
+            )}
+
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center',
+                maxWidth: '100%',
+                flexShrink: 0,
+              }}
+            >
+              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', my: phase === 'paused' ? 0.5 : 1 }}>
                 <ScribeRecordingEmblem phase={emblemPhase} />
               </Box>
 
@@ -475,82 +711,117 @@ export function ScribeAppointmentView({
                 <MenuItem value="External USB Microphone">External USB Microphone</MenuItem>
               </Select>
             </Box>
-          </Box>
+            </Box>
+          </ScrollFadeArea>
 
           <Box sx={{ width: '100%', flexShrink: 0, pt: 1, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
             {phase === 'recording' && (
-              <>
+              <Box sx={{ display: 'flex', gap: 1.25 }}>
                 <Button
                   variant="outlined"
                   color="primary"
-                  size="large"
                   fullWidth
+                  className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
                   startIcon={<PauseRecordingIcon />}
                   onClick={onPauseRecording}
-                  sx={{ textTransform: 'none', fontWeight: 600, py: 1.25, borderRadius: '8px' }}
+                  sx={{
+                    flex: 1,
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    height: 48,
+                    minHeight: 48,
+                    borderRadius: '999px',
+                    fontSize: 14,
+                  }}
                 >
                   Pause
                 </Button>
                 <Button
                   variant="contained"
                   color="primary"
-                  size="large"
                   fullWidth
+                  className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
                   startIcon={<StopRecordingIcon />}
                   onClick={onFinishRecording}
-                  sx={{ textTransform: 'none', fontWeight: 600, py: 1.25, borderRadius: '8px' }}
+                  sx={{
+                    flex: 1,
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    height: 48,
+                    minHeight: 48,
+                    borderRadius: '999px',
+                    fontSize: 14,
+                  }}
                 >
                   Finish
                 </Button>
-              </>
+              </Box>
             )}
 
             {phase === 'paused' && (
-              <>
-                <Box sx={{ display: 'flex', gap: 1.25 }}>
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    size="large"
-                    fullWidth
-                    startIcon={<PlayRecordingIcon />}
-                    onClick={onResumeRecording}
-                    sx={{ textTransform: 'none', fontWeight: 600, py: 1.25, borderRadius: '8px', flex: 1 }}
-                  >
-                    Resume
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    color="primary"
-                    size="large"
-                    fullWidth
-                    startIcon={<StopRecordingIcon />}
-                    onClick={onFinishRecording}
-                    sx={{ textTransform: 'none', fontWeight: 600, py: 1.25, borderRadius: '8px', flex: 1 }}
-                  >
-                    Finish
-                  </Button>
-                </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+                <IconButton
+                  className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
+                  aria-label="Finish recording"
+                  onClick={onFinishRecording}
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    minWidth: 48,
+                    minHeight: 48,
+                    flexShrink: 0,
+                    borderRadius: '50%',
+                    border: '1px solid',
+                    borderColor: 'primary.main',
+                    color: 'primary.main',
+                    '&:hover': {
+                      bgcolor: (t) => alpha(t.palette.primary.main, 0.06),
+                    },
+                  }}
+                >
+                  <AssignmentTurnedInOutlined sx={{ fontSize: 20 }} />
+                </IconButton>
                 <Button
-                  variant="text"
-                  color="inherit"
-                  size="medium"
-                  startIcon={<StopBlockedRecordingIcon sx={{ fontSize: 18 }} />}
+                  variant="contained"
+                  color="primary"
+                  fullWidth
+                  className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
+                  startIcon={<PlayRecordingIcon />}
+                  onClick={onResumeRecording}
+                  sx={{
+                    flex: 1,
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    height: 48,
+                    minHeight: 48,
+                    borderRadius: '999px',
+                    fontSize: 14,
+                  }}
+                >
+                  Resume
+                </Button>
+                <IconButton
+                  className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
+                  aria-label="Cancel recording"
                   onClick={onCancelRecording}
                   sx={{
-                    alignSelf: 'center',
-                    mt: 0.5,
+                    width: 48,
+                    height: 48,
+                    minWidth: 48,
+                    minHeight: 48,
+                    flexShrink: 0,
+                    borderRadius: '50%',
+                    border: '1px solid',
+                    borderColor: (t) => alpha(t.palette.text.secondary, 0.4),
                     color: 'text.secondary',
-                    fontWeight: 500,
-                    fontSize: 13,
                     '&:hover': {
                       bgcolor: (t) => alpha(t.palette.text.primary, 0.04),
                     },
                   }}
                 >
-                  Cancel Recording
-                </Button>
-              </>
+                  <DeleteOutlineRounded sx={{ fontSize: 20 }} />
+                </IconButton>
+              </Box>
             )}
           </Box>
         </Box>

@@ -16,7 +16,7 @@ export function AppCanvas({ children }: AppCanvasProps) {
         flexDirection: 'column',
         overflow: 'hidden',
         pt: 0,
-        pr: 1,
+        pr: 0,
         pb: 1,
         pl: 0,
       }}

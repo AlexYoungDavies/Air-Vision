@@ -68,6 +68,56 @@ export const VISIT_NOTE_SECTIONS: SectionDef[] = [
   },
 ];
 
+/**
+ * Ortho note template differs from the default (PT) template:
+ *  - Several PT-only subsections are removed.
+ *  - The Plan section gains "Orders" and "Services" subsections (rendered by
+ *    `VisitNoteOrdersSection` / `VisitNoteServicesSection`).
+ *
+ * `getVisibleVisitNoteSections` returns the right list for the active template
+ * so the TOC, scroll-spy anchor list, and body map all stay in sync.
+ */
+const ORTHO_HIDDEN_SUBSECTION_IDS: ReadonlySet<string> = new Set([
+  'history-of-present-illness',
+  'exacerbating-factors',
+  'continued-care',
+  'additional-notes',
+  'goals',
+  'plan-of-care',
+]);
+
+export const ORTHO_PLAN_ORDERS_SUBSECTION: SubsectionDef = {
+  id: 'orders',
+  label: 'Orders',
+  anchorId: 'subsection-orders',
+};
+
+export const ORTHO_PLAN_SERVICES_SUBSECTION: SubsectionDef = {
+  id: 'services',
+  label: 'Services',
+  anchorId: 'subsection-services',
+};
+
+export function getVisibleVisitNoteSections(isOrthoPatient: boolean): SectionDef[] {
+  if (!isOrthoPatient) return VISIT_NOTE_SECTIONS;
+  return VISIT_NOTE_SECTIONS.map((section) => {
+    const filtered = section.subsections.filter(
+      (sub) => !ORTHO_HIDDEN_SUBSECTION_IDS.has(sub.id),
+    );
+    if (section.id === 'plan') {
+      return {
+        ...section,
+        subsections: [
+          ...filtered,
+          ORTHO_PLAN_ORDERS_SUBSECTION,
+          ORTHO_PLAN_SERVICES_SUBSECTION,
+        ],
+      };
+    }
+    return { ...section, subsections: filtered };
+  });
+}
+
 /** Shape of visit note content (section -> subsection -> field values). Expand as needed. */
 export interface VisitNoteData {
   subjective: {

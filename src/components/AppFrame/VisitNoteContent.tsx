@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import {
   Accordion,
   AccordionSummary,
@@ -60,6 +60,9 @@ import {
   VISIT_NOTE_SECTIONS,
   DEFAULT_VISIT_NOTE_DATA,
   CPT_CODE_OPTIONS,
+  getVisibleVisitNoteSections,
+  ORTHO_PLAN_ORDERS_SUBSECTION,
+  ORTHO_PLAN_SERVICES_SUBSECTION,
   type VisitNoteData,
   type SectionDef,
   type SubsectionDef,
@@ -512,6 +515,54 @@ const NAV_LINK_ACTIVE = {
   borderRadius: '4px',
 } as const;
 
+/**
+ * SOAP narrative content for the Read view of orthopedic notes.
+ * Mirrors the content authored in DEFAULT_ORTHO_VISIT_NOTE_DATA + DEFAULT_ORTHO_NOTE_EXTRAS
+ * (knee OA visit) summarized into a standard SOAP layout. Formatting rules:
+ *  - Subjective/Plan use ReadViewParagraphsWithCitations (paragraphs separated by "\n\n",
+ *    inline newlines preserved verbatim).
+ *  - Objective/Assessment use ReadViewSectionFormatted (a "Heading:" line followed by a
+ *    "\n\n" blank line then a list of newline-separated items renders as a bold heading
+ *    with a bulleted list).
+ */
+const SOAP_READ_VIEW_CONTENT_ORTHO: Record<string, string> = {
+  subjective:
+    'Right knee pain, ongoing for approximately 18 months, progressively worsening. 64-year-old patient presents for evaluation of chronic right knee pain rated 6/10 at rest and 8/10 with weight-bearing activity. Pain is described as a deep, aching discomfort localized to the medial joint line, worse in the morning with 20–30 minutes of stiffness and again at the end of the day after prolonged standing.\n\n' +
+    'Patient reports intermittent mechanical symptoms including crepitus, occasional catching, and a sensation of instability when descending stairs. Symptoms are exacerbated by walking more than two blocks, climbing stairs, and squatting; partially relieved by rest, ice, and over-the-counter NSAIDs.\n\n' +
+    'Onset 07/15/2024 on the right side; condition currently worsening. Patient has trialed 12 months of conservative management — acetaminophen, ibuprofen 600 mg TID, a 6-week course of physical therapy focused on quadriceps strengthening, and activity modification — with inadequate symptom relief. Denies recent trauma, fevers, chills, erythema, or night sweats. Reports difficulty with ADLs including yard work, grocery shopping, and recreational walking.\n\n' +
+    'Pain rating: 6/10\n\n' +
+    'Exacerbating factors: walking more than two blocks, climbing stairs, squatting, prolonged weight-bearing, and end-of-day activity after extended standing.\n' +
+    'Alleviating factors: rest, ice, elevation, over-the-counter NSAIDs (ibuprofen 600 mg), and activity modification.',
+  objective:
+    'Vitals: BP 132/78, HR 74, T 98.4°F, BMI 29. General: alert, well-appearing, in no acute distress.\n' +
+    'Right Knee Examination:\n\n' +
+    'Inspection: mild varus alignment, no erythema, no obvious effusion, well-healed arthroscopic portal scars.\n' +
+    'Palpation: tenderness along the medial joint line; no warmth.\n' +
+    'Range of motion: active flexion 0–115° (limited by pain); passive flexion to 120° with crepitus.\n' +
+    'Strength: quadriceps 4/5, hamstrings 5/5.\n' +
+    'Special tests: negative Lachman, negative anterior/posterior drawer, negative McMurray; mild medial joint line tenderness with compression.\n' +
+    'Stability: ligamentously stable to varus/valgus stress at 0° and 30°.\n' +
+    'Gait: antalgic gait favoring the right lower extremity.',
+  assessment:
+    'Chronic right knee pain and functional limitation consistent with primary osteoarthritis of the right knee. Clinical examination and prior history suggest degenerative joint disease with mechanical symptoms impacting daily activities. Diagnostic knee radiographs have been ordered to evaluate the degree of joint space narrowing and degenerative changes.\n\n' +
+    'Diagnosis:\n\n' +
+    'M17.11 — Unilateral primary osteoarthritis, right knee.\n\n' +
+    'Continued care: patient will follow up for repeat viscosupplement injection as indicated and ongoing management of right knee osteoarthritis. Radiographic results will be reviewed at next visit to determine degree of joint space narrowing and guide further treatment planning.\n\n' +
+    "Additional notes: patient tolerated today's visit well. Weight loss counseling provided. Instructed to use prescribed knee orthosis during weight-bearing activity and to follow up if symptoms acutely worsen prior to scheduled return.",
+  plan:
+    'Intra-articular viscosupplement injection using hylan G-F 20 (Synvisc) 16 mg was ordered for symptomatic management of right knee osteoarthritis following inadequate response to conservative therapy. The injection is intended to improve joint lubrication, reduce pain, and enhance functional mobility.\n\n' +
+    'A prefabricated knee brace was ordered to provide joint stabilization and support during ambulation and daily activities. The orthosis is intended to reduce mechanical stress on the right knee joint, improve stability, and assist with pain management in the setting of degenerative joint disease.\n\n' +
+    'Orders:\n' +
+    '• Radiologic examination, knee; 3 views.\n' +
+    '• Arthrocentesis, aspiration and/or injection; major joint (knee).\n' +
+    '• Knee orthosis, elastic with joints, prefabricated.\n\n' +
+    'Services Billed:\n' +
+    '• Evaluations — 99214: office/outpatient E/M, established patient.\n' +
+    '• Procedures — 20610: arthrocentesis, knee; J7325: hylan G-F 20 (Synvisc), per 1 mg.\n' +
+    '• Radiology & Imaging — 73562: radiologic examination, knee, 3 views.\n' +
+    '• DME — L1810 (RT): knee orthosis, elastic with joints, prefabricated.',
+};
+
 /** SOAP narrative content for Read view (concise formatted summary). */
 const SOAP_READ_VIEW_CONTENT: Record<string, string> = {
   subjective:
@@ -768,7 +819,6 @@ function CarryForwardSourceTag({ source }: { source: string }) {
  * Visit note content: left TOC (anchor links) + main content (Subjective, Objective, Assessment, Plan, Other).
  * Two views: editable (form fields) and read (formatted text).
  */
-const ALL_ANCHOR_IDS = VISIT_NOTE_SECTIONS.flatMap((s) => s.subsections.map((sub) => sub.anchorId));
 
 const NOTE_TEMPLATE_OPTIONS = [
   'Knee Sprain', 'ACL Tear', 'Annual Physical', 'Follow-up', 'Consultation', 'Lab Review',
@@ -1259,6 +1309,18 @@ export function VisitNoteContent({
   const [activeAnchorId, setActiveAnchorId] = useState<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
+  // Sections/subsections actually rendered in this note (varies by template).
+  // Drives both the left TOC and the scroll-spy anchor list so the two stay
+  // in lockstep with whatever the body renders.
+  const visibleSections = useMemo(
+    () => getVisibleVisitNoteSections(isOrthoPatient),
+    [isOrthoPatient],
+  );
+  const visibleAnchorIds = useMemo(
+    () => visibleSections.flatMap((s) => s.subsections.map((sub) => sub.anchorId)),
+    [visibleSections],
+  );
+
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
@@ -1266,7 +1328,7 @@ export function VisitNoteContent({
     const anchorIds =
       mode === 'read'
         ? SOAP_READ_SECTION_IDS.map((id) => `read-${id}`)
-        : ALL_ANCHOR_IDS;
+        : visibleAnchorIds;
 
     const updateActive = () => {
       const containerRect = container.getBoundingClientRect();
@@ -1286,7 +1348,7 @@ export function VisitNoteContent({
     updateActive();
     container.addEventListener('scroll', updateActive, { passive: true });
     return () => container.removeEventListener('scroll', updateActive);
-  }, [mode]);
+  }, [mode, visibleAnchorIds]);
 
   const toggleSection = useCallback((sectionId: string) => {
     setCollapsedSections((prev) => {
@@ -1677,7 +1739,7 @@ export function VisitNoteContent({
               );
             })
           ) : (
-            VISIT_NOTE_SECTIONS.map((section) => (
+            visibleSections.map((section) => (
               <Box key={section.id} sx={{ mb: 1.5 }}>
                 <Typography sx={NAV_SECTION_LABEL}>{section.label}</Typography>
                 {section.subsections.map((sub) => (
@@ -1776,12 +1838,15 @@ export function VisitNoteContent({
                       </Box>
                     );
                   }
+                  const readContentSource = isOrthoPatient
+                    ? SOAP_READ_VIEW_CONTENT_ORTHO
+                    : SOAP_READ_VIEW_CONTENT;
                   return (
                     <ReadViewSectionBlock
                       key={sectionId}
                       sectionId={sectionId}
                       title={SOAP_READ_SECTION_LABELS[sectionId]}
-                      content={SOAP_READ_VIEW_CONTENT[sectionId] ?? ''}
+                      content={readContentSource[sectionId] ?? ''}
                       onEdit={() => setEditingReadSectionId(sectionId)}
                       onCitationClick={onCitationClick}
                       highlightedCitationInNote={highlightedCitationInNote}
@@ -1796,7 +1861,7 @@ export function VisitNoteContent({
                 </Box>
               </>
             ) : (
-            VISIT_NOTE_SECTIONS.map((section) => {
+            visibleSections.map((section) => {
             const isCollapsed = collapsedSections.has(section.id);
             return (
               <Box key={section.id} sx={{ mb: 3 }}>
@@ -1827,12 +1892,11 @@ export function VisitNoteContent({
 
                 <Collapse in={!isCollapsed}>
                   {section.subsections.map((sub) => {
-                    // For ortho patients, skip subsections that don't belong in the ortho note template
-                    if (isOrthoPatient && (
-                      (section.id === 'subjective' && (sub.id === 'history-of-present-illness' || sub.id === 'exacerbating-factors')) ||
-                      (section.id === 'assessment' && (sub.id === 'continued-care' || sub.id === 'additional-notes')) ||
-                      (section.id === 'plan' && (sub.id === 'goals' || sub.id === 'plan-of-care'))
-                    )) {
+                    // Ortho's Orders/Services live in `visibleSections` so they
+                    // show up in the TOC, but they're rendered below this map
+                    // (as their own components — they have their own headers
+                    // and don't fit the standard subsection wrapper).
+                    if (sub.id === ORTHO_PLAN_ORDERS_SUBSECTION.id || sub.id === ORTHO_PLAN_SERVICES_SUBSECTION.id) {
                       return null;
                     }
                     const isSubCollapsed = collapsedSubsections.has(sub.anchorId);
@@ -2396,10 +2460,14 @@ export function VisitNoteContent({
                     </Box>
                     );
                   })}
-                  {/* Orders and Services — part of Plan section for ortho patients */}
+                  {/* Orders and Services — part of Plan section for ortho patients. */}
+                  {/* Anchor ids match the ortho Plan subsections in `visibleSections` so TOC links scroll here. */}
                   {section.id === 'plan' && mode === 'edit' && isOrthoPatient && orthoExtras && (
                     <>
-                      <Box sx={{ mb: 2, pt: 1, px: 2 }}>
+                      <Box
+                        id={ORTHO_PLAN_ORDERS_SUBSECTION.anchorId}
+                        sx={{ mb: 2, pt: 1, px: 2, scrollMarginTop: 24 }}
+                      >
                         <VisitNoteOrdersSection
                           orders={orthoExtras.orders}
                           onOrdersChange={(orders) =>
@@ -2407,7 +2475,10 @@ export function VisitNoteContent({
                           }
                         />
                       </Box>
-                      <Box sx={{ mb: 2, pt: 1, px: 2 }}>
+                      <Box
+                        id={ORTHO_PLAN_SERVICES_SUBSECTION.anchorId}
+                        sx={{ mb: 2, pt: 1, px: 2, scrollMarginTop: 24 }}
+                      >
                         <VisitNoteServicesSection
                           categories={orthoExtras.services}
                           onCategoriesChange={(services) =>

@@ -38,6 +38,7 @@ import { MOCK_PATIENTS, TODAYS_PATIENTS, getNextUpcomingTodayPatientId, type Pat
 import { getAppointmentsForPatient, type Appointment } from '../../data/mockAppointments';
 import { getPatientVisitPanelData, type ProfileInfoRow } from '../../data/mockPatientVisitPanel';
 import { MOCK_CHATS, getChatById, getMessagesForChat } from '../../data/mockChats';
+import { getHomeVisitAppointmentStatus } from '../../data/mockTodaysVisits';
 import { VisitNoteContent } from './VisitNoteContent';
 import { ThingsToReviewAlertItem } from './ThingsToReviewAlertItem';
 import { AICheckIcon } from '../icons';
@@ -141,6 +142,14 @@ function PatientsListPanel({
   const navigate = useNavigate();
   const theme = useTheme();
   const surfaceOverlay = (theme.palette.background as { surfaceOverlay?: string }).surfaceOverlay;
+  // Live clock so completed/active appointment styling responds in real time as
+  // the day progresses. 30s tick is well under the 15-min appointment grid and
+  // catches start/end boundary transitions promptly without re-rendering often.
+  const [now, setNow] = useState<Date>(() => new Date());
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', borderRadius: 0 }}>
       <Box
@@ -177,6 +186,9 @@ function PatientsListPanel({
           const showLabs = p.hasNewLabs === true;
           const showImaging = p.hasNewImaging === true;
           const showDangerAlerts = patientHasDangerLevelAlerts(p);
+          const appointmentStatus = getHomeVisitAppointmentStatus(p.appointmentTime, now);
+          const isCompleted = appointmentStatus === 'completed';
+          const isActive = appointmentStatus === 'active';
           const blockColor =
             p.appointmentType === 'Initial Consultation' || p.appointmentType === 'New Patient'
               ? theme.palette.info.main
@@ -257,12 +269,54 @@ function PatientsListPanel({
                   pl: 1.5,
                   pr: 1.5,
                   ml: '3px',
+                  opacity: isCompleted ? 0.5 : 1,
                 }}
               >
-                {/* Row 1: patient name */}
-                <Typography sx={{ fontSize: 11, fontWeight: 600, lineHeight: 1.3, color: 'text.primary' }}>
-                  {p.fullName}
-                </Typography>
+                {/* Row 1: patient name (left) + Active label (right, if active) */}
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 0.5,
+                    minWidth: 0,
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      lineHeight: 1.3,
+                      color: 'text.primary',
+                      minWidth: 0,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {p.fullName}
+                  </Typography>
+                  {isActive && (
+                    <Box
+                      component="span"
+                      sx={{
+                        flexShrink: 0,
+                        px: 0.75,
+                        py: 0.125,
+                        borderRadius: '999px',
+                        bgcolor: 'primary.main',
+                        color: 'primary.contrastText',
+                        fontSize: 10,
+                        fontWeight: 700,
+                        lineHeight: 1.4,
+                        letterSpacing: 0.2,
+                        textTransform: 'uppercase',
+                      }}
+                    >
+                      Active
+                    </Box>
+                  )}
+                </Box>
                 {/* Row 2: case name • appointment type */}
                 <Typography sx={{ fontSize: 11, lineHeight: 1, verticalAlign: 'top', color: 'text.secondary', mt: 0.25 }}>
                   {row2 || p.reasonForVisit || '—'}
@@ -1286,9 +1340,9 @@ export function HomePageContent() {
         display: 'flex',
         flexDirection: 'column',
         gap: 1.5,
-        pt: 2,
-        pb: '32px',
-        px: '32px',
+        pt: '12px',
+        pb: '20px',
+        px: '20px',
       }}
     >
       {/* Header row: greeting (left) + tab bar (center) in one line */}

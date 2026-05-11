@@ -552,7 +552,7 @@ export function VisitNoteOrdersSection({ orders, onOrdersChange }: VisitNoteOrde
           No orders added.
         </Typography>
       ) : (
-        <Box>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
           {orders.map((order) => (
             <OrderItem key={order.id} order={order} onRemove={handleRemove} />
           ))}
