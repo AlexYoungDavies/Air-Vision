@@ -3,7 +3,6 @@
  * Layout: CPT+Mod | Description | (ICD + Units) stacked | Actions
  */
 
-import React from 'react';
 import {
   Box,
   Typography,

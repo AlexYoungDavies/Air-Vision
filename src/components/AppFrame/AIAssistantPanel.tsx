@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Box, Chip, Menu, MenuItem, Popover, SvgIcon, TextField, Tooltip, Typography } from '@mui/material';
+import { Box, Chip, Menu, MenuItem, Popover, SvgIcon, TextField, Typography } from '@mui/material';
 import { keyframes } from '@mui/system';
 import AttachFileOutlined from '@mui/icons-material/AttachFileOutlined';
 import SendOutlined from '@mui/icons-material/SendOutlined';
@@ -303,7 +303,7 @@ export interface AIAssistantPanelProps {
 }
 
 export function AIAssistantPanel({
-  onClose,
+  onClose: _onClose,
   userFirstName = 'Alex',
   shortcuts = DEFAULT_ASSISTANT_SHORTCUTS,
   onShortcutClick,
@@ -431,7 +431,7 @@ export function AIAssistantPanel({
         const raw = firstUserMsg.text;
         const title = raw.length > 40 ? raw.slice(0, 40) + '…' : raw;
         setChatHistory((h) => [
-          { id: nextHistoryId(), title, lastAccessed: new Date() },
+          { id: nextHistoryId(), title, lastAccessed: new Date(), messages: prev },
           ...h,
         ]);
       }

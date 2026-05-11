@@ -72,8 +72,6 @@ import {
   DEFAULT_ORTHO_VISIT_NOTE_DATA,
   DEFAULT_ORTHO_NOTE_EXTRAS,
   type OrthoNoteExtras,
-  type OrthoOrder,
-  type OrthoServiceCategory,
 } from '../../data/mockOrthoNoteData';
 import { VisitNoteOrdersSection } from './VisitNoteFields/VisitNoteOrdersSection';
 import { VisitNoteServicesSection } from './VisitNoteFields/VisitNoteServicesSection';
@@ -1302,10 +1300,12 @@ export function VisitNoteContent({
     if (!assistantShortcutOverride) return;
     const { setShortcutOverride } = assistantShortcutOverride;
     setShortcutOverride(
-      data.signStatus === 'signed' ? VISIT_NOTE_SIGNED_ASSISTANT_SHORTCUTS : VISIT_NOTE_UNSIGNED_ASSISTANT_SHORTCUTS,
+      data.notarize.notarize.signStatus === 'signed'
+        ? VISIT_NOTE_SIGNED_ASSISTANT_SHORTCUTS
+        : VISIT_NOTE_UNSIGNED_ASSISTANT_SHORTCUTS,
     );
     return () => setShortcutOverride(null);
-  }, [data.signStatus, assistantShortcutOverride]);
+  }, [data.notarize.notarize.signStatus, assistantShortcutOverride]);
   const [activeAnchorId, setActiveAnchorId] = useState<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 

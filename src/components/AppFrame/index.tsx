@@ -1,6 +1,16 @@
-import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo, type ReactNode } from 'react';
+import {
+  useState,
+  useRef,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+  useMemo,
+  type Dispatch,
+  type ReactNode,
+  type SetStateAction,
+} from 'react';
 import { Box, Fade } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
+import { useTheme, type Theme } from '@mui/material/styles';
 import { SwitchTransition } from 'react-transition-group';
 import { Outlet, useLocation } from 'react-router-dom';
 import { SideNav } from './SideNav';
@@ -42,7 +52,7 @@ function AppFrameMainWorkspace({
   onActiveScribeRecordingChange,
 }: {
   children: ReactNode;
-  theme: ReturnType<typeof useTheme>;
+  theme: Theme;
   activePanel: SidePanel;
   renderedPanel: SidePanel;
   onPanelTransitionEnd: (e: React.TransitionEvent<HTMLDivElement>) => void;
@@ -50,7 +60,7 @@ function AppFrameMainWorkspace({
   scribeSelectedVisit: MockScribeVisit | null;
   onScribeSelectedVisitChange: (v: MockScribeVisit | null) => void;
   activeScribeRecording: ActiveScribeRecordingSession | null;
-  onActiveScribeRecordingChange: (v: ActiveScribeRecordingSession | null) => void;
+  onActiveScribeRecordingChange: Dispatch<SetStateAction<ActiveScribeRecordingSession | null>>;
 }) {
   const location = useLocation();
   const { shortcutOverride } = useAssistantShortcutOverride();
