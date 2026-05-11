@@ -21,7 +21,7 @@ import PauseRounded from '@mui/icons-material/PauseRounded';
 import DescriptionOutlined from '@mui/icons-material/DescriptionOutlined';
 import { AppIconButton } from '../AppIconButton';
 import {
-  MOCK_SCRIBE_VISITS,
+  TODAYS_SCRIBE_VISITS,
   type MockScribeVisit,
   type ScribeVisitRowStatus,
 } from '../../data/mockTodaysVisits';
@@ -316,9 +316,9 @@ export function ScribePanel({
   const [openAction, setOpenAction] = useState(true);
   const [openCompleted, setOpenCompleted] = useState(false);
 
-  const upcoming = MOCK_SCRIBE_VISITS.filter((v) => v.group === 'upcoming');
-  const action = MOCK_SCRIBE_VISITS.filter((v) => v.group === 'action');
-  const completed = MOCK_SCRIBE_VISITS.filter((v) => v.group === 'completed');
+  const upcoming = TODAYS_SCRIBE_VISITS.filter((v) => v.group === 'upcoming');
+  const action = TODAYS_SCRIBE_VISITS.filter((v) => v.group === 'action');
+  const completed = TODAYS_SCRIBE_VISITS.filter((v) => v.group === 'completed');
 
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -420,6 +420,7 @@ export function ScribePanel({
         <ScribeAppointmentView
           key={selectedVisit.id}
           visit={selectedVisit}
+          scheduleDate={scheduleDate}
           onBack={() => onSelectedVisitChange(null)}
           recordingForVisit={
             activeRecording?.visit.id === selectedVisit.id ? activeRecording : null

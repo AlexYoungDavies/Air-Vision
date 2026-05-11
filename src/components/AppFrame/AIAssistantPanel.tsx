@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Box, Chip, Menu, MenuItem, SvgIcon, TextField, Tooltip, Typography } from '@mui/material';
+import { Box, Chip, Menu, MenuItem, Popover, SvgIcon, TextField, Tooltip, Typography } from '@mui/material';
 import { keyframes } from '@mui/system';
 import AttachFileOutlined from '@mui/icons-material/AttachFileOutlined';
 import SendOutlined from '@mui/icons-material/SendOutlined';
@@ -315,6 +315,8 @@ export function AIAssistantPanel({
   const [viewMode, setViewMode] = useState<ViewMode>('chat');
   const [chatHistory, setChatHistory] = useState<ChatHistoryItem[]>(() => buildInitialHistory());
   const [chatMenuAnchor, setChatMenuAnchor] = useState<HTMLElement | null>(null);
+  const [activeShortcut, setActiveShortcut] = useState<AIAssistantShortcut | null>(null);
+  const [tipsAnchor, setTipsAnchor] = useState<HTMLElement | null>(null);
   const greetingLottieRef = useRef<LottieRefCurrentProps | null>(null);
   const directionRef = useRef(1);
   const transcriptEndRef = useRef<HTMLDivElement | null>(null);
@@ -399,6 +401,8 @@ export function AIAssistantPanel({
       const isHomeDemoShortcut = HOME_DEMO_SHORTCUT_IDS.has(shortcut.id);
       if (isHomeDemoShortcut && demoPhase === 'complete') return;
 
+      setActiveShortcut(shortcut);
+
       if (shortcut.id === 'tell-me-about-my-day') {
         appendExchange("Today's Overview", AI_DAY_OVERVIEW, true);
         return;
@@ -437,6 +441,7 @@ export function AIAssistantPanel({
     setInputValue('');
     setIsAssistantThinking(false);
     setViewMode('chat');
+    setActiveShortcut(null);
   }, [clearThinkingTimer]);
 
   const handleSend = () => {
@@ -620,6 +625,7 @@ export function AIAssistantPanel({
               setMessages(item.messages);
               setDemoPhase('complete');
               setIsAssistantThinking(false);
+              setActiveShortcut(null);
               setViewMode('chat');
               setChatMenuAnchor(null);
             }}
@@ -669,9 +675,9 @@ export function AIAssistantPanel({
               onClick={() => {
                 setMessages(item.messages);
                 setDemoPhase('complete');
+                setActiveShortcut(null);
                 setViewMode('chat');
-              }}
-              sx={{
+              }}              sx={{
                 px: 1,
                 py: 0.75,
                 borderRadius: 1,
@@ -908,6 +914,116 @@ export function AIAssistantPanel({
           pb: 1,
         }}
       >
+        {activeShortcut && (
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              px: 1.5,
+              py: 0.875,
+              mb: 0.5,
+              borderRadius: 1,
+              bgcolor: 'primary.light',
+            }}
+          >
+            <Typography
+              sx={{
+                flex: 1,
+                minWidth: 0,
+                fontSize: 13,
+                fontWeight: 700,
+                color: 'primary.dark',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {activeShortcut.label}
+            </Typography>
+
+            {activeShortcut.tips && (
+              <Box
+                component="button"
+                onClick={(e: React.MouseEvent<HTMLElement>) => setTipsAnchor(e.currentTarget)}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  px: 1,
+                  py: 0.25,
+                  borderRadius: 1.5,
+                  bgcolor: 'rgba(255,255,255,0.55)',
+                  border: '1px solid',
+                  borderColor: 'rgba(0,0,0,0.1)',
+                  cursor: 'pointer',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: 'primary.dark',
+                  lineHeight: '18px',
+                  flexShrink: 0,
+                  '&:hover': { bgcolor: 'rgba(255,255,255,0.8)' },
+                }}
+              >
+                Tips
+              </Box>
+            )}
+
+            <Box
+              component="button"
+              onClick={() => setActiveShortcut(null)}
+              aria-label="Dismiss"
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 18,
+                height: 18,
+                p: 0,
+                border: 'none',
+                borderRadius: '50%',
+                bgcolor: 'transparent',
+                cursor: 'pointer',
+                color: 'primary.dark',
+                flexShrink: 0,
+                fontSize: 14,
+                lineHeight: 1,
+                '&:hover': { bgcolor: 'rgba(0,0,0,0.08)' },
+              }}
+            >
+              ✕
+            </Box>
+          </Box>
+        )}
+
+        <Popover
+          open={Boolean(tipsAnchor)}
+          anchorEl={tipsAnchor}
+          onClose={() => setTipsAnchor(null)}
+          anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+          transformOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+          slotProps={{
+            paper: {
+              sx: {
+                width: PANEL_WIDTH - 16,
+                p: 2,
+                borderRadius: 2,
+                boxShadow: '0 4px 20px rgba(0,0,0,0.14)',
+              },
+            },
+          }}
+        >
+          {activeShortcut && (
+            <>
+              <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'text.primary', mb: 0.75 }}>
+                {activeShortcut.label}
+              </Typography>
+              <Typography sx={{ fontSize: 13, color: 'text.secondary', lineHeight: 1.55 }}>
+                {activeShortcut.tips}
+              </Typography>
+            </>
+          )}
+        </Popover>
+
         <Box
           sx={{
             bgcolor: 'action.hover',

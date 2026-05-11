@@ -64,6 +64,16 @@ import {
   type SectionDef,
   type SubsectionDef,
 } from '../../data/visitNoteSections';
+import {
+  ORTHO_PATIENT_IDS,
+  DEFAULT_ORTHO_VISIT_NOTE_DATA,
+  DEFAULT_ORTHO_NOTE_EXTRAS,
+  type OrthoNoteExtras,
+  type OrthoOrder,
+  type OrthoServiceCategory,
+} from '../../data/mockOrthoNoteData';
+import { VisitNoteOrdersSection } from './VisitNoteFields/VisitNoteOrdersSection';
+import { VisitNoteServicesSection } from './VisitNoteFields/VisitNoteServicesSection';
 import { AICheckIcon } from '../icons';
 import { useAssistantShortcutOverrideOptional } from './AssistantShortcutsContext';
 import {
@@ -1215,9 +1225,15 @@ export function VisitNoteContent({
   onCitationClick,
   highlightedCitationInNote,
 }: VisitNoteContentProps) {
+  const isOrthoPatient = ORTHO_PATIENT_IDS.has(appointment.patientId);
   const [mode, setMode] = useState<'edit' | 'read'>('read');
   const [editingReadSectionId, setEditingReadSectionId] = useState<EditingReadSectionId>(null);
-  const [data, setData] = useState<VisitNoteData>(DEFAULT_VISIT_NOTE_DATA);
+  const [data, setData] = useState<VisitNoteData>(
+    isOrthoPatient ? DEFAULT_ORTHO_VISIT_NOTE_DATA : DEFAULT_VISIT_NOTE_DATA,
+  );
+  const [orthoExtras, setOrthoExtras] = useState<OrthoNoteExtras | null>(
+    isOrthoPatient ? DEFAULT_ORTHO_NOTE_EXTRAS : null,
+  );
   const [noteTemplate, setNoteTemplate] = useState(appointment.template);
   const [clinicalStage, setClinicalStage] = useState(appointment.clinicalStage);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
@@ -1227,6 +1243,9 @@ export function VisitNoteContent({
   useEffect(() => {
     setNoteTemplate(appointment.template);
     setClinicalStage(appointment.clinicalStage);
+    const isOrtho = ORTHO_PATIENT_IDS.has(appointment.patientId);
+    setData(isOrtho ? DEFAULT_ORTHO_VISIT_NOTE_DATA : DEFAULT_VISIT_NOTE_DATA);
+    setOrthoExtras(isOrtho ? DEFAULT_ORTHO_NOTE_EXTRAS : null);
   }, [appointment.id, appointment.template, appointment.clinicalStage]);
 
   useEffect(() => {
@@ -1808,6 +1827,14 @@ export function VisitNoteContent({
 
                 <Collapse in={!isCollapsed}>
                   {section.subsections.map((sub) => {
+                    // For ortho patients, skip subsections that don't belong in the ortho note template
+                    if (isOrthoPatient && (
+                      (section.id === 'subjective' && (sub.id === 'history-of-present-illness' || sub.id === 'exacerbating-factors')) ||
+                      (section.id === 'assessment' && (sub.id === 'continued-care' || sub.id === 'additional-notes')) ||
+                      (section.id === 'plan' && (sub.id === 'goals' || sub.id === 'plan-of-care'))
+                    )) {
+                      return null;
+                    }
                     const isSubCollapsed = collapsedSubsections.has(sub.anchorId);
                     return (
                     <Box
@@ -1851,35 +1878,39 @@ export function VisitNoteContent({
                               <VisitNoteTextArea
                                 label="Chief Complaint"
                                 placeholder="Add here"
-                                minRows={4}
+                                minRows={2}
                                 value={data.subjective['chief-complaint'].content}
                                 onChange={(e) => updateChiefComplaintContent(e.target.value)}
                                 sx={{ width: '100%' }}
                               />
-                              <VisitNoteTextArea
-                                label="Patient Comments"
-                                placeholder="Add details about morning stiffness, getting up from bed, and impact on the day..."
-                                minRows={3}
-                                value={data.subjective['chief-complaint'].detailedExplanation}
-                                onChange={(e) => updateChiefComplaintDetailedExplanation(e.target.value)}
-                                sx={{ width: '100%' }}
-                              />
-                              <VisitNoteDateField
-                                label="Date of onset"
-                                value={data.subjective['chief-complaint'].dateOfOnset}
-                                onChange={(e) => updateChiefComplaintDateOfOnset(e.target.value)}
-                                sx={{ width: '100%' }}
-                              />
-                              <VisitNoteRadioSelect
-                                label="Pain rating"
-                                options={Array.from({ length: 10 }, (_, i) => ({
-                                  value: String(i + 1),
-                                  label: String(i + 1),
-                                }))}
-                                value={data.subjective['chief-complaint'].painRating}
-                                onChange={updateChiefComplaintPainRating}
-                                sx={{ width: '100%' }}
-                              />
+                              {!isOrthoPatient && (
+                                <>
+                                  <VisitNoteTextArea
+                                    label="Patient Comments"
+                                    placeholder="Add details about morning stiffness, getting up from bed, and impact on the day..."
+                                    minRows={2}
+                                    value={data.subjective['chief-complaint'].detailedExplanation}
+                                    onChange={(e) => updateChiefComplaintDetailedExplanation(e.target.value)}
+                                    sx={{ width: '100%' }}
+                                  />
+                                  <VisitNoteDateField
+                                    label="Date of onset"
+                                    value={data.subjective['chief-complaint'].dateOfOnset}
+                                    onChange={(e) => updateChiefComplaintDateOfOnset(e.target.value)}
+                                    sx={{ width: '100%' }}
+                                  />
+                                  <VisitNoteRadioSelect
+                                    label="Pain rating"
+                                    options={Array.from({ length: 10 }, (_, i) => ({
+                                      value: String(i + 1),
+                                      label: String(i + 1),
+                                    }))}
+                                    value={data.subjective['chief-complaint'].painRating}
+                                    onChange={updateChiefComplaintPainRating}
+                                    sx={{ width: '100%' }}
+                                  />
+                                </>
+                              )}
                             </Box>
                           ) : (
                             <ReadOnlyChiefComplaint data={data.subjective['chief-complaint']} />
@@ -1927,7 +1958,7 @@ export function VisitNoteContent({
                               <VisitNoteTextArea
                                 label="History of Condition"
                                 placeholder="Add here"
-                                minRows={3}
+                                minRows={2}
                                 value={data.subjective['history-of-present-illness'].historyOfCondition}
                                 onChange={(e) => updateHistoryOfPresentIllness('historyOfCondition', e.target.value)}
                                 sx={{ width: '100%' }}
@@ -1946,7 +1977,7 @@ export function VisitNoteContent({
                               <VisitNoteTextArea
                                 label="Exacerbating Factors"
                                 placeholder="Add here"
-                                minRows={3}
+                                minRows={2}
                                 value={data.subjective['exacerbating-factors'].exacerbatingFactors}
                                 onChange={(e) => updateExacerbatingFactors('exacerbatingFactors', e.target.value)}
                                 sx={{ width: '100%' }}
@@ -1954,7 +1985,7 @@ export function VisitNoteContent({
                               <VisitNoteTextArea
                                 label="Alleviating Factors"
                                 placeholder="Add here"
-                                minRows={3}
+                                minRows={2}
                                 value={data.subjective['exacerbating-factors'].alleviatingFactors}
                                 onChange={(e) => updateExacerbatingFactors('alleviatingFactors', e.target.value)}
                                 sx={{ width: '100%' }}
@@ -1973,7 +2004,7 @@ export function VisitNoteContent({
                               <VisitNoteTextArea
                                 label="Comments"
                                 placeholder="Add here"
-                                minRows={3}
+                                minRows={2}
                                 value={data.objective['objective-comments'].comments}
                                 onChange={(e) => updateObjectiveComments(e.target.value)}
                                 sx={{ width: '100%' }}
@@ -1991,45 +2022,78 @@ export function VisitNoteContent({
 
                       {section.id === 'objective' && sub.id === 'measurements' && (
                         <Box sx={{ pl: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                          <VisitNoteMeasurementsTable
-                            title="Lumbar Mobility"
-                            columnLabels={['Left', 'Right']}
-                            rows={[
-                              { measurementName: 'Lumbar Flexion (degrees)', previousValues: ['52', '48'] },
-                              { measurementName: 'Lumbar Extension (degrees)', previousValues: ['22', '20'] },
-                              { measurementName: 'Lumbar Side Bend Left (degrees)', previousValues: ['28', ''] },
-                              { measurementName: 'Lumbar Side Bend Right (degrees)', previousValues: ['', '26'] },
-                            ]}
-                            values={data.objective.measurements['lumbar-mobility']}
-                            onCellChange={(ri, ci, v) => updateMeasurementCell('lumbar-mobility', ri, ci, v)}
-                            readOnly={false}
-                          />
-                          <VisitNoteMeasurementsTable
-                            title="Thoracic Measurements"
-                            columnLabels={['Left', 'Right']}
-                            rows={[
-                              { measurementName: 'Thoracic Rotation Left (degrees)', previousValues: ['38', ''] },
-                              { measurementName: 'Thoracic Rotation Right (degrees)', previousValues: ['', '35'] },
-                              { measurementName: 'Thoracic Extension (degrees)', previousValues: ['18', '18'] },
-                              { measurementName: 'Thoracic Side Bend (degrees)', previousValues: ['24', '22'] },
-                            ]}
-                            values={data.objective.measurements.thoracic}
-                            onCellChange={(ri, ci, v) => updateMeasurementCell('thoracic', ri, ci, v)}
-                            readOnly={false}
-                          />
-                          <VisitNoteMeasurementsTable
-                            title="General Upright Range of Motion"
-                            columnLabels={['Value']}
-                            rows={[
-                              { measurementName: 'Standing Forward Reach (cm)', previousValues: ['28'] },
-                              { measurementName: 'Sit-to-Stand (reps in 30 sec)', previousValues: ['10'] },
-                              { measurementName: 'Single-Leg Stance Time – Left (sec)', previousValues: ['12'] },
-                              { measurementName: 'Single-Leg Stance Time – Right (sec)', previousValues: ['14'] },
-                            ]}
-                            values={data.objective.measurements['general-upright']}
-                            onCellChange={(ri, ci, v) => updateMeasurementCell('general-upright', ri, ci, v)}
-                            readOnly={false}
-                          />
+                          {isOrthoPatient ? (
+                            <>
+                              <VisitNoteMeasurementsTable
+                                title="Inspection"
+                                columnLabels={['Label']}
+                                rows={[
+                                  { measurementName: 'Alignment' },
+                                  { measurementName: 'Erythema' },
+                                  { measurementName: 'Effusion' },
+                                  { measurementName: 'Surgical scarring' },
+                                ]}
+                                values={data.objective.measurements['lumbar-mobility']}
+                                onCellChange={(ri, ci, v) => updateMeasurementCell('lumbar-mobility', ri, ci, v)}
+                                readOnly={false}
+                              />
+                              <VisitNoteMeasurementsTable
+                                title="General"
+                                columnLabels={['Label', 'Label']}
+                                rows={[
+                                  { measurementName: 'Varus Stress (0°)' },
+                                  { measurementName: 'Valgus Stress (0°)' },
+                                  { measurementName: 'Varus Stress (30°)' },
+                                  { measurementName: 'Valgus Stress (30°)' },
+                                ]}
+                                values={data.objective.measurements.thoracic}
+                                onCellChange={(ri, ci, v) => updateMeasurementCell('thoracic', ri, ci, v)}
+                                readOnly={false}
+                              />
+                            </>
+                          ) : (
+                            <>
+                              <VisitNoteMeasurementsTable
+                                title="Lumbar Mobility"
+                                columnLabels={['Left', 'Right']}
+                                rows={[
+                                  { measurementName: 'Lumbar Flexion (degrees)', previousValues: ['52', '48'] },
+                                  { measurementName: 'Lumbar Extension (degrees)', previousValues: ['22', '20'] },
+                                  { measurementName: 'Lumbar Side Bend Left (degrees)', previousValues: ['28', ''] },
+                                  { measurementName: 'Lumbar Side Bend Right (degrees)', previousValues: ['', '26'] },
+                                ]}
+                                values={data.objective.measurements['lumbar-mobility']}
+                                onCellChange={(ri, ci, v) => updateMeasurementCell('lumbar-mobility', ri, ci, v)}
+                                readOnly={false}
+                              />
+                              <VisitNoteMeasurementsTable
+                                title="Thoracic Measurements"
+                                columnLabels={['Left', 'Right']}
+                                rows={[
+                                  { measurementName: 'Thoracic Rotation Left (degrees)', previousValues: ['38', ''] },
+                                  { measurementName: 'Thoracic Rotation Right (degrees)', previousValues: ['', '35'] },
+                                  { measurementName: 'Thoracic Extension (degrees)', previousValues: ['18', '18'] },
+                                  { measurementName: 'Thoracic Side Bend (degrees)', previousValues: ['24', '22'] },
+                                ]}
+                                values={data.objective.measurements.thoracic}
+                                onCellChange={(ri, ci, v) => updateMeasurementCell('thoracic', ri, ci, v)}
+                                readOnly={false}
+                              />
+                              <VisitNoteMeasurementsTable
+                                title="General Upright Range of Motion"
+                                columnLabels={['Value']}
+                                rows={[
+                                  { measurementName: 'Standing Forward Reach (cm)', previousValues: ['28'] },
+                                  { measurementName: 'Sit-to-Stand (reps in 30 sec)', previousValues: ['10'] },
+                                  { measurementName: 'Single-Leg Stance Time – Left (sec)', previousValues: ['12'] },
+                                  { measurementName: 'Single-Leg Stance Time – Right (sec)', previousValues: ['14'] },
+                                ]}
+                                values={data.objective.measurements['general-upright']}
+                                onCellChange={(ri, ci, v) => updateMeasurementCell('general-upright', ri, ci, v)}
+                                readOnly={false}
+                              />
+                            </>
+                          )}
                         </Box>
                       )}
 
@@ -2037,23 +2101,66 @@ export function VisitNoteContent({
                         <>
                           {mode === 'edit' ? (
                             <Box sx={{ pl: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                              <VisitNoteChipSelect
-                                label="CPT codes"
-                                options={CPT_CODE_OPTIONS}
-                                value={data.assessment['diagnosis-summary'].cptCodes}
-                                onChange={updateDiagnosisSummaryCptCodes}
-                                placeholder="Add CPT codes"
-                                searchPlaceholder="Search CPT codes..."
-                                sx={{ width: '100%' }}
-                              />
+                              {!isOrthoPatient && (
+                                <VisitNoteChipSelect
+                                  label="CPT codes"
+                                  options={CPT_CODE_OPTIONS}
+                                  value={data.assessment['diagnosis-summary'].cptCodes}
+                                  onChange={updateDiagnosisSummaryCptCodes}
+                                  placeholder="Add CPT codes"
+                                  searchPlaceholder="Search CPT codes..."
+                                  sx={{ width: '100%' }}
+                                />
+                              )}
                               <VisitNoteTextArea
                                 label="Summary"
                                 placeholder="Describe the diagnoses the provider has selected..."
-                                minRows={4}
+                                minRows={2}
                                 value={data.assessment['diagnosis-summary'].summary}
                                 onChange={(e) => updateDiagnosisSummarySummary(e.target.value)}
                                 sx={{ width: '100%' }}
                               />
+                              {isOrthoPatient && orthoExtras && (
+                                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 3 }}>
+                                  <Typography
+                                    component="label"
+                                    sx={{
+                                      width: 180,
+                                      flexShrink: 0,
+                                      fontSize: 14,
+                                      fontWeight: 600,
+                                      color: 'primary.dark',
+                                      pt: '6px',
+                                    }}
+                                  >
+                                    Diagnosis Code
+                                  </Typography>
+                                  <Box sx={{ flex: 1, display: 'flex', flexWrap: 'wrap', gap: 0.75, alignItems: 'center', pt: '4px' }}>
+                                    {orthoExtras.diagnosisCodes.map((dc) => (
+                                      <Chip
+                                        key={dc.code}
+                                        label={`${dc.label} - ${dc.code}`}
+                                        size="small"
+                                        onDelete={() => {
+                                          setOrthoExtras((prev) =>
+                                            prev
+                                              ? { ...prev, diagnosisCodes: prev.diagnosisCodes.filter((d) => d.code !== dc.code) }
+                                              : prev,
+                                          );
+                                        }}
+                                        sx={{ fontSize: 12, height: 24 }}
+                                      />
+                                    ))}
+                                    <Button
+                                      size="small"
+                                      startIcon={<AddOutlined sx={{ fontSize: 14 }} />}
+                                      sx={{ fontSize: 12, height: 24, textTransform: 'none' }}
+                                    >
+                                      Add
+                                    </Button>
+                                  </Box>
+                                </Box>
+                              )}
                             </Box>
                           ) : (
                             <Box sx={{ pl: 3 }}>
@@ -2077,7 +2184,7 @@ export function VisitNoteContent({
                               <VisitNoteTextArea
                                 label="Continued care"
                                 placeholder="Reasoning why care should be continued..."
-                                minRows={4}
+                                minRows={2}
                                 value={data.assessment['continued-care'].content}
                                 onChange={(e) => updateContinuedCare(e.target.value)}
                                 sx={{ width: '100%' }}
@@ -2100,7 +2207,7 @@ export function VisitNoteContent({
                               <VisitNoteTextArea
                                 label="Additional notes"
                                 placeholder="Extra notes about the diagnosis..."
-                                minRows={3}
+                                minRows={2}
                                 value={data.assessment['additional-notes'].content}
                                 onChange={(e) => updateAdditionalNotes(e.target.value)}
                                 sx={{ width: '100%' }}
@@ -2123,7 +2230,7 @@ export function VisitNoteContent({
                               <VisitNoteTextArea
                                 label="Treatment Plan"
                                 placeholder="Add content..."
-                                minRows={4}
+                                minRows={2}
                                 value={data.plan['treatment-plan'].content}
                                 onChange={(e) => updateTreatmentPlanContent(e.target.value)}
                                 sx={{ width: '100%' }}
@@ -2139,7 +2246,7 @@ export function VisitNoteContent({
                         </>
                       )}
 
-                      {section.id === 'plan' && sub.id === 'goals' && (
+                      {section.id === 'plan' && sub.id === 'goals' && !isOrthoPatient && (
                         <Box sx={{ pl: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
                           {data.plan.goals.goals.map((goal, idx) => (
                             <PlanGoalCard
@@ -2153,7 +2260,7 @@ export function VisitNoteContent({
                         </Box>
                       )}
 
-                      {section.id === 'plan' && sub.id === 'plan-of-care' && (
+                      {section.id === 'plan' && sub.id === 'plan-of-care' && !isOrthoPatient && (
                         <Box sx={{ pl: 3, display: 'flex', flexDirection: 'column', gap: 2, width: '100%' }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                             <VisitNoteFieldWrapper label="Duration">
@@ -2289,6 +2396,27 @@ export function VisitNoteContent({
                     </Box>
                     );
                   })}
+                  {/* Orders and Services — part of Plan section for ortho patients */}
+                  {section.id === 'plan' && mode === 'edit' && isOrthoPatient && orthoExtras && (
+                    <>
+                      <Box sx={{ mb: 2, pt: 1, px: 2 }}>
+                        <VisitNoteOrdersSection
+                          orders={orthoExtras.orders}
+                          onOrdersChange={(orders) =>
+                            setOrthoExtras((prev) => (prev ? { ...prev, orders } : prev))
+                          }
+                        />
+                      </Box>
+                      <Box sx={{ mb: 2, pt: 1, px: 2 }}>
+                        <VisitNoteServicesSection
+                          categories={orthoExtras.services}
+                          onCategoriesChange={(services) =>
+                            setOrthoExtras((prev) => (prev ? { ...prev, services } : prev))
+                          }
+                        />
+                      </Box>
+                    </>
+                  )}
                 </Collapse>
               </Box>
             );
@@ -3068,7 +3196,7 @@ function SubsectionFormContent({
         <VisitNoteTextArea
           label="Chief Complaint"
           placeholder="Add here"
-          minRows={4}
+          minRows={2}
           value={data.subjective['chief-complaint'].content}
           onChange={(e) => updateChiefComplaintContent(e.target.value)}
           sx={{ width: '100%' }}
@@ -3076,7 +3204,7 @@ function SubsectionFormContent({
         <VisitNoteTextArea
           label="Patient Comments"
           placeholder="Add details about morning stiffness, getting up from bed, and impact on the day..."
-          minRows={3}
+          minRows={2}
           value={data.subjective['chief-complaint'].detailedExplanation}
           onChange={(e) => updateChiefComplaintDetailedExplanation(e.target.value)}
           sx={{ width: '100%' }}
@@ -3138,7 +3266,7 @@ function SubsectionFormContent({
         <VisitNoteTextArea
           label="History of Condition"
           placeholder="Add here"
-          minRows={3}
+          minRows={2}
           value={data.subjective['history-of-present-illness'].historyOfCondition}
           onChange={(e) => updateHistoryOfPresentIllness('historyOfCondition', e.target.value)}
           sx={{ width: '100%' }}
@@ -3154,7 +3282,7 @@ function SubsectionFormContent({
         <VisitNoteTextArea
           label="Exacerbating Factors"
           placeholder="Add here"
-          minRows={3}
+          minRows={2}
           value={data.subjective['exacerbating-factors'].exacerbatingFactors}
           onChange={(e) => updateExacerbatingFactors('exacerbatingFactors', e.target.value)}
           sx={{ width: '100%' }}
@@ -3162,7 +3290,7 @@ function SubsectionFormContent({
         <VisitNoteTextArea
           label="Alleviating Factors"
           placeholder="Add here"
-          minRows={3}
+          minRows={2}
           value={data.subjective['exacerbating-factors'].alleviatingFactors}
           onChange={(e) => updateExacerbatingFactors('alleviatingFactors', e.target.value)}
           sx={{ width: '100%' }}
@@ -3178,7 +3306,7 @@ function SubsectionFormContent({
         <VisitNoteTextArea
           label="Comments"
           placeholder="Add here"
-          minRows={3}
+          minRows={2}
           value={data.objective['objective-comments'].comments}
           onChange={(e) => updateObjectiveComments(e.target.value)}
           sx={{ width: '100%' }}
@@ -3252,7 +3380,7 @@ function SubsectionFormContent({
         <VisitNoteTextArea
           label="Summary"
           placeholder="Describe the diagnoses the provider has selected..."
-          minRows={4}
+          minRows={2}
           value={data.assessment['diagnosis-summary'].summary}
           onChange={(e) => updateDiagnosisSummarySummary(e.target.value)}
           sx={{ width: '100%' }}
@@ -3277,7 +3405,7 @@ function SubsectionFormContent({
         <VisitNoteTextArea
           label="Continued care"
           placeholder="Reasoning why care should be continued..."
-          minRows={4}
+          minRows={2}
           value={data.assessment['continued-care'].content}
           onChange={(e) => updateContinuedCare(e.target.value)}
           sx={{ width: '100%' }}
@@ -3297,7 +3425,7 @@ function SubsectionFormContent({
         <VisitNoteTextArea
           label="Additional notes"
           placeholder="Extra notes about the diagnosis..."
-          minRows={3}
+          minRows={2}
           value={data.assessment['additional-notes'].content}
           onChange={(e) => updateAdditionalNotes(e.target.value)}
           sx={{ width: '100%' }}
@@ -3317,7 +3445,7 @@ function SubsectionFormContent({
         <VisitNoteTextArea
           label="Treatment Plan"
           placeholder="Add content..."
-          minRows={4}
+          minRows={2}
           value={data.plan['treatment-plan'].content}
           onChange={(e) => updateTreatmentPlanContent(e.target.value)}
           sx={{ width: '100%' }}

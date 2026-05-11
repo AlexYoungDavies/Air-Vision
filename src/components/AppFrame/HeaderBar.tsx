@@ -682,7 +682,7 @@ export function HeaderBar({
           },
         }}
       >
-        <Box sx={{ py: 1 }}>
+        <Box sx={{ pt: 1, pb: '8px' }}>
           <Typography
             variant="caption"
             sx={{

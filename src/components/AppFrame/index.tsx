@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useLayoutEffect, type ReactNode } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo, type ReactNode } from 'react';
 import { Box, Fade } from '@mui/material';
 import { useTheme } from '@mui/material/styles';
 import { SwitchTransition } from 'react-transition-group';
@@ -14,7 +14,8 @@ import { ColorPickerPopover } from './ColorPickerPopover';
 import { SpotlightSearch } from './SpotlightSearch';
 import { useAccent } from '../../theme/AppThemeProvider';
 import type { ActiveScribeRecordingSession } from './scribeRecordingSession';
-import type { MockScribeVisit } from '../../data/mockTodaysVisits';
+import { getScribeVisitForPatientId, type MockScribeVisit } from '../../data/mockTodaysVisits';
+import { AppScribeProvider } from './AppScribeContext';
 
 const PANEL_WIDTH = 280;
 /** Width open/close (canvas + panel move together). */
@@ -198,6 +199,26 @@ export function AppFrame({ children }: AppFrameProps) {
     setScribeSelectedVisit(activeScribeRecording.visit);
   };
 
+  const openScribeForPatientId = useCallback((patientId: string) => {
+    const visit = getScribeVisitForPatientId(patientId);
+    setScribeSelectedVisit(visit ?? null);
+    setActivePanel('scribe');
+  }, []);
+
+  const closeGlobalScribePanel = useCallback(() => {
+    setActivePanel('none');
+  }, []);
+
+  const appScribeValue = useMemo(
+    () => ({
+      openScribeForPatientId,
+      closeGlobalScribePanel,
+      isGlobalScribePanelOpen: scribeOpen,
+      globalScribeSelectedPatientId: scribeSelectedVisit?.patientId ?? null,
+    }),
+    [openScribeForPatientId, closeGlobalScribePanel, scribeOpen, scribeSelectedVisit?.patientId],
+  );
+
   return (
     <Box
       sx={{
@@ -284,21 +305,23 @@ export function AppFrame({ children }: AppFrameProps) {
             }}
             onSearchClick={() => setSpotlightOpen(true)}
           />
-          <AssistantShortcutsProvider>
-            <AppFrameMainWorkspace
-              theme={theme}
-              activePanel={activePanel}
-              renderedPanel={renderedPanel}
-              onPanelTransitionEnd={handlePanelWidthTransitionEnd}
-              onCloseAssistant={() => setActivePanel('none')}
-              scribeSelectedVisit={scribeSelectedVisit}
-              onScribeSelectedVisitChange={setScribeSelectedVisit}
-              activeScribeRecording={activeScribeRecording}
-              onActiveScribeRecordingChange={setActiveScribeRecording}
-            >
-              {children ?? <Outlet />}
-            </AppFrameMainWorkspace>
-          </AssistantShortcutsProvider>
+          <AppScribeProvider value={appScribeValue}>
+            <AssistantShortcutsProvider>
+              <AppFrameMainWorkspace
+                theme={theme}
+                activePanel={activePanel}
+                renderedPanel={renderedPanel}
+                onPanelTransitionEnd={handlePanelWidthTransitionEnd}
+                onCloseAssistant={() => setActivePanel('none')}
+                scribeSelectedVisit={scribeSelectedVisit}
+                onScribeSelectedVisitChange={setScribeSelectedVisit}
+                activeScribeRecording={activeScribeRecording}
+                onActiveScribeRecordingChange={setActiveScribeRecording}
+              >
+                {children ?? <Outlet />}
+              </AppFrameMainWorkspace>
+            </AssistantShortcutsProvider>
+          </AppScribeProvider>
         </Box>
       </Box>
       <ColorPickerPopover

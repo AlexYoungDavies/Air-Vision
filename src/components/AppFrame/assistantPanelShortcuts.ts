@@ -21,13 +21,30 @@ export interface AIAssistantShortcut {
   label: string;
   /** Leading icon inside the chip. */
   Icon: ComponentType<SvgIconProps>;
+  /** Short description shown in the "Tips" popover when this shortcut is active. */
+  tips?: string;
 }
 
 /** Home / day overview (route `/`). */
 export const DEFAULT_ASSISTANT_SHORTCUTS: AIAssistantShortcut[] = [
-  { id: 'tell-me-about-my-day', label: "Today's Overview", Icon: WbSunnyOutlined },
-  { id: 'whats-waiting-on-me', label: "My Todo's", Icon: HourglassEmptyOutlined },
-  { id: 'key-alerts-today', label: 'Important Alerts', Icon: NotificationImportantOutlined },
+  {
+    id: 'tell-me-about-my-day',
+    label: "Today's Overview",
+    Icon: WbSunnyOutlined,
+    tips: "I'll walk you through today's patient schedule, flag any overruns, highlight open pre-visit tasks, and surface anything that needs your attention before clinic starts.",
+  },
+  {
+    id: 'whats-waiting-on-me',
+    label: "My Todo's",
+    Icon: HourglassEmptyOutlined,
+    tips: "I'll show you pending refill requests, unsigned notes, lab results awaiting review, and any other tasks waiting on your sign-off — prioritised by urgency.",
+  },
+  {
+    id: 'key-alerts-today',
+    label: 'Important Alerts',
+    Icon: NotificationImportantOutlined,
+    tips: "I'll surface critical alerts from today's schedule: flagged lab results, overbooked slots, unsigned consents, and patients with outstanding pre-visit tasks.",
+  },
 ];
 
 /** Visits calendar (`/visits`). */

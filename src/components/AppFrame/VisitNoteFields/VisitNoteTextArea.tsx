@@ -37,7 +37,7 @@ export function VisitNoteTextArea({
           pb: '4px',
           '& .MuiInputBase-root': {
             ...baseInputSx,
-            minHeight: 28,
+            minHeight: 64,
             height: 'auto',
             alignItems: 'flex-start',
             paddingTop: '6px',
