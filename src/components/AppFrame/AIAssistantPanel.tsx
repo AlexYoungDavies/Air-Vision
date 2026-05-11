@@ -1,12 +1,18 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Box, Chip, Menu, MenuItem, Popover, SvgIcon, TextField, Typography } from '@mui/material';
+import { Box, Button, Chip, Menu, MenuItem, Popover, SvgIcon, TextField, Typography } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 import { keyframes } from '@mui/system';
 import AttachFileOutlined from '@mui/icons-material/AttachFileOutlined';
 import SendOutlined from '@mui/icons-material/SendOutlined';
 import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined';
+import CheckOutlined from '@mui/icons-material/CheckOutlined';
+import CloseOutlined from '@mui/icons-material/CloseOutlined';
+import ArrowRightAltOutlined from '@mui/icons-material/ArrowRightAltOutlined';
 import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
 import hoverAnimationData from '../../assets/hover.json';
 import { AppIconButton } from '../AppIconButton';
+import { AICheckIcon } from '../icons';
+import type { AICheckReport, AICheckSuggestion, SeededAssistantChat } from './AICheckChat';
 import {
   DEFAULT_ASSISTANT_SHORTCUTS,
   type AIAssistantShortcut,
@@ -55,10 +61,31 @@ function nextMessageId(): string {
 
 type ChatRole = 'user' | 'assistant';
 
-interface ChatMessage {
+interface TextChatMessage {
   id: string;
   role: ChatRole;
+  kind: 'text';
   text: string;
+}
+
+interface AICheckReportChatMessage {
+  id: string;
+  role: 'assistant';
+  kind: 'ai-check-report';
+  report: AICheckReport;
+}
+
+type ChatMessage = TextChatMessage | AICheckReportChatMessage;
+
+function isTextMessage(msg: ChatMessage): msg is TextChatMessage {
+  return msg.kind === 'text';
+}
+
+function findFirstUserText(messages: ChatMessage[]): string | undefined {
+  for (const m of messages) {
+    if (m.role === 'user' && m.kind === 'text') return m.text;
+  }
+  return undefined;
 }
 
 type DemoPhase = 'greeting' | 'awaiting_rule_update' | 'complete';
@@ -104,10 +131,10 @@ function buildInitialHistory(): ChatHistoryItem[] {
       title: "Today's Schedule Overview",
       lastAccessed: at(0, 9, 15),
       messages: [
-        { id: 'h1-m1', role: 'user', text: "Today's Overview" },
-        { id: 'h1-m2', role: 'assistant', text: AI_DAY_OVERVIEW },
-        { id: 'h1-m3', role: 'user', text: 'Can you move the new patient slot earlier in the day?' },
-        { id: 'h1-m4', role: 'assistant', text: "The earliest open slot for a New Patient visit (45 min) before your current one is 10:15 AM. Want me to move it there, or would you prefer to adjust the duration instead?" },
+        { id: 'h1-m1', role: 'user', kind: 'text', text: "Today's Overview" },
+        { id: 'h1-m2', role: 'assistant', kind: 'text', text: AI_DAY_OVERVIEW },
+        { id: 'h1-m3', role: 'user', kind: 'text', text: 'Can you move the new patient slot earlier in the day?' },
+        { id: 'h1-m4', role: 'assistant', kind: 'text', text: "The earliest open slot for a New Patient visit (45 min) before your current one is 10:15 AM. Want me to move it there, or would you prefer to adjust the duration instead?" },
       ],
     },
     {
@@ -115,10 +142,10 @@ function buildInitialHistory(): ChatHistoryItem[] {
       title: 'Scheduling Rules Update',
       lastAccessed: at(0, 11, 42),
       messages: [
-        { id: 'h2-m1', role: 'user', text: 'Update my scheduling rules so new patients can only book 9–12' },
-        { id: 'h2-m2', role: 'assistant', text: AI_RULES_CONFIRMED },
-        { id: 'h2-m3', role: 'user', text: 'Perfect, thanks' },
-        { id: 'h2-m4', role: 'assistant', text: "You're welcome. The rule is live—any new patient booking attempts outside that window will be blocked automatically." },
+        { id: 'h2-m1', role: 'user', kind: 'text', text: 'Update my scheduling rules so new patients can only book 9–12' },
+        { id: 'h2-m2', role: 'assistant', kind: 'text', text: AI_RULES_CONFIRMED },
+        { id: 'h2-m3', role: 'user', kind: 'text', text: 'Perfect, thanks' },
+        { id: 'h2-m4', role: 'assistant', kind: 'text', text: "You're welcome. The rule is live—any new patient booking attempts outside that window will be blocked automatically." },
       ],
     },
     {
@@ -126,10 +153,10 @@ function buildInitialHistory(): ChatHistoryItem[] {
       title: "My Todo's",
       lastAccessed: at(1, 14, 30),
       messages: [
-        { id: 'h3-m1', role: 'user', text: "What's waiting on me?" },
-        { id: 'h3-m2', role: 'assistant', text: AI_WAITING },
-        { id: 'h3-m3', role: 'user', text: 'Open the lab result' },
-        { id: 'h3-m4', role: 'assistant', text: "Opening the lab result for James Hartley (CBC, drawn this morning). Flagged: Hemoglobin 9.2 g/dL — low. You may want to review before his 2 PM visit." },
+        { id: 'h3-m1', role: 'user', kind: 'text', text: "What's waiting on me?" },
+        { id: 'h3-m2', role: 'assistant', kind: 'text', text: AI_WAITING },
+        { id: 'h3-m3', role: 'user', kind: 'text', text: 'Open the lab result' },
+        { id: 'h3-m4', role: 'assistant', kind: 'text', text: "Opening the lab result for James Hartley (CBC, drawn this morning). Flagged: Hemoglobin 9.2 g/dL — low. You may want to review before his 2 PM visit." },
       ],
     },
     {
@@ -137,10 +164,10 @@ function buildInitialHistory(): ChatHistoryItem[] {
       title: 'Patient Alerts',
       lastAccessed: at(2, 10, 0),
       messages: [
-        { id: 'h4-m1', role: 'user', text: 'Key alerts for today' },
-        { id: 'h4-m2', role: 'assistant', text: AI_KEY_ALERTS },
-        { id: 'h4-m3', role: 'user', text: 'Which patients have open pre-visit tasks?' },
-        { id: 'h4-m4', role: 'assistant', text: "Three patients have open tasks: Sarah M. (med reconciliation), David R. (consent form unsigned), and Emily T. (pre-visit questionnaire incomplete). All are scheduled before noon." },
+        { id: 'h4-m1', role: 'user', kind: 'text', text: 'Key alerts for today' },
+        { id: 'h4-m2', role: 'assistant', kind: 'text', text: AI_KEY_ALERTS },
+        { id: 'h4-m3', role: 'user', kind: 'text', text: 'Which patients have open pre-visit tasks?' },
+        { id: 'h4-m4', role: 'assistant', kind: 'text', text: "Three patients have open tasks: Sarah M. (med reconciliation), David R. (consent form unsigned), and Emily T. (pre-visit questionnaire incomplete). All are scheduled before noon." },
       ],
     },
     {
@@ -148,10 +175,10 @@ function buildInitialHistory(): ChatHistoryItem[] {
       title: 'Lab Results Review',
       lastAccessed: at(3, 16, 20),
       messages: [
-        { id: 'h5-m1', role: 'user', text: 'Any lab results I need to review?' },
-        { id: 'h5-m2', role: 'assistant', text: "You have 4 pending lab results: two are routine follow-ups (lipid panel, HbA1c), one is flagged critical — potassium 6.1 mEq/L for Robert Chen, and one is a pre-op CBC still pending sign-off." },
-        { id: 'h5-m3', role: 'user', text: 'Flag the critical one for a callback' },
-        { id: 'h5-m4', role: 'assistant', text: "Done. Robert Chen's chart is flagged for an urgent callback regarding the potassium result. His contact number on file is (555) 304-1182. Want me to draft a message to your nurse as well?" },
+        { id: 'h5-m1', role: 'user', kind: 'text', text: 'Any lab results I need to review?' },
+        { id: 'h5-m2', role: 'assistant', kind: 'text', text: "You have 4 pending lab results: two are routine follow-ups (lipid panel, HbA1c), one is flagged critical — potassium 6.1 mEq/L for Robert Chen, and one is a pre-op CBC still pending sign-off." },
+        { id: 'h5-m3', role: 'user', kind: 'text', text: 'Flag the critical one for a callback' },
+        { id: 'h5-m4', role: 'assistant', kind: 'text', text: "Done. Robert Chen's chart is flagged for an urgent callback regarding the potassium result. His contact number on file is (555) 304-1182. Want me to draft a message to your nurse as well?" },
       ],
     },
     {
@@ -159,10 +186,10 @@ function buildInitialHistory(): ChatHistoryItem[] {
       title: 'End of Day Summary',
       lastAccessed: at(5, 17, 0),
       messages: [
-        { id: 'h6-m1', role: 'user', text: 'Give me an end of day summary' },
-        { id: 'h6-m2', role: 'assistant', text: "Here's your summary: you saw 14 patients, completed 12 notes (2 still open), signed 3 prescriptions, and had 1 no-show. Average visit ran 2 minutes over the booked time. Reminder: you have a prior auth due tomorrow for Maria L." },
-        { id: 'h6-m3', role: 'user', text: 'Remind me about the prior auth tomorrow morning' },
-        { id: 'h6-m4', role: 'assistant', text: "Got it—I'll surface that reminder when you open the app tomorrow. Prior auth for Maria L., due by end of day." },
+        { id: 'h6-m1', role: 'user', kind: 'text', text: 'Give me an end of day summary' },
+        { id: 'h6-m2', role: 'assistant', kind: 'text', text: "Here's your summary: you saw 14 patients, completed 12 notes (2 still open), signed 3 prescriptions, and had 1 no-show. Average visit ran 2 minutes over the booked time. Reminder: you have a prior auth due tomorrow for Maria L." },
+        { id: 'h6-m3', role: 'user', kind: 'text', text: 'Remind me about the prior auth tomorrow morning' },
+        { id: 'h6-m4', role: 'assistant', kind: 'text', text: "Got it—I'll surface that reminder when you open the app tomorrow. Prior auth for Maria L., due by end of day." },
       ],
     },
   ];
@@ -300,6 +327,13 @@ export interface AIAssistantPanelProps {
   userFirstName?: string;
   shortcuts?: AIAssistantShortcut[];
   onShortcutClick?: (shortcutId: string) => void;
+  /**
+   * Imperative hand-off from the parent: when this object's `key` changes the
+   * panel saves the in-progress chat to history and replaces it with the
+   * provided seed (a synthetic user prompt + a rich AI Check report message).
+   * Used to power "AI Check" from the visit note.
+   */
+  pendingAICheck?: { key: number; seed: SeededAssistantChat } | null;
 }
 
 export function AIAssistantPanel({
@@ -307,6 +341,7 @@ export function AIAssistantPanel({
   userFirstName = 'Alex',
   shortcuts = DEFAULT_ASSISTANT_SHORTCUTS,
   onShortcutClick,
+  pendingAICheck,
 }: AIAssistantPanelProps) {
   const [inputValue, setInputValue] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -321,10 +356,11 @@ export function AIAssistantPanel({
   const directionRef = useRef(1);
   const transcriptEndRef = useRef<HTMLDivElement | null>(null);
   const thinkingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const consumedSeedKeyRef = useRef<number | null>(null);
 
   const hasConversation = messages.length > 0;
 
-  const rawChatTitle = messages.find((m) => m.role === 'user')?.text ?? '';
+  const rawChatTitle = findFirstUserText(messages) ?? '';
   const chatTitle = rawChatTitle.length > 24 ? rawChatTitle.slice(0, 24) + '…' : rawChatTitle;
 
   useEffect(() => {
@@ -349,6 +385,38 @@ export function AIAssistantPanel({
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (!pendingAICheck) return;
+    if (consumedSeedKeyRef.current === pendingAICheck.key) return;
+    consumedSeedKeyRef.current = pendingAICheck.key;
+
+    if (thinkingTimeoutRef.current != null) {
+      clearTimeout(thinkingTimeoutRef.current);
+      thinkingTimeoutRef.current = null;
+    }
+
+    const seed = pendingAICheck.seed;
+    setMessages((prev) => {
+      const firstUserText = findFirstUserText(prev);
+      if (firstUserText) {
+        const title = firstUserText.length > 40 ? firstUserText.slice(0, 40) + '…' : firstUserText;
+        setChatHistory((h) => [
+          { id: nextHistoryId(), title, lastAccessed: new Date(), messages: prev },
+          ...h,
+        ]);
+      }
+      return [
+        { id: nextMessageId(), role: 'user', kind: 'text', text: seed.userPrompt },
+        { id: nextMessageId(), role: 'assistant', kind: 'ai-check-report', report: seed.report },
+      ];
+    });
+    setDemoPhase('complete');
+    setInputValue('');
+    setIsAssistantThinking(false);
+    setViewMode('chat');
+    setActiveShortcut(null);
+  }, [pendingAICheck]);
 
   const handleGreetingLottieComplete = () => {
     const nextDir = (directionRef.current === 1 ? -1 : 1) as 1 | -1;
@@ -375,7 +443,7 @@ export function AIAssistantPanel({
         thinkingTimeoutRef.current = null;
         setMessages((prev) => [
           ...prev,
-          { id: nextMessageId(), role: 'assistant', text: assistantText },
+          { id: nextMessageId(), role: 'assistant', kind: 'text', text: assistantText },
         ]);
         setIsAssistantThinking(false);
         if (options?.advanceToAwaitingRule) setDemoPhase('awaiting_rule_update');
@@ -387,7 +455,10 @@ export function AIAssistantPanel({
 
   const appendExchange = useCallback(
     (userText: string, assistantText: string, advanceDemo: boolean) => {
-      setMessages((prev) => [...prev, { id: nextMessageId(), role: 'user', text: userText }]);
+      setMessages((prev) => [
+        ...prev,
+        { id: nextMessageId(), role: 'user', kind: 'text', text: userText },
+      ]);
       scheduleAssistantReply(assistantText, advanceDemo ? { advanceToAwaitingRule: true } : undefined);
     },
     [scheduleAssistantReply],
@@ -426,10 +497,9 @@ export function AIAssistantPanel({
   const handleNewChat = useCallback(() => {
     clearThinkingTimer();
     setMessages((prev) => {
-      const firstUserMsg = prev.find((m) => m.role === 'user');
-      if (firstUserMsg) {
-        const raw = firstUserMsg.text;
-        const title = raw.length > 40 ? raw.slice(0, 40) + '…' : raw;
+      const firstUserText = findFirstUserText(prev);
+      if (firstUserText) {
+        const title = firstUserText.length > 40 ? firstUserText.slice(0, 40) + '…' : firstUserText;
         setChatHistory((h) => [
           { id: nextHistoryId(), title, lastAccessed: new Date(), messages: prev },
           ...h,
@@ -469,27 +539,39 @@ export function AIAssistantPanel({
     }
 
     if (demoPhase === 'awaiting_rule_update') {
-      setMessages((prev) => [...prev, { id: nextMessageId(), role: 'user', text }]);
+      setMessages((prev) => [
+        ...prev,
+        { id: nextMessageId(), role: 'user', kind: 'text', text },
+      ]);
       scheduleAssistantReply(AI_RULES_CONFIRMED, { advanceToComplete: true });
       setInputValue('');
       return;
     }
 
     if (demoPhase !== 'complete' && hasConversation && looksLikeSchedulingRuleUpdate(text)) {
-      setMessages((prev) => [...prev, { id: nextMessageId(), role: 'user', text }]);
+      setMessages((prev) => [
+        ...prev,
+        { id: nextMessageId(), role: 'user', kind: 'text', text },
+      ]);
       scheduleAssistantReply(AI_RULES_CONFIRMED, { advanceToComplete: true });
       setInputValue('');
       return;
     }
 
     if (demoPhase === 'complete') {
-      setMessages((prev) => [...prev, { id: nextMessageId(), role: 'user', text }]);
+      setMessages((prev) => [
+        ...prev,
+        { id: nextMessageId(), role: 'user', kind: 'text', text },
+      ]);
       scheduleAssistantReply(AI_DEMO_WRAP_UP);
       setInputValue('');
       return;
     }
 
-    setMessages((prev) => [...prev, { id: nextMessageId(), role: 'user', text }]);
+    setMessages((prev) => [
+      ...prev,
+      { id: nextMessageId(), role: 'user', kind: 'text', text },
+    ]);
     scheduleAssistantReply(
       "Try asking about your day, what's waiting on you, or key alerts—or use the shortcuts when you open the panel.",
     );
@@ -733,40 +815,49 @@ export function AIAssistantPanel({
               px: 1,
             }}
           >
-            {messages.map((msg) => (
-              <Box
-                key={msg.id}
-                sx={{
-                  alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                  maxWidth: msg.role === 'user' ? '90%' : '100%',
-                }}
-              >
-                <Typography
-                  component="div"
+            {messages.map((msg) => {
+              if (!isTextMessage(msg)) {
+                return (
+                  <Box key={msg.id} sx={{ alignSelf: 'flex-start', width: '100%' }}>
+                    <AICheckReportBubble report={msg.report} />
+                  </Box>
+                );
+              }
+              return (
+                <Box
+                  key={msg.id}
                   sx={{
-                    display: 'inline-block',
-                    maxWidth: '100%',
-                    fontSize: 13,
-                    lineHeight: 1.45,
-                    whiteSpace: 'pre-wrap',
-                    color: 'text.primary',
-                    ...(msg.role === 'user'
-                      ? {
-                          px: 1.25,
-                          py: 1,
-                          borderRadius: '10px',
-                          bgcolor: 'action.selected',
-                        }
-                      : {
-                          py: 0.25,
-                          bgcolor: 'transparent',
-                        }),
+                    alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                    maxWidth: msg.role === 'user' ? '90%' : '100%',
                   }}
                 >
-                  {msg.text}
-                </Typography>
-              </Box>
-            ))}
+                  <Typography
+                    component="div"
+                    sx={{
+                      display: 'inline-block',
+                      maxWidth: '100%',
+                      fontSize: 13,
+                      lineHeight: 1.45,
+                      whiteSpace: 'pre-wrap',
+                      color: 'text.primary',
+                      ...(msg.role === 'user'
+                        ? {
+                            px: 1.25,
+                            py: 1,
+                            borderRadius: '10px',
+                            bgcolor: 'action.selected',
+                          }
+                        : {
+                            py: 0.25,
+                            bgcolor: 'transparent',
+                          }),
+                    }}
+                  >
+                    {msg.text}
+                  </Typography>
+                </Box>
+              );
+            })}
             {isAssistantThinking ? (
               <Box sx={{ alignSelf: 'flex-start', maxWidth: '100%' }}>
                 <Typography
@@ -1116,6 +1207,294 @@ export function AIAssistantPanel({
           </Box>
         </Box>
       </Box>}
+    </Box>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* AI Check rich content                                                      */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Renders an AI Check report inline in the chat transcript: a small
+ * "Acceptance" header card showing the before → after percentages, then a
+ * stack of suggestion cards. Each card surfaces either Accept/Decline actions
+ * or an inline text input depending on the suggestion type.
+ */
+function AICheckReportBubble({ report }: { report: AICheckReport }) {
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+      <AICheckAcceptanceCard
+        beforePercent={report.beforePercent}
+        afterPercent={report.afterPercent}
+      />
+      <Typography
+        sx={{
+          fontSize: 11,
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          letterSpacing: '0.05em',
+          color: 'text.secondary',
+          mt: 0.5,
+          ml: 0.25,
+        }}
+      >
+        Suggestions ({report.suggestions.length})
+      </Typography>
+      {report.suggestions.map((suggestion) => (
+        <AICheckSuggestionCard key={suggestion.id} suggestion={suggestion} />
+      ))}
+    </Box>
+  );
+}
+
+function AICheckAcceptanceCard({
+  beforePercent,
+  afterPercent,
+}: {
+  beforePercent: number;
+  afterPercent: number;
+}) {
+  return (
+    <Box
+      sx={{
+        p: 1.25,
+        borderRadius: 1,
+        bgcolor: 'background.paper',
+        boxShadow: '0px 1px 2px 0px rgba(0, 0, 0, 0.1)',
+      }}
+    >
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.75 }}>
+        <AICheckIcon sx={{ fontSize: 16, color: 'primary.main' }} />
+        <Typography
+          sx={{
+            fontSize: 11,
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.05em',
+            color: 'text.secondary',
+          }}
+        >
+          Note acceptance
+        </Typography>
+      </Box>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+          <Typography sx={{ fontSize: 11, color: 'text.secondary', lineHeight: 1.2 }}>
+            Current
+          </Typography>
+          <Typography
+            sx={{
+              fontSize: 22,
+              fontWeight: 700,
+              color: 'text.primary',
+              lineHeight: 1.1,
+            }}
+          >
+            {beforePercent}%
+          </Typography>
+        </Box>
+        <ArrowRightAltOutlined sx={{ fontSize: 22, color: 'text.secondary' }} />
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+          <Typography sx={{ fontSize: 11, color: 'primary.main', lineHeight: 1.2 }}>
+            If accepted
+          </Typography>
+          <Typography
+            sx={{
+              fontSize: 22,
+              fontWeight: 700,
+              color: 'primary.main',
+              lineHeight: 1.1,
+            }}
+          >
+            {afterPercent}%
+          </Typography>
+        </Box>
+      </Box>
+      <Typography
+        sx={{
+          fontSize: 12,
+          color: 'text.secondary',
+          mt: 0.75,
+          lineHeight: 1.4,
+        }}
+      >
+        Likelihood this note is accepted by insurance, with and without the AI
+        suggestions applied.
+      </Typography>
+    </Box>
+  );
+}
+
+type SuggestionStatus = 'pending' | 'accepted' | 'declined';
+
+function AICheckSuggestionCard({ suggestion }: { suggestion: AICheckSuggestion }) {
+  const [status, setStatus] = useState<SuggestionStatus>('pending');
+  const [inputValue, setInputValue] = useState('');
+
+  const decided = status !== 'pending';
+
+  return (
+    <Box
+      sx={{
+        p: 1.25,
+        borderRadius: 1,
+        bgcolor: 'background.paper',
+        boxShadow: '0px 1px 2px 0px rgba(0, 0, 0, 0.1)',
+        opacity: decided ? 0.65 : 1,
+        transition: 'opacity 0.2s ease',
+      }}
+    >
+      <Typography
+        sx={{
+          fontSize: 13,
+          fontWeight: 700,
+          color: 'text.primary',
+          lineHeight: 1.3,
+          mb: 0.5,
+        }}
+      >
+        {suggestion.title}
+      </Typography>
+      {suggestion.description && (
+        <Typography
+          sx={{
+            fontSize: 12,
+            color: 'text.primary',
+            lineHeight: 1.5,
+            mb: suggestion.bullets ? 0.75 : 1,
+          }}
+        >
+          {suggestion.description}
+        </Typography>
+      )}
+      {suggestion.bullets && suggestion.bullets.length > 0 && (
+        <Box
+          component="ul"
+          sx={{
+            m: 0,
+            mb: 1,
+            pl: 2,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 0.25,
+          }}
+        >
+          {suggestion.bullets.map((line, idx) => (
+            <Box
+              key={idx}
+              component="li"
+              sx={{
+                fontSize: 12,
+                color: 'text.primary',
+                lineHeight: 1.5,
+              }}
+            >
+              {line}
+            </Box>
+          ))}
+        </Box>
+      )}
+
+      {suggestion.action === 'input' ? (
+        <TextField
+          fullWidth
+          size="small"
+          placeholder={suggestion.inputPlaceholder ?? 'Add details…'}
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          variant="outlined"
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              fontSize: 13,
+              borderRadius: 1.5,
+              bgcolor: 'action.hover',
+              '& fieldset': { borderColor: 'transparent' },
+              '&:hover fieldset': { borderColor: 'divider' },
+              '&.Mui-focused fieldset': { borderColor: 'primary.main' },
+            },
+            '& .MuiOutlinedInput-input': {
+              py: 0.875,
+              px: 1.25,
+            },
+          }}
+        />
+      ) : decided ? (
+        <Chip
+          size="small"
+          icon={
+            status === 'accepted' ? (
+              <CheckOutlined sx={{ fontSize: 14 }} />
+            ) : (
+              <CloseOutlined sx={{ fontSize: 14 }} />
+            )
+          }
+          label={status === 'accepted' ? 'Accepted' : 'Declined'}
+          sx={(theme) => ({
+            height: 24,
+            fontSize: 11,
+            fontWeight: 600,
+            borderRadius: '999px',
+            bgcolor:
+              status === 'accepted'
+                ? alpha(theme.palette.primary.main, 0.1)
+                : 'action.hover',
+            color: status === 'accepted' ? 'primary.main' : 'text.secondary',
+            '& .MuiChip-icon': {
+              color: 'inherit',
+              ml: '6px',
+              mr: '-2px',
+            },
+          })}
+        />
+      ) : (
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, mt: 0.25 }}>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => setStatus('accepted')}
+            startIcon={<CheckOutlined sx={{ fontSize: 14 }} />}
+            sx={{
+              minHeight: 28,
+              height: 28,
+              px: 1.25,
+              borderRadius: '999px',
+              fontSize: 12,
+              fontWeight: 600,
+              borderColor: (theme) => alpha(theme.palette.primary.main, 0.4),
+              color: 'primary.main',
+              '& .MuiButton-startIcon': { mr: 0.5 },
+              '&:hover': {
+                borderColor: 'primary.main',
+                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.06),
+              },
+            }}
+          >
+            Accept
+          </Button>
+          <Button
+            variant="text"
+            size="small"
+            onClick={() => setStatus('declined')}
+            startIcon={<CloseOutlined sx={{ fontSize: 14 }} />}
+            sx={{
+              minHeight: 28,
+              height: 28,
+              px: 1.25,
+              borderRadius: '999px',
+              fontSize: 12,
+              fontWeight: 600,
+              color: 'primary.main',
+              '& .MuiButton-startIcon': { mr: 0.5 },
+              '&:hover': {
+                bgcolor: (theme) => alpha(theme.palette.primary.main, 0.06),
+              },
+            }}
+          >
+            Decline
+          </Button>
+        </Box>
+      )}
     </Box>
   );
 }

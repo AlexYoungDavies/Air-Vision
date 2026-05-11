@@ -374,10 +374,10 @@ function ReadViewSectionFormatted({
 export interface VisitNoteContentProps {
   noteId: string;
   appointment: Appointment;
-  /** When provided, the AI Check button opens/closes the secondary content panel. */
+  /** Called when the user clicks "AI Check" in the toolbar (typically opens the Ask Athelas chat with an AI Check report). */
   onAICheckClick?: () => void;
-  /** When true, the AI Check button shows active state (panel open). */
-  isAIPanelOpen?: boolean;
+  /** Number of available AI Check suggestions; rendered as a badge on the AI Check toolbar button. */
+  aiCheckSuggestionCount?: number;
   /** When provided, the Scribe button opens the Scribe panel and shows active state when open. */
   onScribeClick?: () => void;
   /** When true, the Scribe button shows active state (panel open). */
@@ -955,7 +955,7 @@ function VisitNoteFloatingToolbar({
   mode,
   onModeChange,
   onAICheckClick,
-  isAIPanelOpen,
+  aiCheckSuggestionCount,
   onScribeClick,
   isScribePanelOpen,
   scribeRecordingState,
@@ -965,7 +965,7 @@ function VisitNoteFloatingToolbar({
   mode: 'edit' | 'read';
   onModeChange: (next: 'edit' | 'read') => void;
   onAICheckClick?: () => void;
-  isAIPanelOpen?: boolean;
+  aiCheckSuggestionCount?: number;
   onScribeClick?: () => void;
   isScribePanelOpen?: boolean;
   scribeRecordingState?: ScribeRecordingState;
@@ -1119,8 +1119,8 @@ function VisitNoteFloatingToolbar({
           borderColor: toolbarBorder,
           bgcolor: toolbarBg,
           boxShadow: `${toolbarShadow}, ${toolbarGlow}`,
-          pl: 0.75,
-          pr: 0.75,
+          pl: 0.5,
+          pr: 0.5,
           py: 0.5,
         }}
       >
@@ -1158,6 +1158,30 @@ function VisitNoteFloatingToolbar({
             className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
             onClick={onAICheckClick}
             startIcon={<AICheckIcon sx={{ fontSize: 24, color: 'primary.main' }} />}
+            endIcon={
+              aiCheckSuggestionCount && aiCheckSuggestionCount > 0 ? (
+                <Box
+                  component="span"
+                  sx={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    height: 18,
+                    minWidth: 18,
+                    px: 0.5,
+                    borderRadius: '9999px',
+                    bgcolor: (theme) => alpha(theme.palette.warning.main, 0.16),
+                    color: 'warning.dark',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    lineHeight: 1,
+                    verticalAlign: 'middle',
+                  }}
+                >
+                  {aiCheckSuggestionCount}
+                </Box>
+              ) : undefined
+            }
             sx={{
               height: 44,
               minHeight: 44,
@@ -1170,7 +1194,6 @@ function VisitNoteFloatingToolbar({
               textTransform: 'none',
               minWidth: 0,
               '&:hover': { bgcolor: 'action.hover' },
-              ...(isAIPanelOpen && { bgcolor: alpha(theme.palette.primary.main, 0.12) }),
             }}
           >
             AI Check
@@ -1264,7 +1287,7 @@ export function VisitNoteContent({
   noteId: _noteId,
   appointment,
   onAICheckClick,
-  isAIPanelOpen,
+  aiCheckSuggestionCount,
   onScribeClick,
   isScribePanelOpen,
   scribeRecordingState,
@@ -2498,7 +2521,7 @@ export function VisitNoteContent({
             mode={mode}
             onModeChange={setMode}
             onAICheckClick={onAICheckClick}
-            isAIPanelOpen={isAIPanelOpen}
+            aiCheckSuggestionCount={aiCheckSuggestionCount}
             onScribeClick={onScribeClick}
             isScribePanelOpen={isScribePanelOpen}
             scribeRecordingState={scribeRecordingState}

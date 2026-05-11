@@ -1,7 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  Alert,
   Box,
   Typography,
   Avatar,
@@ -33,6 +32,8 @@ import { BillingTabContent } from './BillingTabContent';
 import { OverviewTabContent } from './OverviewTabContent';
 import { VisitNoteContent, CitationPanelContent } from './VisitNoteContent';
 import { useAppScribe } from './AppScribeContext';
+import { useAppAssistant } from './AppAssistantContext';
+import { buildDefaultAICheckSeed } from './AICheckChat';
 import {
   MedicationsTabContent,
   OrdersTabContent,
@@ -78,7 +79,7 @@ export type PrimaryTabId = (typeof PRIMARY_TABS)[number]['id'];
 export type MoreTabId = (typeof MORE_TAB_OPTIONS)[number]['id'];
 export type ProfileTabId = PrimaryTabId | MoreTabId;
 
-export type SecondaryPanelMode = 'pin' | 'chat' | 'tasks' | 'history' | 'ai' | 'citations';
+export type SecondaryPanelMode = 'pin' | 'chat' | 'tasks' | 'history' | 'citations';
 
 export interface OpenVisitNote {
   id: string;
@@ -310,165 +311,6 @@ function HistoryPanelContent() {
   );
 }
 
-/** Mock AI Check panel: insurance likelihood, approval suggestions, CPT billing alert. */
-function AICheckPanelContent() {
-  const likelihoodPercent = 78;
-  const suggestions = [
-    'Document the medical necessity for each CPT code in the assessment section.',
-    'Ensure the treatment plan aligns with the chief complaint and diagnosis.',
-    'Add time spent if billing time-based codes (e.g., 99214 requires 30–39 min).',
-    'Verify modifier usage (e.g., -25 for significant, separate E/M).',
-  ];
-  const cptAlertCodes = ['99213', '97110', '97140'];
-
-  const scoreSeverity = likelihoodPercent >= 70 ? 'success' : likelihoodPercent >= 50 ? 'warning' : 'error';
-
-  return (
-    <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
-      {/* Insurance acceptance – clean score card with ring */}
-      <Box>
-        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Insurance acceptance
-        </Typography>
-        <Paper
-          variant="outlined"
-          sx={{
-            mt: 1,
-            p: 2,
-            borderRadius: 2,
-            border: '1px solid',
-            borderColor: 'divider',
-            bgcolor: 'action.hover',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 2,
-          }}
-        >
-          <Box
-            sx={{
-              position: 'relative',
-              width: 72,
-              height: 72,
-              flexShrink: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Box
-              component="svg"
-              viewBox="0 0 36 36"
-              sx={{
-                position: 'absolute',
-                width: 72,
-                height: 72,
-                transform: 'rotate(-90deg)',
-              }}
-            >
-              <Box
-                component="circle"
-                cx="18"
-                cy="18"
-                r="15.9"
-                fill="none"
-                stroke="currentColor"
-                sx={{ color: 'divider', strokeWidth: 3 }}
-              />
-              <Box
-                component="circle"
-                cx="18"
-                cy="18"
-                r="15.9"
-                fill="none"
-                stroke="currentColor"
-                strokeDasharray={`${likelihoodPercent} ${100 - likelihoodPercent}`}
-                strokeLinecap="round"
-                strokeWidth={3}
-                sx={{
-                  color: `${scoreSeverity}.main`,
-                  transition: 'stroke-dasharray 0.4s ease',
-                }}
-              />
-            </Box>
-            <Typography
-              variant="h6"
-              component="span"
-              sx={{
-                fontWeight: 700,
-                color: `${scoreSeverity}.main`,
-                fontSize: 18,
-              }}
-            >
-              {likelihoodPercent}%
-            </Typography>
-          </Box>
-          <Typography variant="body2" color="text.primary" sx={{ flex: 1, lineHeight: 1.5 }}>
-            Likelihood this note will be accepted by insurance based on documentation and code alignment.
-          </Typography>
-        </Paper>
-      </Box>
-
-      {/* Improve claim approval – distinct numbered cards */}
-      <Box>
-        <Typography variant="caption" sx={{ fontWeight: 700, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Improve claim approval ({suggestions.length} suggestions)
-        </Typography>
-        <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
-          {suggestions.map((text, i) => (
-            <Paper
-              key={i}
-              variant="outlined"
-              sx={{
-                p: 1.25,
-                borderRadius: 1.5,
-                border: '1px solid',
-                borderColor: 'divider',
-                bgcolor: 'background.paper',
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 1.25,
-              }}
-            >
-              <Box
-                sx={{
-                  width: 24,
-                  height: 24,
-                  borderRadius: '50%',
-                  bgcolor: 'primary.light',
-                  color: 'primary.main',
-                  fontWeight: 700,
-                  fontSize: 12,
-                  flexShrink: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                {i + 1}
-              </Box>
-              <Typography variant="body2" sx={{ fontSize: 13, lineHeight: 1.5, pt: 0.25 }}>
-                {text}
-              </Typography>
-            </Paper>
-          ))}
-        </Box>
-      </Box>
-
-      <Alert
-        severity="warning"
-        sx={{ '& .MuiAlert-message': { width: '100%' } }}
-      >
-        <Typography variant="caption" sx={{ fontWeight: 700, display: 'block', mb: 0.25 }}>
-          CPT codes billed together
-        </Typography>
-        <Typography variant="body2" sx={{ fontSize: 13 }}>
-          You are billing {cptAlertCodes.join(', ')} together. Some payers may bundle or reduce payment when these codes are reported on the same claim. Consider documenting distinct time or separate procedures to support unbundling if applicable.
-        </Typography>
-      </Alert>
-    </Box>
-  );
-}
-
 export function PatientProfilePage({
   patient,
   secondaryPanelMode: controlledPanelMode,
@@ -494,6 +336,8 @@ export function PatientProfilePage({
     isGlobalScribePanelOpen,
     globalScribeSelectedPatientId,
   } = useAppScribe();
+  const { openAssistantWithAICheck } = useAppAssistant();
+  const aiCheckSeed = useMemo(() => buildDefaultAICheckSeed(), []);
 
   const isControlled = controlledPanelMode !== undefined;
   const secondaryPanelMode = isControlled ? controlledPanelMode : internalPanelMode;
@@ -957,8 +801,8 @@ export function PatientProfilePage({
             <VisitNoteContent
               noteId={activeVisitNote.id}
               appointment={activeVisitNote.appointment}
-              onAICheckClick={() => setSecondaryPanelMode(secondaryPanelMode === 'ai' ? null : 'ai')}
-              isAIPanelOpen={secondaryPanelMode === 'ai'}
+              onAICheckClick={() => openAssistantWithAICheck(aiCheckSeed.report)}
+              aiCheckSuggestionCount={aiCheckSeed.report.suggestions.length}
               onScribeClick={() => {
                 if (isGlobalScribePanelOpen && globalScribeSelectedPatientId === patient.id) {
                   closeGlobalScribePanel();
@@ -1041,7 +885,6 @@ export function PatientProfilePage({
                   chat: 'Care thread',
                   tasks: 'Tasks',
                   history: 'Activity',
-                  ai: 'AI Check',
                   citations: 'Citation sources',
                 };
                 const title = currentMode ? panelTitles[currentMode] : '';
@@ -1080,7 +923,6 @@ export function PatientProfilePage({
                         {currentMode === 'pin' && <PinPanelContent patient={patient} />}
                         {currentMode === 'tasks' && <TasksPanelContent />}
                         {currentMode === 'history' && <HistoryPanelContent />}
-                        {currentMode === 'ai' && <AICheckPanelContent />}
                         {currentMode === 'citations' && (
                           <CitationPanelContent
                             highlightedCitationNumber={highlightedCitationNumber}

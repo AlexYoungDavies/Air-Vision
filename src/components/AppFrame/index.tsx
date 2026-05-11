@@ -26,6 +26,8 @@ import { useAccent } from '../../theme/AppThemeProvider';
 import type { ActiveScribeRecordingSession } from './scribeRecordingSession';
 import { getScribeVisitForPatientId, type MockScribeVisit } from '../../data/mockTodaysVisits';
 import { AppScribeProvider } from './AppScribeContext';
+import { AppAssistantProvider, type AppAssistantContextValue } from './AppAssistantContext';
+import type { AICheckReport, SeededAssistantChat } from './AICheckChat';
 
 const PANEL_WIDTH = 280;
 /** Width open/close (canvas + panel move together). */
@@ -50,6 +52,7 @@ function AppFrameMainWorkspace({
   onScribeSelectedVisitChange,
   activeScribeRecording,
   onActiveScribeRecordingChange,
+  pendingAICheck,
 }: {
   children: ReactNode;
   theme: Theme;
@@ -61,6 +64,7 @@ function AppFrameMainWorkspace({
   onScribeSelectedVisitChange: (v: MockScribeVisit | null) => void;
   activeScribeRecording: ActiveScribeRecordingSession | null;
   onActiveScribeRecordingChange: Dispatch<SetStateAction<ActiveScribeRecordingSession | null>>;
+  pendingAICheck: { key: number; seed: SeededAssistantChat } | null;
 }) {
   const location = useLocation();
   const { shortcutOverride } = useAssistantShortcutOverride();
@@ -115,7 +119,11 @@ function AppFrameMainWorkspace({
                 }}
               >
                 {renderedPanel === 'assistant' && (
-                  <AIAssistantPanel onClose={onCloseAssistant} shortcuts={assistantShortcuts} />
+                  <AIAssistantPanel
+                    onClose={onCloseAssistant}
+                    shortcuts={assistantShortcuts}
+                    pendingAICheck={pendingAICheck}
+                  />
                 )}
                 {renderedPanel === 'scribe' && (
                   <ScribePanel
@@ -229,6 +237,29 @@ export function AppFrame({ children }: AppFrameProps) {
     [openScribeForPatientId, closeGlobalScribePanel, scribeOpen, scribeSelectedVisit?.patientId],
   );
 
+  const [pendingAICheck, setPendingAICheck] = useState<{
+    key: number;
+    seed: SeededAssistantChat;
+  } | null>(null);
+  const aiCheckSeedKeyRef = useRef(0);
+
+  const openAssistantWithAICheck = useCallback(
+    (report: AICheckReport) => {
+      aiCheckSeedKeyRef.current += 1;
+      setPendingAICheck({
+        key: aiCheckSeedKeyRef.current,
+        seed: { userPrompt: 'Run an AI check on this note', report },
+      });
+      setActivePanel('assistant');
+    },
+    [],
+  );
+
+  const appAssistantValue = useMemo<AppAssistantContextValue>(
+    () => ({ openAssistantWithAICheck }),
+    [openAssistantWithAICheck],
+  );
+
   return (
     <Box
       sx={{
@@ -316,21 +347,24 @@ export function AppFrame({ children }: AppFrameProps) {
             onSearchClick={() => setSpotlightOpen(true)}
           />
           <AppScribeProvider value={appScribeValue}>
-            <AssistantShortcutsProvider>
-              <AppFrameMainWorkspace
-                theme={theme}
-                activePanel={activePanel}
-                renderedPanel={renderedPanel}
-                onPanelTransitionEnd={handlePanelWidthTransitionEnd}
-                onCloseAssistant={() => setActivePanel('none')}
-                scribeSelectedVisit={scribeSelectedVisit}
-                onScribeSelectedVisitChange={setScribeSelectedVisit}
-                activeScribeRecording={activeScribeRecording}
-                onActiveScribeRecordingChange={setActiveScribeRecording}
-              >
-                {children ?? <Outlet />}
-              </AppFrameMainWorkspace>
-            </AssistantShortcutsProvider>
+            <AppAssistantProvider value={appAssistantValue}>
+              <AssistantShortcutsProvider>
+                <AppFrameMainWorkspace
+                  theme={theme}
+                  activePanel={activePanel}
+                  renderedPanel={renderedPanel}
+                  onPanelTransitionEnd={handlePanelWidthTransitionEnd}
+                  onCloseAssistant={() => setActivePanel('none')}
+                  scribeSelectedVisit={scribeSelectedVisit}
+                  onScribeSelectedVisitChange={setScribeSelectedVisit}
+                  activeScribeRecording={activeScribeRecording}
+                  onActiveScribeRecordingChange={setActiveScribeRecording}
+                  pendingAICheck={pendingAICheck}
+                >
+                  {children ?? <Outlet />}
+                </AppFrameMainWorkspace>
+              </AssistantShortcutsProvider>
+            </AppAssistantProvider>
           </AppScribeProvider>
         </Box>
       </Box>
