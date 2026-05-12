@@ -364,6 +364,7 @@ export function HeaderBar({
           maxHeight: 28,
           display: 'flex',
           alignItems: 'center',
+          justifyContent: 'center',
           gap: '6px',
           px: 1.5,
           borderRadius: '8px',

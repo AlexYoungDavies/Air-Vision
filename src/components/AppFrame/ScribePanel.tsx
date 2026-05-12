@@ -15,6 +15,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import dayjs, { type Dayjs } from 'dayjs';
 import ChevronLeftOutlined from '@mui/icons-material/ChevronLeftOutlined';
 import ChevronRightOutlined from '@mui/icons-material/ChevronRightOutlined';
+import CloseOutlined from '@mui/icons-material/CloseOutlined';
 import ExpandMoreOutlined from '@mui/icons-material/ExpandMoreOutlined';
 import AccessTimeOutlined from '@mui/icons-material/AccessTimeOutlined';
 import PauseRounded from '@mui/icons-material/PauseRounded';
@@ -301,6 +302,11 @@ export interface ScribePanelProps {
   onSelectedVisitChange: (visit: MockScribeVisit | null) => void;
   activeRecording: ActiveScribeRecordingSession | null;
   onActiveRecordingChange: Dispatch<SetStateAction<ActiveScribeRecordingSession | null>>;
+  /** When true, render an inline close button in the panel header (used when
+   *  the panel is presented as a compact-viewport overlay popover). */
+  compact?: boolean;
+  /** Invoked by the inline close button (compact mode only). */
+  onClose?: () => void;
 }
 
 export function ScribePanel({
@@ -308,6 +314,8 @@ export function ScribePanel({
   onSelectedVisitChange,
   activeRecording,
   onActiveRecordingChange,
+  compact,
+  onClose,
 }: ScribePanelProps) {
   const [scheduleDate, setScheduleDate] = useState<Dayjs>(() => dayjs().startOf('day'));
   const [datePickerAnchor, setDatePickerAnchor] = useState<HTMLElement | null>(null);
@@ -412,6 +420,16 @@ export function ScribePanel({
             <AppIconButton tooltip="Cached recordings" aria-label="Cached recordings" sx={{ color: 'text.secondary' }}>
               <CassetteIcon />
             </AppIconButton>
+            {compact && onClose && (
+              <AppIconButton
+                tooltip="Close"
+                aria-label="Close panel"
+                onClick={onClose}
+                sx={{ color: 'text.secondary' }}
+              >
+                <CloseOutlined sx={{ fontSize: 18 }} />
+              </AppIconButton>
+            )}
           </Box>
         </Box>
       )}
@@ -422,6 +440,8 @@ export function ScribePanel({
           visit={selectedVisit}
           scheduleDate={scheduleDate}
           onBack={() => onSelectedVisitChange(null)}
+          compact={compact}
+          onClose={onClose}
           recordingForVisit={
             activeRecording?.visit.id === selectedVisit.id ? activeRecording : null
           }
@@ -442,10 +462,23 @@ export function ScribePanel({
               s && s.visit.id === selectedVisit.id ? { ...s, phase: 'recording' } : s,
             )
           }
-          onFinishRecording={() => onActiveRecordingChange(null)}
+          // Finish → processing. The AppFrame schedules the processing → preview
+          // transition once it sees a session enter `processing`.
+          onFinishRecording={() =>
+            onActiveRecordingChange((s) =>
+              s && s.visit.id === selectedVisit.id ? { ...s, phase: 'processing' } : s,
+            )
+          }
           onCancelRecording={() => {
             onActiveRecordingChange(null);
             onSelectedVisitChange(null);
+          }}
+          onSubmitToChart={() => {
+            onActiveRecordingChange(null);
+            onSelectedVisitChange(null);
+          }}
+          onDiscardPostProcessed={() => {
+            onActiveRecordingChange(null);
           }}
         />
       ) : (

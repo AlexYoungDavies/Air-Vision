@@ -9,7 +9,7 @@ import {
   type ReactNode,
   type SetStateAction,
 } from 'react';
-import { Box, Fade } from '@mui/material';
+import { Box, Fade, useMediaQuery } from '@mui/material';
 import { useTheme, type Theme } from '@mui/material/styles';
 import { SwitchTransition } from 'react-transition-group';
 import { Outlet, useLocation } from 'react-router-dom';
@@ -34,6 +34,9 @@ const PANEL_WIDTH = 280;
 const PANEL_TRANSITION_MS = 300;
 /** Per-step fade when switching Assistant ↔ Scribe (out-in, so total ≈ 2× this). */
 const PANEL_CROSSFADE_MS = 150;
+/** Below this viewport width the panel renders as a right-side overlay popover
+ *  instead of an inline column that shifts the canvas. */
+const COMPACT_PANEL_MAX_WIDTH_PX = 999.95;
 
 export type SidePanel = 'none' | 'assistant' | 'scribe';
 
@@ -47,7 +50,7 @@ function AppFrameMainWorkspace({
   activePanel,
   renderedPanel,
   onPanelTransitionEnd,
-  onCloseAssistant,
+  onClosePanel,
   scribeSelectedVisit,
   onScribeSelectedVisitChange,
   activeScribeRecording,
@@ -59,7 +62,7 @@ function AppFrameMainWorkspace({
   activePanel: SidePanel;
   renderedPanel: SidePanel;
   onPanelTransitionEnd: (e: React.TransitionEvent<HTMLDivElement>) => void;
-  onCloseAssistant: () => void;
+  onClosePanel: () => void;
   scribeSelectedVisit: MockScribeVisit | null;
   onScribeSelectedVisitChange: (v: MockScribeVisit | null) => void;
   activeScribeRecording: ActiveScribeRecordingSession | null;
@@ -69,10 +72,58 @@ function AppFrameMainWorkspace({
   const location = useLocation();
   const { shortcutOverride } = useAssistantShortcutOverride();
   const assistantShortcuts = shortcutOverride ?? getAssistantShortcutsForPath(location.pathname);
+  const isCompactPanel = useMediaQuery(`(max-width: ${COMPACT_PANEL_MAX_WIDTH_PX}px)`);
+  const isPanelOpen = activePanel !== 'none';
+
+  // Panel body is rendered identically in both layout modes — only the
+  // surrounding container differs (inline column vs. fixed-right overlay).
+  const panelBody = renderedPanel !== 'none' && (
+    <SwitchTransition mode="out-in">
+      <Fade
+        key={renderedPanel}
+        timeout={PANEL_CROSSFADE_MS}
+        easing={{
+          enter: theme.transitions.easing.easeInOut,
+          exit: theme.transitions.easing.easeInOut,
+        }}
+      >
+        <Box
+          sx={{
+            width: '100%',
+            height: '100%',
+            minHeight: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          }}
+        >
+          {renderedPanel === 'assistant' && (
+            <AIAssistantPanel
+              onClose={onClosePanel}
+              shortcuts={assistantShortcuts}
+              pendingAICheck={pendingAICheck}
+              compact={isCompactPanel}
+            />
+          )}
+          {renderedPanel === 'scribe' && (
+            <ScribePanel
+              selectedVisit={scribeSelectedVisit}
+              onSelectedVisitChange={onScribeSelectedVisitChange}
+              activeRecording={activeScribeRecording}
+              onActiveRecordingChange={onActiveScribeRecordingChange}
+              compact={isCompactPanel}
+              onClose={onClosePanel}
+            />
+          )}
+        </Box>
+      </Fade>
+    </SwitchTransition>
+  );
 
   return (
     <Box
       sx={{
+        position: 'relative',
         flex: 1,
         minHeight: 0,
         minWidth: 0,
@@ -83,10 +134,13 @@ function AppFrameMainWorkspace({
       }}
     >
       <AppCanvas>{children}</AppCanvas>
+
+      {/* Wide-viewport inline panel column — pushes canvas content.
+          Collapsed to width: 0 (and gets out of the way entirely) in compact mode. */}
       <Box
         onTransitionEnd={onPanelTransitionEnd}
         sx={{
-          width: activePanel !== 'none' ? PANEL_WIDTH : 0,
+          width: !isCompactPanel && isPanelOpen ? PANEL_WIDTH : 0,
           flexShrink: 0,
           overflow: 'hidden',
           minHeight: 0,
@@ -98,46 +152,59 @@ function AppFrameMainWorkspace({
             }),
         }}
       >
-        {renderedPanel !== 'none' && (
-          <SwitchTransition mode="out-in">
-            <Fade
-              key={renderedPanel}
-              timeout={PANEL_CROSSFADE_MS}
-              easing={{
-                enter: theme.transitions.easing.easeInOut,
-                exit: theme.transitions.easing.easeInOut,
-              }}
-            >
-              <Box
-                sx={{
-                  width: '100%',
-                  height: '100%',
-                  minHeight: 0,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  overflow: 'hidden',
-                }}
-              >
-                {renderedPanel === 'assistant' && (
-                  <AIAssistantPanel
-                    onClose={onCloseAssistant}
-                    shortcuts={assistantShortcuts}
-                    pendingAICheck={pendingAICheck}
-                  />
-                )}
-                {renderedPanel === 'scribe' && (
-                  <ScribePanel
-                    selectedVisit={scribeSelectedVisit}
-                    onSelectedVisitChange={onScribeSelectedVisitChange}
-                    activeRecording={activeScribeRecording}
-                    onActiveRecordingChange={onActiveScribeRecordingChange}
-                  />
-                )}
-              </Box>
-            </Fade>
-          </SwitchTransition>
-        )}
+        {!isCompactPanel && panelBody}
       </Box>
+
+          {/* Compact-viewport overlay panel — a floating card that slides in from
+          the right over the canvas. Stays mounted while sliding out so the
+          transform animation plays cleanly; pointer events disabled when
+          closed so the canvas underneath remains interactive. The dismiss
+          action lives inside the panel's own header (next to the existing
+          icon buttons), not here.
+
+          NOTE: the card is `PANEL_WIDTH + 16` wide rather than `PANEL_WIDTH`
+          so that, after the 8px inner padding on each side, the inner content
+          area is still exactly `PANEL_WIDTH` — matching the fixed width the
+          panel components were designed against. Without this, the panel
+          contents would be clipped by 16px. */}
+      {isCompactPanel && (
+        <Box
+          aria-hidden={!isPanelOpen}
+          onTransitionEnd={onPanelTransitionEnd}
+          sx={{
+            position: 'absolute',
+            top: 0,
+            right: 8,
+            bottom: 8,
+            width: PANEL_WIDTH + 16,
+            display: 'flex',
+            flexDirection: 'column',
+            bgcolor: 'background.default',
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: '8px',
+            overflow: 'hidden',
+            // 8px inner padding on both sides so the panel content doesn't bump
+            // against the rounded edges of the card.
+            px: 1,
+            boxShadow: isPanelOpen
+              ? '0 12px 32px -12px rgba(0, 0, 0, 0.24), 0 4px 12px -4px rgba(0, 0, 0, 0.12)'
+              : 'none',
+            // Add the 8px side gap to the closed translate so no edge of the
+            // card peeks past the viewport's right edge while it's hidden.
+            transform: isPanelOpen ? 'translateX(0)' : 'translateX(calc(100% + 8px))',
+            transition: (t) =>
+              t.transitions.create(['transform', 'box-shadow'], {
+                duration: PANEL_TRANSITION_MS,
+                easing: t.transitions.easing.easeInOut,
+              }),
+            pointerEvents: isPanelOpen ? 'auto' : 'none',
+            zIndex: 5,
+          }}
+        >
+          {panelBody}
+        </Box>
+      )}
     </Box>
   );
 }
@@ -163,8 +230,12 @@ export function AppFrame({ children }: AppFrameProps) {
     }
   }, [activePanel]);
 
+  /** Fires when the wide-mode width transition or the compact-mode transform
+   *  transition completes; in either case, if the panel is now closed we can
+   *  safely drop the rendered content so it stops consuming memory/work. */
   const handlePanelWidthTransitionEnd = (e: React.TransitionEvent<HTMLDivElement>) => {
-    if (e.propertyName !== 'width' || e.target !== e.currentTarget) return;
+    if (e.target !== e.currentTarget) return;
+    if (e.propertyName !== 'width' && e.propertyName !== 'transform') return;
     if (activePanel === 'none') {
       setRenderedPanel('none');
     }
@@ -200,6 +271,27 @@ export function AppFrame({ children }: AppFrameProps) {
       });
     }, 1000);
     return () => window.clearInterval(id);
+  }, [activeScribeRecording?.phase, activeScribeRecording?.visit.id]);
+
+  /**
+   * Drive the post-processing animation: when the session enters `processing`,
+   * schedule a one-shot transition to `preview` after a short delay so the
+   * provider sees the animated emblem before the post-processed note appears.
+   * The duration is intentionally close to a full pulse cycle (~2.2s) of the
+   * Scribe emblem so the morph completes before the preview takes over.
+   */
+  const SCRIBE_PROCESSING_DURATION_MS = 2500;
+  useEffect(() => {
+    if (!activeScribeRecording || activeScribeRecording.phase !== 'processing') return;
+    const visitId = activeScribeRecording.visit.id;
+    const id = window.setTimeout(() => {
+      setActiveScribeRecording((s) =>
+        s && s.visit.id === visitId && s.phase === 'processing'
+          ? { ...s, phase: 'preview' }
+          : s,
+      );
+    }, SCRIBE_PROCESSING_DURATION_MS);
+    return () => window.clearTimeout(id);
   }, [activeScribeRecording?.phase, activeScribeRecording?.visit.id]);
 
   const onRecordingViewVisible =
@@ -313,7 +405,10 @@ export function AppFrame({ children }: AppFrameProps) {
               }
             }}
             scribeLiveActivity={
-              showScribeLiveActivity && activeScribeRecording
+              showScribeLiveActivity &&
+              activeScribeRecording &&
+              (activeScribeRecording.phase === 'recording' ||
+                activeScribeRecording.phase === 'paused')
                 ? {
                     phase: activeScribeRecording.phase,
                     seconds: activeScribeRecording.seconds,
@@ -322,15 +417,16 @@ export function AppFrame({ children }: AppFrameProps) {
                     onResume: () =>
                       setActiveScribeRecording((s) => (s ? { ...s, phase: 'recording' } : s)),
                     onFinish: () => {
+                      // Mirror the in-panel Finish: kick the session into
+                      // `processing` and surface the panel + selected visit so
+                      // the provider sees the loader → preview transition.
                       setActiveScribeRecording((s) => {
-                        const v = s?.visit;
-                        if (v) {
-                          queueMicrotask(() => {
-                            setActivePanel('scribe');
-                            setScribeSelectedVisit(v);
-                          });
-                        }
-                        return null;
+                        if (!s) return s;
+                        queueMicrotask(() => {
+                          setActivePanel('scribe');
+                          setScribeSelectedVisit(s.visit);
+                        });
+                        return { ...s, phase: 'processing' };
                       });
                     },
                     onNavigateToRecording: openScribeToRecording,
@@ -354,7 +450,7 @@ export function AppFrame({ children }: AppFrameProps) {
                   activePanel={activePanel}
                   renderedPanel={renderedPanel}
                   onPanelTransitionEnd={handlePanelWidthTransitionEnd}
-                  onCloseAssistant={() => setActivePanel('none')}
+                  onClosePanel={() => setActivePanel('none')}
                   scribeSelectedVisit={scribeSelectedVisit}
                   onScribeSelectedVisitChange={setScribeSelectedVisit}
                   activeScribeRecording={activeScribeRecording}

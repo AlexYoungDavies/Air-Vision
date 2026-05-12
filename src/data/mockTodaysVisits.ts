@@ -205,3 +205,178 @@ const PATIENT_MID_VISIT_OVERRIDES: Record<string, MockScribeMidVisitSummary> = {
 export function getMidVisitSummaryForVisit(visit: MockScribeVisit): MockScribeMidVisitSummary {
   return PATIENT_MID_VISIT_OVERRIDES[visit.patientId] ?? DEFAULT_MID_VISIT_SUMMARY;
 }
+
+/**
+ * Post-processed Scribe output, surfaced to the provider after Finish has
+ * been pressed and the AI has "generated" a structured note.
+ *
+ * Modeled after a SOAP note: each section contains one or more discrete
+ * generated items (e.g. Chief Complaint, Diagnosis Codes, Treatment Plan)
+ * that the provider can include or exclude before submitting to chart.
+ */
+export type MockScribeSectionId = 'subjective' | 'objective' | 'assessment' | 'plan';
+
+export interface MockScribeSectionItem {
+  /** Stable id within the section — used for keyed lists and toggles. */
+  id: string;
+  title: string;
+  /** Body text for the item; rendered below the checkbox + title row. */
+  body: string;
+}
+
+export interface MockScribeSection {
+  id: MockScribeSectionId;
+  /** Display label, e.g. "Subjective". */
+  title: string;
+  items: MockScribeSectionItem[];
+}
+
+/**
+ * Single line of a recorded conversation. Speaker labels are simplified
+ * (`provider` vs `patient`) so the transcript reads like a natural script
+ * and the UI can color-code or align the two voices.
+ */
+export interface MockScribeTranscriptLine {
+  id: string;
+  speaker: 'provider' | 'patient';
+  text: string;
+}
+
+export interface MockScribePostProcessedOutput {
+  sections: MockScribeSection[];
+  transcript: MockScribeTranscriptLine[];
+}
+
+/**
+ * Default post-processed output. Tone matches the existing mid-visit summary
+ * (post-op knee follow-up with PT progress + routine X-ray) so the preview
+ * reads as a continuation of the same encounter.
+ */
+const DEFAULT_POST_PROCESSED_OUTPUT: MockScribePostProcessedOutput = {
+  sections: [
+    {
+      id: 'subjective',
+      title: 'Subjective',
+      items: [
+        {
+          id: 'chief-complaint',
+          title: 'Chief Complaint',
+          body: 'Routine post-op follow-up two weeks after right knee arthroscopy. Patient reports mild medial joint-line tenderness, denies locking, giving way, or new swelling. Pain 1–2/10 at rest.',
+        },
+      ],
+    },
+    {
+      id: 'objective',
+      title: 'Objective',
+      items: [
+        {
+          id: 'objective-comments',
+          title: 'Objective Comments',
+          body: 'Surgical site clean and dry on visual inspection, incision well-approximated without erythema or drainage. Mild antalgic gait noted on ambulation; full weight bearing tolerated.',
+        },
+        {
+          id: 'measurements',
+          title: 'Measurements',
+          body: 'BP 122/78, HR 72, Temp 98.4°F, SpO₂ 99%. Knee ROM: 0–115°. Quad strength 4+/5 on the right.',
+        },
+      ],
+    },
+    {
+      id: 'assessment',
+      title: 'Assessment',
+      items: [
+        {
+          id: 'diagnosis-summary',
+          title: 'Diagnosis Summary',
+          body: 'Status post right knee arthroscopic partial medial meniscectomy, week 2. Recovery progressing as expected with mild expected residual tenderness; no signs of infection or post-op complication.',
+        },
+        {
+          id: 'diagnosis-codes',
+          title: 'Diagnosis Codes',
+          body: 'M23.221 — Derangement of anterior horn of medial meniscus due to old tear or injury, right knee. Z47.1 — Aftercare following joint replacement surgery.',
+        },
+      ],
+    },
+    {
+      id: 'plan',
+      title: 'Plan',
+      items: [
+        {
+          id: 'treatment-plan',
+          title: 'Treatment Plan',
+          body: 'Continue current physical therapy protocol; advance to phase 2 exercises at week 4 if tolerated. Acetaminophen PRN for breakthrough pain; avoid NSAIDs for two more weeks. Follow up in 4 weeks.',
+        },
+        {
+          id: 'orders',
+          title: 'Orders',
+          body: 'Radiologic examination, knee; 3 views — fulfilled by X-rays Delight LLC. Patient escorted to imaging directly after this encounter.',
+        },
+        {
+          id: 'services',
+          title: 'Services',
+          body: '99213 — Office/outpatient visit, established patient, low complexity, ~15 min. PT continuation under existing referral.',
+        },
+      ],
+    },
+  ],
+  transcript: [
+    {
+      id: 't-1',
+      speaker: 'provider',
+      text: "Hey, good to see you back. How's the knee been treating you since we last met?",
+    },
+    {
+      id: 't-2',
+      speaker: 'patient',
+      text: "Doing pretty well overall. There's a little tenderness on the inside of the knee, but it's not stopping me from doing things.",
+    },
+    {
+      id: 't-3',
+      speaker: 'provider',
+      text: 'Good — any episodes of locking, giving way, or new swelling?',
+    },
+    {
+      id: 't-4',
+      speaker: 'patient',
+      text: "Nope, none of that. Pain's about a 1 or 2 out of 10 when I'm just sitting around.",
+    },
+    {
+      id: 't-5',
+      speaker: 'provider',
+      text: "Excellent. And how's PT going?",
+    },
+    {
+      id: 't-6',
+      speaker: 'patient',
+      text: "Two weeks in, haven't missed a session. I'm doing the home exercises every day too.",
+    },
+    {
+      id: 't-7',
+      speaker: 'provider',
+      text: "That's exactly what I want to hear. Let me take a look... Site looks clean, healing well. I do see a slight antalgic gait — totally expected at this stage.",
+    },
+    {
+      id: 't-8',
+      speaker: 'provider',
+      text: "I'd like to get a routine post-op X-ray today, three views of the knee. We'll have you walk over to imaging right after this.",
+    },
+    {
+      id: 't-9',
+      speaker: 'patient',
+      text: "Sounds good, I'll head over there.",
+    },
+    {
+      id: 't-10',
+      speaker: 'provider',
+      text: "Perfect. I'll see you in four weeks for the next follow-up.",
+    },
+  ],
+};
+
+const PATIENT_POST_PROCESSED_OVERRIDES: Record<string, MockScribePostProcessedOutput> = {};
+
+export function getPostProcessedOutputForVisit(
+  visit: MockScribeVisit,
+): MockScribePostProcessedOutput {
+  return PATIENT_POST_PROCESSED_OVERRIDES[visit.patientId] ?? DEFAULT_POST_PROCESSED_OUTPUT;
+}

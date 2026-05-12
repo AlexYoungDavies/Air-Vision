@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Box, Button, Chip, Menu, MenuItem, Popover, SvgIcon, TextField, Typography } from '@mui/material';
+import { Box, Button, Chip, CircularProgress, Menu, MenuItem, Popover, SvgIcon, TextField, Typography } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { keyframes } from '@mui/system';
 import AttachFileOutlined from '@mui/icons-material/AttachFileOutlined';
@@ -7,11 +7,9 @@ import SendOutlined from '@mui/icons-material/SendOutlined';
 import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined';
 import CheckOutlined from '@mui/icons-material/CheckOutlined';
 import CloseOutlined from '@mui/icons-material/CloseOutlined';
-import ArrowRightAltOutlined from '@mui/icons-material/ArrowRightAltOutlined';
 import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
 import hoverAnimationData from '../../assets/hover.json';
 import { AppIconButton } from '../AppIconButton';
-import { AICheckIcon } from '../icons';
 import type { AICheckReport, AICheckSuggestion, SeededAssistantChat } from './AICheckChat';
 import {
   DEFAULT_ASSISTANT_SHORTCUTS,
@@ -334,14 +332,18 @@ export interface AIAssistantPanelProps {
    * Used to power "AI Check" from the visit note.
    */
   pendingAICheck?: { key: number; seed: SeededAssistantChat } | null;
+  /** When true, render an inline close button in the panel header (used when
+   *  the panel is presented as a compact-viewport overlay popover). */
+  compact?: boolean;
 }
 
 export function AIAssistantPanel({
-  onClose: _onClose,
+  onClose,
   userFirstName = 'Alex',
   shortcuts = DEFAULT_ASSISTANT_SHORTCUTS,
   onShortcutClick,
   pendingAICheck,
+  compact,
 }: AIAssistantPanelProps) {
   const [inputValue, setInputValue] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -679,6 +681,16 @@ export function AIAssistantPanel({
         >
           <AllChatsIcon sx={{ fontSize: 18 }} />
         </AppIconButton>
+        {compact && (
+          <AppIconButton
+            tooltip="Close"
+            aria-label="Close panel"
+            onClick={onClose}
+            sx={{ color: 'text.secondary', flexShrink: 0 }}
+          >
+            <CloseOutlined sx={{ fontSize: 18 }} />
+          </AppIconButton>
+        )}
       </Box>
 
       <Menu
@@ -1248,6 +1260,75 @@ function AICheckReportBubble({ report }: { report: AICheckReport }) {
   );
 }
 
+/**
+ * Single circular percentage gauge: a light grey track with a colored progress
+ * arc, the percent value centered inside, and a label below.
+ */
+function AcceptanceRing({
+  value,
+  color,
+  label,
+}: {
+  value: number;
+  color: string;
+  label: string;
+}) {
+  const size = 56;
+  const thickness = 4;
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+      <Box sx={{ position: 'relative', width: size, height: size }}>
+        {/* Background track */}
+        <CircularProgress
+          variant="determinate"
+          value={100}
+          size={size}
+          thickness={thickness}
+          sx={{
+            color: 'grey.200',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+          }}
+        />
+        {/* Colored progress arc */}
+        <CircularProgress
+          variant="determinate"
+          value={value}
+          size={size}
+          thickness={thickness}
+          sx={{
+            color,
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            '& .MuiCircularProgress-circle': { strokeLinecap: 'round' },
+          }}
+        />
+        {/* Centered percentage */}
+        <Box
+          sx={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Typography
+            sx={{ fontSize: 13, fontWeight: 600, color: 'text.primary', lineHeight: 1 }}
+          >
+            {value}%
+          </Typography>
+        </Box>
+      </Box>
+      <Typography sx={{ fontSize: 13, color: 'text.primary', lineHeight: 1.2 }}>
+        {label}
+      </Typography>
+    </Box>
+  );
+}
+
 function AICheckAcceptanceCard({
   beforePercent,
   afterPercent,
@@ -1258,70 +1339,42 @@ function AICheckAcceptanceCard({
   return (
     <Box
       sx={{
-        p: 1.25,
-        borderRadius: 1,
+        p: 2,
+        borderRadius: 2,
         bgcolor: 'background.paper',
-        boxShadow: '0px 1px 2px 0px rgba(0, 0, 0, 0.1)',
+        boxShadow: '0px 1px 2px 0px rgba(0, 0, 0, 0.08)',
       }}
     >
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 0.75 }}>
-        <AICheckIcon sx={{ fontSize: 16, color: 'primary.main' }} />
-        <Typography
-          sx={{
-            fontSize: 11,
-            fontWeight: 700,
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-            color: 'text.secondary',
-          }}
-        >
-          Note acceptance
-        </Typography>
-      </Box>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-          <Typography sx={{ fontSize: 11, color: 'text.secondary', lineHeight: 1.2 }}>
-            Current
-          </Typography>
-          <Typography
-            sx={{
-              fontSize: 22,
-              fontWeight: 700,
-              color: 'text.primary',
-              lineHeight: 1.1,
-            }}
-          >
-            {beforePercent}%
-          </Typography>
-        </Box>
-        <ArrowRightAltOutlined sx={{ fontSize: 22, color: 'text.secondary' }} />
-        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-          <Typography sx={{ fontSize: 11, color: 'primary.main', lineHeight: 1.2 }}>
-            If accepted
-          </Typography>
-          <Typography
-            sx={{
-              fontSize: 22,
-              fontWeight: 700,
-              color: 'primary.main',
-              lineHeight: 1.1,
-            }}
-          >
-            {afterPercent}%
-          </Typography>
-        </Box>
-      </Box>
       <Typography
         sx={{
-          fontSize: 12,
-          color: 'text.secondary',
-          mt: 0.75,
-          lineHeight: 1.4,
+          fontSize: 16,
+          fontWeight: 600,
+          color: 'text.primary',
+          textAlign: 'center',
+          mb: 2,
         }}
       >
-        Likelihood this note is accepted by insurance, with and without the AI
-        suggestions applied.
+        Acceptance Likelihood
       </Typography>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-around',
+          gap: 2,
+        }}
+      >
+        <AcceptanceRing
+          value={beforePercent}
+          color="warning.main"
+          label="Without changes"
+        />
+        <AcceptanceRing
+          value={afterPercent}
+          color="success.main"
+          label="With changes"
+        />
+      </Box>
     </Box>
   );
 }

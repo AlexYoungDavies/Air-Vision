@@ -13,6 +13,7 @@ import {
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import ChevronLeftOutlined from '@mui/icons-material/ChevronLeftOutlined';
+import CloseOutlined from '@mui/icons-material/CloseOutlined';
 import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined';
 import BoltOutlined from '@mui/icons-material/BoltOutlined';
 import type { Dayjs } from 'dayjs';
@@ -22,6 +23,7 @@ import CheckRounded from '@mui/icons-material/CheckRounded';
 import AssignmentTurnedInOutlined from '@mui/icons-material/AssignmentTurnedInOutlined';
 import {
   getMidVisitSummaryForVisit,
+  getPostProcessedOutputForVisit,
   getPreVisitSummaryForVisit,
   type MockScribeMidVisitSummary,
   type MockScribeVisit,
@@ -35,8 +37,10 @@ import {
   UploadIcon,
 } from '../icons';
 import { ScribeRecordingEmblem } from './ScribeRecordingEmblem';
+import { ScribeReviewView } from './ScribeReviewView';
 import type { ActiveScribeRecordingSession } from './scribeRecordingSession';
 import { VISIT_NOTE_BUTTON_EXEMPT_CLASS } from '../../theme/buttonStyleConstants';
+import { AppIconButton } from '../AppIconButton';
 
 function formatTimer(totalSeconds: number): string {
   const m = Math.floor(totalSeconds / 60);
@@ -524,13 +528,25 @@ export interface ScribeAppointmentViewProps {
   visit: MockScribeVisit;
   scheduleDate?: Dayjs;
   onBack: () => void;
-  /** Lifted session when this visit is recording or paused; null before Begin or after Finish. */
+  /** Lifted session when this visit is recording, paused, processing, or in
+   *  preview; null before Begin Recording or after Submit / Discard. */
   recordingForVisit: ActiveScribeRecordingSession | null;
   onBeginRecording: () => void;
   onPauseRecording: () => void;
   onResumeRecording: () => void;
+  /** Provider hit "Finish" — kicks off post-processing (loading state). */
   onFinishRecording: () => void;
+  /** Cancel from inside the recording or paused state. */
   onCancelRecording: () => void;
+  /** Provider hit "Submit to Chart" from the post-processed preview. */
+  onSubmitToChart: () => void;
+  /** Provider chose Discard from the preview's More Actions menu. */
+  onDiscardPostProcessed: () => void;
+  /** When true, render an inline close button alongside "Back to List" (used
+   *  when the panel is presented as a compact-viewport overlay popover). */
+  compact?: boolean;
+  /** Invoked by the inline close button (compact mode only). */
+  onClose?: () => void;
 }
 
 export function ScribeAppointmentView({
@@ -543,17 +559,25 @@ export function ScribeAppointmentView({
   onResumeRecording,
   onFinishRecording,
   onCancelRecording,
+  onSubmitToChart,
+  onDiscardPostProcessed,
+  compact,
+  onClose,
 }: ScribeAppointmentViewProps) {
   const [mic, setMic] = useState('MacBook Pro Microphone');
   const [midVisitSummaryOpen, setMidVisitSummaryOpen] = useState(true);
 
   const phase = recordingForVisit ? recordingForVisit.phase : 'idle';
   const seconds = recordingForVisit?.seconds ?? 0;
+  // The pulse animation is reserved for active recording. Processing reuses
+  // the flower formation but keeps the breathing morph subtle so the user
+  // perceives the AI is "thinking" rather than capturing audio.
   const emblemPhase = recordingForVisit?.phase === 'recording' ? 'pulse' : 'flower';
   const timerLabel = useMemo(() => formatTimer(seconds), [seconds]);
   const effectiveDate = scheduleDate ?? dayjs();
   const dateLabel = useMemo(() => formatVisitDate(effectiveDate), [effectiveDate]);
   const midVisitSummary = useMemo(() => getMidVisitSummaryForVisit(visit), [visit]);
+  const postProcessedOutput = useMemo(() => getPostProcessedOutputForVisit(visit), [visit]);
 
   const handleMicChange = (e: SelectChangeEvent<string>) => setMic(e.target.value);
 
@@ -569,7 +593,17 @@ export function ScribeAppointmentView({
         pb: 2,
       }}
     >
-      <Box sx={{ flexShrink: 0, pt: 0.5, pb: phase === 'idle' ? 0.5 : 1.5 }}>
+      <Box
+        sx={{
+          flexShrink: 0,
+          pt: 0.5,
+          pb: phase === 'idle' ? 0.5 : 1.5,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 1,
+        }}
+      >
         <Button
           onClick={onBack}
           aria-label="Back to list"
@@ -587,9 +621,19 @@ export function ScribeAppointmentView({
         >
           Back to List
         </Button>
+        {compact && onClose && (
+          <AppIconButton
+            tooltip="Close"
+            aria-label="Close panel"
+            onClick={onClose}
+            sx={{ color: 'text.secondary', flexShrink: 0 }}
+          >
+            <CloseOutlined sx={{ fontSize: 18 }} />
+          </AppIconButton>
+        )}
       </Box>
 
-      {phase === 'idle' ? (
+      {phase === 'idle' && (
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
           <PreVisitIdleView
             visit={visit}
@@ -597,7 +641,46 @@ export function ScribeAppointmentView({
             onBeginRecording={onBeginRecording}
           />
         </Box>
-      ) : (
+      )}
+
+      {phase === 'processing' && (
+        <Box
+          sx={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: 0,
+            textAlign: 'center',
+            gap: 2,
+          }}
+        >
+          <Typography variant="body1" sx={{ fontWeight: 700, color: 'primary.main', fontSize: 17, lineHeight: 1.3 }}>
+            {visit.patientName}
+          </Typography>
+          <ScribeRecordingEmblem phase="flower" />
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+            <Typography sx={{ fontWeight: 700, color: 'primary.main', fontSize: 16 }}>
+              Generating note…
+            </Typography>
+            <Typography sx={{ color: 'text.secondary', fontSize: 13, maxWidth: 220 }}>
+              Post-processing the recording into a structured visit note.
+            </Typography>
+          </Box>
+        </Box>
+      )}
+
+      {phase === 'preview' && (
+        <ScribeReviewView
+          visit={visit}
+          output={postProcessedOutput}
+          onSubmitToChart={onSubmitToChart}
+          onDiscard={onDiscardPostProcessed}
+        />
+      )}
+
+      {(phase === 'recording' || phase === 'paused') && (
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
           <ScrollFadeArea>
             <Box

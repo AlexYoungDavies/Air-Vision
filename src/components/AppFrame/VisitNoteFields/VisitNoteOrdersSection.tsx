@@ -554,7 +554,10 @@ export function VisitNoteOrdersSection({ orders, onOrdersChange, readOnly }: Vis
           gap: 1,
         }}
       >
-        <Typography variant="h6" sx={{ fontWeight: 700, fontSize: 20 }}>
+        <Typography
+          variant="h6"
+          sx={{ fontWeight: 700, fontSize: readOnly ? 16 : 20 }}
+        >
           Orders
         </Typography>
         {!readOnly && (

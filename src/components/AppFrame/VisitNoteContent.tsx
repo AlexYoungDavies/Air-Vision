@@ -1190,6 +1190,7 @@ function VisitNoteFloatingToolbar({
               flexShrink: 0,
               whiteSpace: 'nowrap',
               '&:hover': { bgcolor: 'action.hover' },
+              '& .MuiButton-endIcon > *:nth-of-type(1)': { fontSize: 12 },
             }}
           >
             AI Check
