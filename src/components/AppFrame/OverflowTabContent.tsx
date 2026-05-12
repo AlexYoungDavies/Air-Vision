@@ -42,11 +42,11 @@ export function MedicationsTabContent({ patientId: _patientId }: { patientId: st
         <Table size="small" stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell>Medication</TableCell>
-              <TableCell>Dose</TableCell>
-              <TableCell>Frequency</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Prescriber</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Medication</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Dose</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Frequency</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Status</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Prescriber</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -84,10 +84,10 @@ export function OrdersTabContent({ patientId: _patientId }: { patientId: string 
         <Table size="small" stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell>Order type</TableCell>
-              <TableCell>Date</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Ordering provider</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Order type</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Date</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Status</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Ordering provider</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -131,10 +131,10 @@ export function ProblemListTabContent({ patientId: _patientId }: { patientId: st
         <Table size="small" stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell>Problem</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell>Onset</TableCell>
-              <TableCell>ICD-10</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Problem</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Status</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Onset</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>ICD-10</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -171,10 +171,10 @@ export function LabsTabContent({ patientId: _patientId }: { patientId: string })
         <Table size="small" stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell>Lab</TableCell>
-              <TableCell>Date</TableCell>
-              <TableCell>Result</TableCell>
-              <TableCell>Ordering provider</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Lab</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Date</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Result</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Ordering provider</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -210,12 +210,12 @@ export function VitalsTabContent({ patientId: _patientId }: { patientId: string 
         <Table size="small" stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell>Date</TableCell>
-              <TableCell>Blood pressure</TableCell>
-              <TableCell>Heart rate</TableCell>
-              <TableCell>Temp</TableCell>
-              <TableCell>Weight</TableCell>
-              <TableCell>Resp.</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Date</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Blood pressure</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Heart rate</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Temp</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Weight</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Resp.</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -252,9 +252,9 @@ export function AllergiesTabContent({ patientId: _patientId }: { patientId: stri
         <Table size="small" stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell>Allergen</TableCell>
-              <TableCell>Reaction</TableCell>
-              <TableCell>Severity</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Allergen</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Reaction</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Severity</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -297,9 +297,9 @@ export function ImmunizationsTabContent({ patientId: _patientId }: { patientId: 
         <Table size="small" stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell>Vaccine</TableCell>
-              <TableCell>Date</TableCell>
-              <TableCell>Dose</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Vaccine</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Date</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50' }}>Dose</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>

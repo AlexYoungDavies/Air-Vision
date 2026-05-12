@@ -36,7 +36,7 @@ export const STICKY_ACTIONS_CELL = {
   zIndex: 1,
   whiteSpace: 'nowrap' as const,
 };
-export const STICKY_ACTIONS_HEADER = { ...STICKY_ACTIONS_CELL, bgcolor: 'background.paper', zIndex: 2 };
+export const STICKY_ACTIONS_HEADER = { ...STICKY_ACTIONS_CELL, bgcolor: 'grey.50', zIndex: 2 };
 
 export const COLUMN_HEADER_STYLE = { maxWidth: 240 };
 export const COLUMN_BODY_STYLE = { maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const };
@@ -142,16 +142,16 @@ export function AppointmentsTabContent({ patientId, onOpenNote }: AppointmentsTa
         <Table size="small" stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Date</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Time</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Status</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Case</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Template</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Clinical stage</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Provider</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Insurance</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Facility</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Tags</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Date</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Time</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Status</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Case</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Template</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Clinical stage</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Provider</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Insurance</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Facility</TableCell>
+              <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Tags</TableCell>
               <TableCell sx={{ fontWeight: 600, ...STICKY_ACTIONS_HEADER }} align="right">
                 Actions
               </TableCell>

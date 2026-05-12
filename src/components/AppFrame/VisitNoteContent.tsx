@@ -1323,7 +1323,7 @@ function VisitNoteFloatingToolbar({
   // footprint matches the open-note bar (signed-locked, signed-editing,
   // open). The morph wrapper CSS-transitions between these shells so
   // e.g. signed → open feels like the same physical bar resizing. We
-  // intentionally use the same 24px corner radius as the addendum-reason
+  // intentionally use the same 28px corner radius as the addendum-reason
   // and recording cards so transitions between any pair of variants
   // morph the width without a jarring radius jump as well.
   const pillShellSx: SxProps<Theme> = {
@@ -1331,7 +1331,7 @@ function VisitNoteFloatingToolbar({
     alignItems: 'center',
     justifyContent: 'flex-start',
     gap: 1.5,
-    borderRadius: 3,
+    borderRadius: 3.5,
     border: '1px solid',
     borderColor: toolbarBorder,
     bgcolor: toolbarBg,
@@ -1359,7 +1359,7 @@ function VisitNoteFloatingToolbar({
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'stretch',
-        borderRadius: 3,
+        borderRadius: 3.5,
         minWidth: 320,
         border: '1px solid transparent',
         background: gradientBg,
@@ -1506,7 +1506,7 @@ function VisitNoteFloatingToolbar({
         flexDirection: 'column',
         gap: 1.5,
         width: 'min(720px, calc(100vw - 32px))',
-        borderRadius: 3,
+        borderRadius: 3.5,
         border: '1px solid',
         borderColor: toolbarBorder,
         bgcolor: toolbarBg,

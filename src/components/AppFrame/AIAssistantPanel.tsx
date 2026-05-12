@@ -7,9 +7,8 @@ import SendOutlined from '@mui/icons-material/SendOutlined';
 import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined';
 import CheckOutlined from '@mui/icons-material/CheckOutlined';
 import CloseOutlined from '@mui/icons-material/CloseOutlined';
-import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
-import hoverAnimationData from '../../assets/hover.json';
 import { AppIconButton } from '../AppIconButton';
+import { AthelasGreetingEmblem } from './AthelasGreetingEmblem';
 import type { AICheckReport, AICheckSuggestion, SeededAssistantChat } from './AICheckChat';
 import {
   useAICheckActions,
@@ -22,11 +21,6 @@ import {
 
 /** Matches `AppFrame` side panel width. */
 const PANEL_WIDTH = 280;
-
-const lottieSlowSpin = keyframes`
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-`;
 
 const greetingEntrance = keyframes`
   0% { opacity: 0; transform: translateY(12px); }
@@ -45,8 +39,6 @@ const thinkingTextFill = keyframes`
 
 /** Pauses before the demo reply lands. */
 const ASSISTANT_THINKING_MS = 2000;
-/** Hover.json is ~80.56 frames @ 29.97fps ≈ 2.69s. Speed factor to get 2s per half. */
-const GREETING_LOTTIE_SPEED = (80.56 / 29.97) / 2;
 
 function getTimeGreeting(): string {
   const hour = new Date().getHours();
@@ -366,8 +358,6 @@ export function AIAssistantPanel({
   const [chatMenuAnchor, setChatMenuAnchor] = useState<HTMLElement | null>(null);
   const [activeShortcut, setActiveShortcut] = useState<AIAssistantShortcut | null>(null);
   const [tipsAnchor, setTipsAnchor] = useState<HTMLElement | null>(null);
-  const greetingLottieRef = useRef<LottieRefCurrentProps | null>(null);
-  const directionRef = useRef(1);
   const transcriptEndRef = useRef<HTMLDivElement | null>(null);
   const thinkingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const consumedSeedKeyRef = useRef<number | null>(null);
@@ -377,15 +367,6 @@ export function AIAssistantPanel({
 
   const rawChatTitle = findFirstUserText(messages) ?? '';
   const chatTitle = rawChatTitle.length > 24 ? rawChatTitle.slice(0, 24) + '…' : rawChatTitle;
-
-  useEffect(() => {
-    const lottie = greetingLottieRef.current;
-    if (!lottie) return;
-    lottie.setSpeed(GREETING_LOTTIE_SPEED);
-    lottie.setDirection(1);
-    directionRef.current = 1;
-    lottie.play();
-  }, []);
 
   useEffect(() => {
     if (!hasConversation) return;
@@ -432,13 +413,6 @@ export function AIAssistantPanel({
     setViewMode('chat');
     setActiveShortcut(null);
   }, [pendingAICheck]);
-
-  const handleGreetingLottieComplete = () => {
-    const nextDir = (directionRef.current === 1 ? -1 : 1) as 1 | -1;
-    directionRef.current = nextDir;
-    greetingLottieRef.current?.setDirection(nextDir);
-    greetingLottieRef.current?.play();
-  };
 
   const clearThinkingTimer = useCallback(() => {
     if (thinkingTimeoutRef.current != null) {
@@ -969,16 +943,7 @@ export function AIAssistantPanel({
               animation: `${greetingEntrance} 0.4s ease-out forwards`,
             }}
           >
-            <Box sx={{ width: 80, height: 80, animation: `${lottieSlowSpin} 20s linear infinite` }}>
-              <Lottie
-                lottieRef={greetingLottieRef}
-                animationData={hoverAnimationData}
-                loop={false}
-                onComplete={handleGreetingLottieComplete}
-                style={{ width: 80, height: 80 }}
-                rendererSettings={{ preserveAspectRatio: 'xMidYMid meet' }}
-              />
-            </Box>
+            <AthelasGreetingEmblem size={80} />
 
             <Typography
               sx={{

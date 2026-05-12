@@ -100,13 +100,13 @@ const STATUS_META: Record<
     label: 'Initial Review Required',
     icon: <WarningAmberOutlined sx={{ fontSize: 16 }} />,
     iconColor: 'warning.main',
-    borderColor: 'warning.light',
+    borderColor: 'warning.main',
   },
   submission_error: {
     label: 'Submission Error',
     icon: <ErrorOutlineOutlined sx={{ fontSize: 16 }} />,
     iconColor: 'error.main',
-    borderColor: 'error.light',
+    borderColor: 'error.main',
   },
   submission_pending: {
     label: 'Submission Pending',

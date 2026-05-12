@@ -15,8 +15,11 @@ import {
   Avatar,
   IconButton,
   Typography,
+  Popper,
+  Paper,
+  Grow,
 } from '@mui/material';
-import { alpha, useTheme, type Theme } from '@mui/material/styles';
+import { alpha, darken, lighten, useTheme, type Theme } from '@mui/material/styles';
 import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined';
 import ChevronRightOutlined from '@mui/icons-material/ChevronRightOutlined';
 import ChevronLeftOutlined from '@mui/icons-material/ChevronLeftOutlined';
@@ -555,7 +558,7 @@ function SideNavFooter({ collapsed }: { collapsed: boolean }) {
     appearanceCloseTimerRef.current = setTimeout(() => {
       setAppearanceOpen(false);
       appearanceCloseTimerRef.current = undefined;
-    }, 200);
+    }, 300);
   };
 
   const closeAccount = () => {
@@ -846,48 +849,49 @@ function SideNavFooter({ collapsed }: { collapsed: boolean }) {
         </MenuItem>
       </Menu>
 
-      <Menu
+      {/*
+       * Submenu rendered as a Popper (not a Menu) so it shares no Modal/Backdrop
+       * with the parent Menu. A Backdrop sitting on top of the Appearance row
+       * fires `mouseleave` the instant the submenu opens, which caused the
+       * flash-and-close behavior. Popper draws bare DOM, so hover passes
+       * cleanly from the parent MenuItem into the panel.
+       */}
+      <Popper
         id="account-appearance-menu"
         anchorEl={appearanceAnchorEl}
         open={accountOpen && appearanceOpen && Boolean(appearanceAnchorEl)}
-        onClose={() => {
-          clearAppearanceCloseTimer();
-          setAppearanceOpen(false);
-        }}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-        disableAutoFocus
-        slotProps={{
-          paper: {
-            onMouseEnter: clearAppearanceCloseTimer,
-            onMouseLeave: scheduleAppearanceClose,
-            sx: {
-              ml: 0.75,
-              borderRadius: '12px',
-              boxShadow: theme.shadows[8],
-              border: '1px solid',
-              borderColor: 'divider',
-              overflow: 'hidden',
-            },
-          },
-        }}
+        placement="right-start"
+        modifiers={[{ name: 'offset', options: { offset: [0, 6] } }]}
+        style={{ zIndex: theme.zIndex.modal + 1 }}
+        transition
       >
-        <MenuList
-          autoFocusItem={false}
-          disablePadding
-          onMouseEnter={clearAppearanceCloseTimer}
-          onMouseLeave={scheduleAppearanceClose}
-          sx={{ p: 0 }}
-        >
-          <AppearancePickerPanel
-            accentKey={accentKey}
-            onAccentChange={setAccentKey}
-            mode={mode}
-            onModeChange={setMode}
-            compact
-          />
-        </MenuList>
-      </Menu>
+        {({ TransitionProps }) => (
+          <Grow {...TransitionProps} style={{ transformOrigin: 'left top' }} timeout={150}>
+            <Paper
+              elevation={8}
+              onMouseEnter={clearAppearanceCloseTimer}
+              onMouseLeave={scheduleAppearanceClose}
+              sx={{
+                borderRadius: '12px',
+                boxShadow: theme.shadows[8],
+                border: '1px solid',
+                borderColor: 'divider',
+                overflow: 'hidden',
+              }}
+            >
+              <MenuList autoFocusItem={false} disablePadding sx={{ p: 0 }}>
+                <AppearancePickerPanel
+                  accentKey={accentKey}
+                  onAccentChange={setAccentKey}
+                  mode={mode}
+                  onModeChange={setMode}
+                  compact
+                />
+              </MenuList>
+            </Paper>
+          </Grow>
+        )}
+      </Popper>
     </>
   );
 }
@@ -935,12 +939,25 @@ export function SideNav({ collapsed, onToggle: _onToggle }: SideNavProps) {
           component="span"
           role="img"
           aria-label="Air Scribe"
-          sx={{ flexShrink: 0, display: 'flex', alignItems: 'center', lineHeight: 0 }}
+          sx={{
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            lineHeight: 0,
+            // Logo paints with currentColor. Light mode: very dark version of
+            // the accent (saturated/legible on light surfaces). Dark mode:
+            // very light version (legible on dark surfaces). Both follow the
+            // active accent so the wordmark stays on-brand across themes.
+            color: (t) =>
+              t.palette.mode === 'dark'
+                ? lighten(t.palette.primary.main, 0.75)
+                : darken(t.palette.primary.main, 0.6),
+          }}
         >
           <AirLogo
             preserveAspectRatio="xMidYMid meet"
-            width={collapsed ? 26 : (28 * 86) / 40}
-            height={collapsed ? (26 * 40) / 86 : 28}
+            width={collapsed ? 26 : (28 * 77) / 30}
+            height={collapsed ? (26 * 30) / 77 : 28}
             style={{ display: 'block' }}
           />
         </Box>

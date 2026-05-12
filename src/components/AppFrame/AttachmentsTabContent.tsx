@@ -32,7 +32,7 @@ const STICKY_ACTIONS_CELL = {
   zIndex: 1,
   whiteSpace: 'nowrap' as const,
 };
-const STICKY_ACTIONS_HEADER = { ...STICKY_ACTIONS_CELL, bgcolor: 'background.paper', zIndex: 2 };
+const STICKY_ACTIONS_HEADER = { ...STICKY_ACTIONS_CELL, bgcolor: 'grey.50', zIndex: 2 };
 
 export interface AttachmentsTabContentProps {
   patientId: string;

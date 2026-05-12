@@ -37,6 +37,7 @@ import {
   UploadIcon,
 } from '../icons';
 import { ScribeRecordingEmblem } from './ScribeRecordingEmblem';
+import { AthelasGreetingEmblem } from './AthelasGreetingEmblem';
 import { ScribeReviewView } from './ScribeReviewView';
 import { ScribeScrollFadeArea } from './ScribeScrollFadeArea';
 import type { ActiveScribeRecordingSession } from './scribeRecordingSession';
@@ -120,9 +121,12 @@ function CollapsibleCard({ icon, title, open, onToggle, children, emphasizeTitle
   return (
     <Box
       sx={{
-        bgcolor: 'rgba(255, 255, 255, 0.8)',
+        bgcolor: (t) =>
+          t.palette.mode === 'dark' ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.8)',
         borderRadius: '10px',
         boxShadow: '0px 1px 4px 0px rgba(0, 0, 0, 0.12)',
+        border: (t) =>
+          t.palette.mode === 'dark' ? '1px solid rgba(255, 255, 255, 0.1)' : 'none',
         overflow: 'hidden',
       }}
     >
@@ -602,7 +606,7 @@ export function ScribeAppointmentView({
           <Typography variant="body1" sx={{ fontWeight: 700, color: 'primary.main', fontSize: 17, lineHeight: 1.3 }}>
             {visit.patientName}
           </Typography>
-          <ScribeRecordingEmblem phase="flower" />
+          <AthelasGreetingEmblem size={120} />
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
             <Typography sx={{ fontWeight: 700, color: 'primary.main', fontSize: 16 }}>
               Generating note…
@@ -693,9 +697,11 @@ export function ScribeAppointmentView({
                 flexShrink: 0,
               }}
             >
-              <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', my: phase === 'paused' ? 0.5 : 1 }}>
-                <ScribeRecordingEmblem phase={emblemPhase} />
-              </Box>
+              {phase !== 'paused' && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', my: 1 }}>
+                  <ScribeRecordingEmblem phase={emblemPhase} />
+                </Box>
+              )}
 
               <Typography
                 variant="h4"
@@ -704,7 +710,7 @@ export function ScribeAppointmentView({
                   color: 'primary.main',
                   fontVariantNumeric: 'tabular-nums',
                   letterSpacing: '-0.02em',
-                  mt: 1,
+                  mt: phase === 'paused' ? 0 : 1,
                   mb: phase === 'paused' ? 1 : 1.5,
                 }}
               >

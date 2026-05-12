@@ -12,12 +12,10 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   Chip,
   Button,
   Menu,
   MenuItem,
-  useTheme,
 } from '@mui/material';
 import { AppIconButton } from '../AppIconButton';
 import PushPinOutlined from '@mui/icons-material/PushPinOutlined';
@@ -74,12 +72,12 @@ function SectionCard({
   children: React.ReactNode;
   onAdd?: () => void;
 }) {
-  const theme = useTheme();
   return (
     <Box
       sx={{
         borderRadius: 1,
-        boxShadow: theme.shadows[1],
+        border: '1px solid',
+        borderColor: 'rgba(0, 0, 0, 0.1)',
         display: 'flex',
         flexDirection: 'column',
         flex: 1,
@@ -106,7 +104,8 @@ function SectionCard({
           alignItems: 'center',
           justifyContent: 'space-between',
           borderBottom: '1px solid',
-          borderColor: 'divider',
+          borderColor: 'rgba(0, 0, 0, 0.1)',
+          bgcolor: 'grey.50',
           gap: 1,
         }}
       >
@@ -270,16 +269,16 @@ function SummaryView({
             <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Date</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Time</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Case</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Template</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Clinical stage</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Provider</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Insurance</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Facility</TableCell>
-                  <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', ...COLUMN_HEADER_STYLE }}>Tags</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Date</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Time</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Status</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Case</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Template</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Clinical stage</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Provider</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Insurance</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Facility</TableCell>
+                  <TableCell sx={{ fontWeight: 600, bgcolor: 'grey.50', ...COLUMN_HEADER_STYLE }}>Tags</TableCell>
                   <TableCell sx={{ fontWeight: 600, ...STICKY_ACTIONS_HEADER }} align="right">
                     Actions
                   </TableCell>
@@ -465,10 +464,10 @@ function SummaryView({
             <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow sx={{ height: 28, minHeight: 28 }}>
-                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Medication</TableCell>
-                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Dose</TableCell>
-                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Frequency</TableCell>
-                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Prescriber</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Medication</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Dose</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Frequency</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Prescriber</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -509,10 +508,10 @@ function SummaryView({
             <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow sx={{ height: 28, minHeight: 28 }}>
-                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Type</TableCell>
-                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Description</TableCell>
-                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Date</TableCell>
-                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Status</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Type</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Description</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Date</TableCell>
+                  <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Status</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -659,44 +658,38 @@ function InsuranceView({ patient }: { patient: Patient }) {
     [patient.id]
   );
   return (
-    <Box sx={{ py: 2, display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <Box>
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Insurance on file
-        </Typography>
-        <TableContainer component={Paper} variant="outlined">
-          <Table size="small">
+    <Box sx={{ py: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <SectionCard title="Insurance on file" onAdd={() => {}}>
+        <TableContainer sx={{ overflow: 'auto' }}>
+          <Table size="small" stickyHeader>
             <TableHead>
               <TableRow sx={{ height: 28, minHeight: 28 }}>
-                <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Provider</TableCell>
-                <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Member ID</TableCell>
-                <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Group Number</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Provider</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Member ID</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Group Number</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {insurances.map((ins, i) => (
                 <TableRow key={i}>
-                  <TableCell>{ins.provider}</TableCell>
-                  <TableCell>{ins.memberId}</TableCell>
-                  <TableCell>{ins.groupNumber ?? '—'}</TableCell>
+                  <TableCell sx={{ fontSize: 13 }}>{ins.provider}</TableCell>
+                  <TableCell sx={{ fontSize: 13 }}>{ins.memberId}</TableCell>
+                  <TableCell sx={{ fontSize: 13 }}>{ins.groupNumber ?? '—'}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </TableContainer>
-      </Box>
-      <Box>
-        <Typography variant="h6" sx={{ mb: 2 }}>
-          Authorizations
-        </Typography>
-        <TableContainer component={Paper} variant="outlined">
-          <Table size="small">
+      </SectionCard>
+      <SectionCard title="Authorizations" onAdd={() => {}}>
+        <TableContainer sx={{ overflow: 'auto', maxHeight: 320 }}>
+          <Table size="small" stickyHeader>
             <TableHead>
               <TableRow sx={{ height: 28, minHeight: 28 }}>
-                <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Type</TableCell>
-                <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Description</TableCell>
-                <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Date</TableCell>
-                <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Type</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Description</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Date</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Status</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -719,7 +712,7 @@ function InsuranceView({ patient }: { patient: Patient }) {
             </TableBody>
           </Table>
         </TableContainer>
-      </Box>
+      </SectionCard>
     </Box>
   );
 }
@@ -729,29 +722,28 @@ function CasesView({ patient }: { patient: Patient }) {
   const cases = useMemo(() => getCasesFromAppointments(appointments), [appointments]);
   return (
     <Box sx={{ py: 2 }}>
-      <Typography variant="h6" sx={{ mb: 2 }}>
-        Cases
-      </Typography>
-      <TableContainer component={Paper} variant="outlined">
-        <Table size="small">
-          <TableHead>
-            <TableRow sx={{ height: 28, minHeight: 28 }}>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Case name</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }}>Case ID</TableCell>
-              <TableCell sx={{ fontWeight: 600, bgcolor: 'background.paper', py: 0.5, lineHeight: 1.2 }} align="right">Appointments</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {cases.map((row) => (
-              <TableRow key={row.caseId}>
-                <TableCell>{row.caseName}</TableCell>
-                <TableCell>{row.caseId}</TableCell>
-                <TableCell align="right">{row.appointmentCount}</TableCell>
+      <SectionCard title="Cases" onAdd={() => {}}>
+        <TableContainer sx={{ overflow: 'auto' }}>
+          <Table size="small" stickyHeader>
+            <TableHead>
+              <TableRow sx={{ height: 28, minHeight: 28 }}>
+                <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Case name</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }}>Case ID</TableCell>
+                <TableCell sx={{ fontWeight: 600, fontSize: 12, bgcolor: 'grey.50', py: 0.5, lineHeight: 1.2 }} align="right">Appointments</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+            </TableHead>
+            <TableBody>
+              {cases.map((row) => (
+                <TableRow key={row.caseId}>
+                  <TableCell sx={{ fontSize: 13 }}>{row.caseName}</TableCell>
+                  <TableCell sx={{ fontSize: 13 }}>{row.caseId}</TableCell>
+                  <TableCell sx={{ fontSize: 13 }} align="right">{row.appointmentCount}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      </SectionCard>
     </Box>
   );
 }

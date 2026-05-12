@@ -4,9 +4,41 @@ import type { AccentKey, PaletteMode } from './accents';
 import { getPrimaryPaletteForAccent, getBackgroundPaletteForAccent } from './accents';
 import { VISIT_NOTE_BUTTON_EXEMPT_CLASS } from './buttonStyleConstants';
 
+/**
+ * Semantic palettes for badges, chips, and alerts.
+ *
+ * Convention used across the app:
+ *   bgcolor: 'X.light'   → pastel surface
+ *   color:   'X.dark'    → saturated darker text
+ *
+ * Light mode: `light` is a true pastel hex; `dark` is a saturated darker hex.
+ * Dark mode:  `light` is a translucent overlay (composites to a subtle tint
+ *             on top of the dark surface); `dark` is a saturated lighter hex
+ *             so it reads as text on the overlay. The `light`/`dark`
+ *             semantics intentionally invert in dark mode so the same
+ *             `bgcolor/color` pairing works without per-site mode checks.
+ *
+ * `main` stays a saturated mid-tone in both modes for indicators,
+ * borders, and icon accents.
+ */
+const LIGHT_SEMANTIC = {
+  error: { light: '#FDECEC', main: '#D32F2F', dark: '#A21515', contrastText: '#fff' },
+  warning: { light: '#FDF1DC', main: '#B85A02', dark: '#7A3E00', contrastText: '#fff' },
+  success: { light: '#E6F4EA', main: '#2E7D32', dark: '#1B5E20', contrastText: '#fff' },
+  info: { light: '#E3F2FD', main: '#0277BD', dark: '#01579B', contrastText: '#fff' },
+};
+
+const DARK_SEMANTIC = {
+  error: { light: 'rgba(244, 67, 54, 0.18)', main: '#F44336', dark: '#FCA5A5', contrastText: '#fff' },
+  warning: { light: 'rgba(255, 167, 38, 0.18)', main: '#FFA726', dark: '#FFCC80', contrastText: 'rgba(0, 0, 0, 0.87)' },
+  success: { light: 'rgba(102, 187, 106, 0.18)', main: '#66BB6A', dark: '#A5D6A7', contrastText: 'rgba(0, 0, 0, 0.87)' },
+  info: { light: 'rgba(41, 182, 246, 0.18)', main: '#29B6F6', dark: '#90CAF9', contrastText: 'rgba(0, 0, 0, 0.87)' },
+};
+
 const LIGHT_BASE = {
   palette: {
     mode: 'light' as const,
+    ...LIGHT_SEMANTIC,
     background: {
       paper: '#ffffff',
       default: '#f5f5f5',
@@ -38,9 +70,38 @@ const LIGHT_BASE = {
   },
 };
 
+/**
+ * MUI's standard <Alert> in dark mode pulls text color from `palette.X.light`
+ * which we redefine as a translucent overlay. Pin the text color, icon color,
+ * and bg explicitly so each severity stays legible.
+ */
+const DARK_ALERT_OVERRIDES = {
+  standardError: {
+    backgroundColor: DARK_SEMANTIC.error.light,
+    color: DARK_SEMANTIC.error.dark,
+    '& .MuiAlert-icon': { color: DARK_SEMANTIC.error.main },
+  },
+  standardWarning: {
+    backgroundColor: DARK_SEMANTIC.warning.light,
+    color: DARK_SEMANTIC.warning.dark,
+    '& .MuiAlert-icon': { color: DARK_SEMANTIC.warning.main },
+  },
+  standardSuccess: {
+    backgroundColor: DARK_SEMANTIC.success.light,
+    color: DARK_SEMANTIC.success.dark,
+    '& .MuiAlert-icon': { color: DARK_SEMANTIC.success.main },
+  },
+  standardInfo: {
+    backgroundColor: DARK_SEMANTIC.info.light,
+    color: DARK_SEMANTIC.info.dark,
+    '& .MuiAlert-icon': { color: DARK_SEMANTIC.info.main },
+  },
+};
+
 const DARK_BASE = {
   palette: {
     mode: 'dark' as const,
+    ...DARK_SEMANTIC,
     background: {
       paper: '#1e1e1e',
       default: '#121212',
@@ -70,13 +131,7 @@ const DARK_BASE = {
       },
     },
     MuiAlert: {
-      styleOverrides: {
-        standardWarning: {
-          backgroundColor: 'rgba(255, 152, 0, 0.16)',
-          color: 'rgba(255, 255, 255, 0.9)',
-          '& .MuiAlert-icon': { color: '#ffb74d' },
-        },
-      },
+      styleOverrides: DARK_ALERT_OVERRIDES,
     },
   },
 };
