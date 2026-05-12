@@ -29,6 +29,7 @@ import {
 import type { ActiveScribeRecordingSession } from './scribeRecordingSession';
 import { ACCENT_PRIMARY_PALETTES } from '../../theme/accents';
 import { ScribeAppointmentView } from './ScribeAppointmentView';
+import { useAppScribe } from './AppScribeContext';
 
 const PANEL_WIDTH = 280;
 
@@ -317,6 +318,7 @@ export function ScribePanel({
   compact,
   onClose,
 }: ScribePanelProps) {
+  const { markChartSubmittedForPatientId } = useAppScribe();
   const [scheduleDate, setScheduleDate] = useState<Dayjs>(() => dayjs().startOf('day'));
   const [datePickerAnchor, setDatePickerAnchor] = useState<HTMLElement | null>(null);
   const datePickerOpen = Boolean(datePickerAnchor);
@@ -474,6 +476,10 @@ export function ScribePanel({
             onSelectedVisitChange(null);
           }}
           onSubmitToChart={() => {
+            // Record that this patient's chart has now been populated by the
+            // scribe. The visit-note surface watches this flag to swap the
+            // empty pre-visit placeholder for the populated SOAP content.
+            markChartSubmittedForPatientId(selectedVisit.patientId);
             onActiveRecordingChange(null);
             onSelectedVisitChange(null);
           }}

@@ -27,6 +27,7 @@ import type { ActiveScribeRecordingSession } from './scribeRecordingSession';
 import { getScribeVisitForPatientId, type MockScribeVisit } from '../../data/mockTodaysVisits';
 import { AppScribeProvider } from './AppScribeContext';
 import { AppAssistantProvider, type AppAssistantContextValue } from './AppAssistantContext';
+import { AICheckActionsProvider } from './AICheckActionsContext';
 import type { AICheckReport, SeededAssistantChat } from './AICheckChat';
 
 const PANEL_WIDTH = 280;
@@ -56,6 +57,7 @@ function AppFrameMainWorkspace({
   activeScribeRecording,
   onActiveScribeRecordingChange,
   pendingAICheck,
+  pendingAICheckReset,
 }: {
   children: ReactNode;
   theme: Theme;
@@ -68,6 +70,7 @@ function AppFrameMainWorkspace({
   activeScribeRecording: ActiveScribeRecordingSession | null;
   onActiveScribeRecordingChange: Dispatch<SetStateAction<ActiveScribeRecordingSession | null>>;
   pendingAICheck: { key: number; seed: SeededAssistantChat } | null;
+  pendingAICheckReset: { key: number } | null;
 }) {
   const location = useLocation();
   const { shortcutOverride } = useAssistantShortcutOverride();
@@ -102,6 +105,7 @@ function AppFrameMainWorkspace({
               onClose={onClosePanel}
               shortcuts={assistantShortcuts}
               pendingAICheck={pendingAICheck}
+              pendingAICheckReset={pendingAICheckReset}
               compact={isCompactPanel}
             />
           )}
@@ -261,6 +265,26 @@ export function AppFrame({ children }: AppFrameProps) {
 
   const [scribeSelectedVisit, setScribeSelectedVisit] = useState<MockScribeVisit | null>(null);
   const [activeScribeRecording, setActiveScribeRecording] = useState<ActiveScribeRecordingSession | null>(null);
+  // Set of patient ids whose scribe output has been pushed to the chart.
+  // Populates after the provider clicks "Submit to Chart" in the scribe
+  // post-processed preview. The visit-note surface reads this to decide
+  // between the populated SOAP content (with all default data) and the
+  // empty pre-visit placeholder.
+  const [submittedScribeChartPatientIds, setSubmittedScribeChartPatientIds] = useState<
+    ReadonlySet<string>
+  >(() => new Set());
+  const isChartSubmittedForPatientId = useCallback(
+    (patientId: string) => submittedScribeChartPatientIds.has(patientId),
+    [submittedScribeChartPatientIds],
+  );
+  const markChartSubmittedForPatientId = useCallback((patientId: string) => {
+    setSubmittedScribeChartPatientIds((prev) => {
+      if (prev.has(patientId)) return prev;
+      const next = new Set(prev);
+      next.add(patientId);
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     if (!activeScribeRecording || activeScribeRecording.phase !== 'recording') return;
@@ -325,8 +349,17 @@ export function AppFrame({ children }: AppFrameProps) {
       closeGlobalScribePanel,
       isGlobalScribePanelOpen: scribeOpen,
       globalScribeSelectedPatientId: scribeSelectedVisit?.patientId ?? null,
+      isChartSubmittedForPatientId,
+      markChartSubmittedForPatientId,
     }),
-    [openScribeForPatientId, closeGlobalScribePanel, scribeOpen, scribeSelectedVisit?.patientId],
+    [
+      openScribeForPatientId,
+      closeGlobalScribePanel,
+      scribeOpen,
+      scribeSelectedVisit?.patientId,
+      isChartSubmittedForPatientId,
+      markChartSubmittedForPatientId,
+    ],
   );
 
   const [pendingAICheck, setPendingAICheck] = useState<{
@@ -334,6 +367,14 @@ export function AppFrame({ children }: AppFrameProps) {
     seed: SeededAssistantChat;
   } | null>(null);
   const aiCheckSeedKeyRef = useRef(0);
+  // Bumped by `resetAICheckChatIfShowing` (called by the visit note on
+  // unmount) so the assistant panel can drop the now-orphaned AI Check
+  // chat back to a fresh state — but only if the panel is actually showing
+  // an AI Check report (the panel itself enforces that guard).
+  const [pendingAICheckReset, setPendingAICheckReset] = useState<{
+    key: number;
+  } | null>(null);
+  const aiCheckResetKeyRef = useRef(0);
 
   const openAssistantWithAICheck = useCallback(
     (report: AICheckReport) => {
@@ -347,9 +388,14 @@ export function AppFrame({ children }: AppFrameProps) {
     [],
   );
 
+  const resetAICheckChatIfShowing = useCallback(() => {
+    aiCheckResetKeyRef.current += 1;
+    setPendingAICheckReset({ key: aiCheckResetKeyRef.current });
+  }, []);
+
   const appAssistantValue = useMemo<AppAssistantContextValue>(
-    () => ({ openAssistantWithAICheck }),
-    [openAssistantWithAICheck],
+    () => ({ openAssistantWithAICheck, resetAICheckChatIfShowing }),
+    [openAssistantWithAICheck, resetAICheckChatIfShowing],
   );
 
   return (
@@ -444,22 +490,25 @@ export function AppFrame({ children }: AppFrameProps) {
           />
           <AppScribeProvider value={appScribeValue}>
             <AppAssistantProvider value={appAssistantValue}>
-              <AssistantShortcutsProvider>
-                <AppFrameMainWorkspace
-                  theme={theme}
-                  activePanel={activePanel}
-                  renderedPanel={renderedPanel}
-                  onPanelTransitionEnd={handlePanelWidthTransitionEnd}
-                  onClosePanel={() => setActivePanel('none')}
-                  scribeSelectedVisit={scribeSelectedVisit}
-                  onScribeSelectedVisitChange={setScribeSelectedVisit}
-                  activeScribeRecording={activeScribeRecording}
-                  onActiveScribeRecordingChange={setActiveScribeRecording}
-                  pendingAICheck={pendingAICheck}
-                >
-                  {children ?? <Outlet />}
-                </AppFrameMainWorkspace>
-              </AssistantShortcutsProvider>
+              <AICheckActionsProvider>
+                <AssistantShortcutsProvider>
+                  <AppFrameMainWorkspace
+                    theme={theme}
+                    activePanel={activePanel}
+                    renderedPanel={renderedPanel}
+                    onPanelTransitionEnd={handlePanelWidthTransitionEnd}
+                    onClosePanel={() => setActivePanel('none')}
+                    scribeSelectedVisit={scribeSelectedVisit}
+                    onScribeSelectedVisitChange={setScribeSelectedVisit}
+                    activeScribeRecording={activeScribeRecording}
+                    onActiveScribeRecordingChange={setActiveScribeRecording}
+                    pendingAICheck={pendingAICheck}
+                    pendingAICheckReset={pendingAICheckReset}
+                  >
+                    {children ?? <Outlet />}
+                  </AppFrameMainWorkspace>
+                </AssistantShortcutsProvider>
+              </AICheckActionsProvider>
             </AppAssistantProvider>
           </AppScribeProvider>
         </Box>

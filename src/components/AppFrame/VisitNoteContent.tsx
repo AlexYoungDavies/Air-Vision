@@ -54,11 +54,14 @@ import ShowChartOutlined from '@mui/icons-material/ShowChartOutlined';
 import PersonOutlined from '@mui/icons-material/PersonOutlined';
 import AssignmentOutlined from '@mui/icons-material/AssignmentOutlined';
 import CheckCircleOutlined from '@mui/icons-material/CheckCircleOutlined';
+import LockOutlined from '@mui/icons-material/LockOutlined';
+import ArrowForwardRounded from '@mui/icons-material/ArrowForwardRounded';
 import type { Appointment } from '../../data/mockAppointments';
 import { VISIT_NOTE_BUTTON_EXEMPT_CLASS } from '../../theme/buttonStyleConstants';
 import {
   VISIT_NOTE_SECTIONS,
   DEFAULT_VISIT_NOTE_DATA,
+  EMPTY_VISIT_NOTE_DATA,
   CPT_CODE_OPTIONS,
   getVisibleVisitNoteSections,
   ORTHO_PLAN_ORDERS_SUBSECTION,
@@ -71,6 +74,7 @@ import {
   ORTHO_PATIENT_IDS,
   DEFAULT_ORTHO_VISIT_NOTE_DATA,
   DEFAULT_ORTHO_NOTE_EXTRAS,
+  EMPTY_ORTHO_NOTE_EXTRAS,
   type OrthoNoteExtras,
 } from '../../data/mockOrthoNoteData';
 import { VisitNoteOrdersSection } from './VisitNoteFields/VisitNoteOrdersSection';
@@ -81,6 +85,12 @@ import {
   VISIT_NOTE_SIGNED_ASSISTANT_SHORTCUTS,
   VISIT_NOTE_UNSIGNED_ASSISTANT_SHORTCUTS,
 } from './assistantPanelShortcuts';
+import { useAppScribe } from './AppScribeContext';
+import {
+  useAICheckActionsOptional,
+  type AICheckSuggestionResolution,
+} from './AICheckActionsContext';
+import { useAppAssistantOptional } from './AppAssistantContext';
 
 // Signature icon (same as Notes tab on home page)
 function SignatureAltIcon(props: React.ComponentProps<typeof SvgIcon>) {
@@ -157,6 +167,7 @@ function ReadViewSectionBlock({
   title,
   content,
   onEdit,
+  canEdit = true,
   onCitationClick,
   highlightedCitationInNote,
 }: {
@@ -164,6 +175,9 @@ function ReadViewSectionBlock({
   title: string;
   content: string;
   onEdit: () => void;
+  /** When false, the per-section Edit pencil is hidden — e.g. after the note
+   *  has been signed and no addendum is in progress. */
+  canEdit?: boolean;
   onCitationClick?: (citationNumber: number) => void;
   highlightedCitationInNote?: number;
 }) {
@@ -211,9 +225,11 @@ function ReadViewSectionBlock({
           <IconButton size="small" onClick={handleCopy} aria-label="Copy" title="Copy" sx={iconButtonSx}>
             <ContentCopyOutlined sx={{ fontSize: 18 }} />
           </IconButton>
-          <IconButton size="small" onClick={onEdit} aria-label="Edit" title="Edit" sx={iconButtonSx}>
-            <EditOutlined sx={{ fontSize: 18 }} />
-          </IconButton>
+          {canEdit && (
+            <IconButton size="small" onClick={onEdit} aria-label="Edit" title="Edit" sx={iconButtonSx}>
+              <EditOutlined sx={{ fontSize: 18 }} />
+            </IconButton>
+          )}
           <IconButton size="small" onClick={handleCopyLink} aria-label="Copy link" title="Copy link" sx={iconButtonSx}>
             <LinkOutlined sx={{ fontSize: 18 }} />
           </IconButton>
@@ -225,6 +241,54 @@ function ReadViewSectionBlock({
         ) : (
           <ReadViewParagraphsWithCitations sectionId={sectionId} content={content} onCitationClick={onCitationClick} highlightedCitationInNote={highlightedCitationInNote} />
         )}
+      </Box>
+    </Box>
+  );
+}
+
+/**
+ * Empty-state placeholder shown for each SOAP block in read view before the
+ * scribe has populated the chart (i.e. before "Submit to Chart"). Mirrors
+ * the visual hierarchy of the edit-view section headers (large bold title
+ * with a caret) so the empty note still scans as a structured chart, and
+ * tells the provider where the content will land.
+ */
+function ReadViewEmptySectionBlock({
+  sectionId,
+  title,
+}: {
+  sectionId: string;
+  title: string;
+}) {
+  return (
+    <Box
+      id={`read-${sectionId}`}
+      sx={{
+        mb: 3,
+        scrollMarginTop: 24,
+      }}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+          py: 0.5,
+          mb: 1.5,
+        }}
+      >
+        <KeyboardArrowDownOutlined sx={{ fontSize: 24, color: 'text.primary' }} />
+        <Typography sx={{ fontWeight: 700, fontSize: 36, lineHeight: 1.2 }}>
+          {title}
+        </Typography>
+      </Box>
+      <Box sx={{ pl: 4.25 }}>
+        <Typography variant="body2" color="text.secondary" sx={{ fontSize: 14, lineHeight: 1.6 }}>
+          Content will appear here after you’ve completed your scribe.
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ fontSize: 14, lineHeight: 1.6 }}>
+          (You can also fill the note manually in Edit mode, accessible in the toolbar)
+        </Typography>
       </Box>
     </Box>
   );
@@ -943,6 +1007,17 @@ export function ScribePanelContent({
   );
 }
 
+/**
+ * Tri-state that drives the post-sign toolbar variants:
+ *  - `none`         → signed but no addendum in progress (shows the
+ *                     "This note has been signed." pill with Add Addendum).
+ *  - `reasonPrompt` → user clicked Add Addendum; toolbar expands to a card
+ *                     asking for a reason before unlocking the note.
+ *  - `editing`      → reason captured (or skipped); note is editable again
+ *                     and toolbar shows the Finalize & Re-sign affordance.
+ */
+export type VisitNoteAddendumState = 'none' | 'reasonPrompt' | 'editing';
+
 /** Floating toolbar at bottom center: Scribe, AI Check, Dictate | view/edit toggle. */
 function VisitNoteFloatingToolbar({
   mode,
@@ -954,6 +1029,15 @@ function VisitNoteFloatingToolbar({
   scribeRecordingState,
   onScribePause,
   onScribeEndRecording,
+  signStatus,
+  addendumState,
+  addendumReason,
+  onAddendumReasonChange,
+  onAddAddendumClick,
+  onAddendumCancel,
+  onAddendumSkip,
+  onAddendumProceed,
+  onFinalizeAddendum,
 }: {
   mode: 'edit' | 'read';
   onModeChange: (next: 'edit' | 'read') => void;
@@ -964,6 +1048,15 @@ function VisitNoteFloatingToolbar({
   scribeRecordingState?: ScribeRecordingState;
   onScribePause?: () => void;
   onScribeEndRecording?: () => void;
+  signStatus: 'signed' | 'unsigned';
+  addendumState: VisitNoteAddendumState;
+  addendumReason: string;
+  onAddendumReasonChange: (next: string) => void;
+  onAddAddendumClick: () => void;
+  onAddendumCancel: () => void;
+  onAddendumSkip: () => void;
+  onAddendumProceed: () => void;
+  onFinalizeAddendum: () => void;
 }) {
   const theme = useTheme();
   const isDark = theme.palette.mode === 'dark';
@@ -1090,18 +1183,246 @@ function VisitNoteFloatingToolbar({
 
   const modeToggleTrackBg = isDark ? alpha(theme.palette.common.white, 0.08) : theme.palette.grey[200];
 
+  // Shared sticky-bottom anchor used by every toolbar variant so they all
+  // live in the same spot on screen regardless of which one is rendering.
+  const stickyAnchorSx = {
+    position: 'sticky',
+    bottom: 12,
+    left: 0,
+    right: 0,
+    display: 'flex',
+    justifyContent: 'center',
+    zIndex: 10,
+  } as const;
+
+  // Pill-shape shared by the signed and addendum-editing variants so they
+  // visually match the dimensions of the normal note toolbar.
+  const pillSx = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 1.5,
+    borderRadius: '9999px',
+    border: '1px solid',
+    borderColor: toolbarBorder,
+    bgcolor: toolbarBg,
+    boxShadow: `${toolbarShadow}, ${toolbarGlow}`,
+    pl: 0.5,
+    pr: 0.5,
+    py: 0.5,
+    minWidth: 480,
+  } as const;
+
+  // Signed, no addendum in progress → "This note has been signed." pill.
+  if (signStatus === 'signed' && addendumState === 'none') {
+    return (
+      <Box sx={stickyAnchorSx}>
+        <Box sx={pillSx}>
+          <Box
+            sx={{
+              width: 36,
+              height: 36,
+              borderRadius: '50%',
+              bgcolor: (t) => alpha(t.palette.text.primary, 0.06),
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'text.secondary',
+              flexShrink: 0,
+            }}
+          >
+            <LockOutlined sx={{ fontSize: 20 }} />
+          </Box>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography sx={{ fontSize: 14, fontWeight: 700, color: 'text.primary', lineHeight: 1.3 }}>
+              This note has been signed.
+            </Typography>
+            <Typography sx={{ fontSize: 12.5, color: 'text.secondary', lineHeight: 1.3 }}>
+              To make edit, add an addendum.
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            color="primary"
+            className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
+            onClick={onAddAddendumClick}
+            startIcon={<SignatureAltIcon />}
+            sx={{
+              height: 44,
+              minHeight: 44,
+              py: 0,
+              px: 2.25,
+              borderRadius: '9999px',
+              fontSize: 14,
+              fontWeight: 600,
+              textTransform: 'none',
+              flexShrink: 0,
+              boxShadow: 'none',
+              '&:hover': { boxShadow: 'none', bgcolor: 'primary.dark' },
+            }}
+          >
+            Add Addendum
+          </Button>
+        </Box>
+      </Box>
+    );
+  }
+
+  // Addendum reason prompt — wider/taller card with a textarea + actions.
+  if (signStatus === 'signed' && addendumState === 'reasonPrompt') {
+    const reasonProvided = addendumReason.trim().length > 0;
+    return (
+      <Box sx={stickyAnchorSx}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 1.5,
+            width: 'min(720px, calc(100% - 32px))',
+            borderRadius: 3,
+            border: '1px solid',
+            borderColor: toolbarBorder,
+            bgcolor: toolbarBg,
+            boxShadow: `${toolbarShadow}, ${toolbarGlow}`,
+            p: 2,
+          }}
+        >
+          <Typography sx={{ fontSize: 15, fontWeight: 700, color: 'text.primary' }}>
+            To proceed, provide an addendum reason.
+          </Typography>
+          <TextField
+            value={addendumReason}
+            onChange={(e) => onAddendumReasonChange(e.target.value)}
+            placeholder="Write something here..."
+            multiline
+            minRows={4}
+            fullWidth
+            variant="outlined"
+            autoFocus
+            inputProps={{ 'aria-label': 'Addendum reason' }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                fontSize: 14,
+                bgcolor: (t) => alpha(t.palette.text.primary, 0.04),
+                borderRadius: 2,
+                '& fieldset': { borderColor: 'transparent' },
+                '&:hover fieldset': { borderColor: (t) => alpha(t.palette.text.primary, 0.16) },
+                '&.Mui-focused fieldset': { borderColor: 'primary.main' },
+              },
+            }}
+          />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Button
+              variant="outlined"
+              className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
+              onClick={onAddendumCancel}
+              sx={{
+                height: 40,
+                minHeight: 40,
+                px: 2.25,
+                borderRadius: '9999px',
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: 14,
+                color: 'text.primary',
+                borderColor: (t) => alpha(t.palette.text.primary, 0.16),
+                '&:hover': {
+                  borderColor: 'text.primary',
+                  bgcolor: (t) => alpha(t.palette.text.primary, 0.04),
+                },
+              }}
+            >
+              Cancel
+            </Button>
+            <Box sx={{ flex: 1 }} />
+            <Button
+              variant="text"
+              className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
+              onClick={onAddendumSkip}
+              sx={{
+                height: 40,
+                minHeight: 40,
+                px: 1.5,
+                color: 'primary.main',
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: 14,
+                '&:hover': { bgcolor: 'action.hover' },
+              }}
+            >
+              Skip
+            </Button>
+            <Button
+              variant="contained"
+              color="primary"
+              className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
+              onClick={onAddendumProceed}
+              disabled={!reasonProvided}
+              endIcon={<ArrowForwardRounded />}
+              sx={{
+                height: 40,
+                minHeight: 40,
+                px: 2.5,
+                borderRadius: '9999px',
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: 14,
+                boxShadow: 'none',
+                '&:hover': { boxShadow: 'none', bgcolor: 'primary.dark' },
+              }}
+            >
+              Proceed
+            </Button>
+          </Box>
+        </Box>
+      </Box>
+    );
+  }
+
+  // Addendum editing → "Finalize changes…" pill with Finalize & Re-sign.
+  if (signStatus === 'signed' && addendumState === 'editing') {
+    return (
+      <Box sx={stickyAnchorSx}>
+        <Box sx={pillSx}>
+          <Typography
+            sx={{
+              flex: 1,
+              fontSize: 14,
+              fontWeight: 700,
+              color: 'text.primary',
+              pl: 1.5,
+            }}
+          >
+            Finalize changes…
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
+            onClick={onFinalizeAddendum}
+            startIcon={<SignatureAltIcon />}
+            sx={{
+              height: 44,
+              minHeight: 44,
+              py: 0,
+              px: 2.25,
+              borderRadius: '9999px',
+              fontSize: 14,
+              fontWeight: 600,
+              textTransform: 'none',
+              flexShrink: 0,
+              boxShadow: 'none',
+              '&:hover': { boxShadow: 'none', bgcolor: 'primary.dark' },
+            }}
+          >
+            Finalize & Re-sign
+          </Button>
+        </Box>
+      </Box>
+    );
+  }
+
   return (
-    <Box
-      sx={{
-        position: 'sticky',
-        bottom: 12,
-        left: 0,
-        right: 0,
-        display: 'flex',
-        justifyContent: 'center',
-        zIndex: 10,
-      }}
-    >
+    <Box sx={stickyAnchorSx}>
       <Box
         sx={{
           display: 'inline-flex',
@@ -1279,6 +1600,211 @@ function VisitNoteFloatingToolbar({
 }
 
 type EditingReadSectionId = (typeof SOAP_READ_SECTION_IDS)[number] | null;
+type ReadSoapSectionId = (typeof SOAP_READ_SECTION_IDS)[number];
+/** Per-SOAP-section text that the AI Check has appended to the read view. */
+type AiAppendedReadContent = Partial<Record<ReadSoapSectionId, string>>;
+
+/**
+ * Logical target a suggestion modifies. The caller maps this to the right
+ * DOM id depending on whether the note is in read or edit mode, since the
+ * two layouts have different anchors.
+ */
+type AICheckHighlightTarget =
+  | { kind: 'soap'; section: ReadSoapSectionId; subsectionAnchorId: string }
+  | { kind: 'services' };
+
+/**
+ * Outcome of applying a single AI Check suggestion to the note. The caller
+ * uses this both to mark the resolution as "applied" (so re-renders don't
+ * re-run it) and to drive the post-apply UI affordances — auto-scrolling
+ * to and momentarily highlighting wherever the change landed.
+ */
+interface AICheckSuggestionApplyResult {
+  /** When true, the caller should not run this suggestion's effect again. */
+  applied: boolean;
+  /** Where to scroll-and-flash so the provider visually sees the change. */
+  highlight?: AICheckHighlightTarget;
+  /**
+   * Text to append to a SOAP read-view section. The read view renders from
+   * a static narrative (not `data`), so changes the suggestion makes to
+   * `data` are mirrored here for read mode.
+   */
+  appendedReadContent?: { section: ReadSoapSectionId; text: string };
+}
+
+const LEFT_KNEE_EXAM_BLOCK =
+  'Left Knee Examination:\n\n' +
+  'Inspection: Normal alignment, no erythema, no effusion, no surgical scars.\n' +
+  'Palpation: No tenderness, no warmth.\n' +
+  'Range of motion: Active flexion 0–135°, full and pain-free.\n' +
+  'Strength: Quadriceps 5/5, hamstrings 5/5.\n' +
+  'Special tests: Negative Lachman, negative anterior/posterior drawer, negative McMurray.\n' +
+  'Stability: Ligamentously stable to varus/valgus stress at 0° and 30°.\n' +
+  'Gait: Normal gait; weight-bearing symmetric.';
+
+const HISTORICAL_RECORDS_BLOCK =
+  'Additional historical records:\n' +
+  '• Past Medical History: Hypertension, hyperlipidemia, BMI 29.\n' +
+  '• Past Surgical History: Right knee arthroscopy 2009 for meniscal debridement.\n' +
+  '• Medications: Lisinopril, atorvastatin, ibuprofen PRN.\n' +
+  '• Allergies: NKDA.\n' +
+  '• Social History: Retired, non-smoker, occasional alcohol use.';
+
+/**
+ * Mutate the visit-note state in response to a single AI Check suggestion
+ * resolution. Returns metadata describing what changed so the caller can
+ * scroll the provider to the modified section and flash a transient
+ * highlight there.
+ *
+ * Suggestion IDs mirror those produced by `buildDefaultAICheckSeed`.
+ */
+function applyAICheckSuggestion({
+  suggestionId,
+  resolution,
+  isOrtho,
+  setData,
+  setOrthoExtras,
+}: {
+  suggestionId: string;
+  resolution: AICheckSuggestionResolution;
+  isOrtho: boolean;
+  setData: React.Dispatch<React.SetStateAction<VisitNoteData>>;
+  setOrthoExtras: React.Dispatch<React.SetStateAction<OrthoNoteExtras | null>>;
+}): AICheckSuggestionApplyResult {
+  // Declined / dismissed resolutions are terminal and don't mutate the note.
+  if (resolution.kind === 'declined' || resolution.kind === 'input-declined') {
+    return { applied: true };
+  }
+
+  const appendParagraph = (prev: string, next: string) => {
+    const trimmed = prev.trimEnd();
+    if (!trimmed) return next;
+    return `${trimmed}\n\n${next}`;
+  };
+
+  switch (suggestionId) {
+    case 'sug-injection-units': {
+      // Ortho: fill in the units cell on the Hylan G-F 20 (Synvisc) line so
+      // the missing-units warning called out in the suggestion copy
+      // resolves visibly in the Services table.
+      if (resolution.kind !== 'input-accepted') return { applied: true };
+      if (!isOrtho) return { applied: true };
+      const units = resolution.value;
+      setOrthoExtras((prev) => {
+        if (!prev) return prev;
+        const services = prev.services.map((cat) => ({
+          ...cat,
+          rows: cat.rows.map((row) =>
+            row.cptCode === 'J7325' ? { ...row, units } : row,
+          ),
+        }));
+        return { ...prev, services };
+      });
+      return { applied: true, highlight: { kind: 'services' } };
+    }
+
+    case 'sug-modifier-25-same-day': {
+      if (resolution.kind !== 'accepted') return { applied: true };
+      if (!isOrtho) return { applied: true };
+      setOrthoExtras((prev) => {
+        if (!prev) return prev;
+        const services = prev.services.map((cat) =>
+          cat.id === 'cat-evaluations'
+            ? {
+                ...cat,
+                rows: cat.rows.map((row) =>
+                  row.cptCode === '99214' ? { ...row, modifier: '25' } : row,
+                ),
+              }
+            : cat,
+        );
+        return { ...prev, services };
+      });
+      return { applied: true, highlight: { kind: 'services' } };
+    }
+
+    case 'sug-future-plan': {
+      if (resolution.kind !== 'input-accepted') return { applied: true };
+      const addition = resolution.value;
+      setData((prev) => ({
+        ...prev,
+        plan: {
+          ...prev.plan,
+          'treatment-plan': {
+            ...prev.plan['treatment-plan'],
+            content: appendParagraph(prev.plan['treatment-plan'].content, addition),
+          },
+        },
+      }));
+      return {
+        applied: true,
+        highlight: {
+          kind: 'soap',
+          section: 'plan',
+          subsectionAnchorId: 'subsection-treatment-plan',
+        },
+        appendedReadContent: { section: 'plan', text: addition },
+      };
+    }
+
+    case 'sug-left-knee': {
+      if (resolution.kind !== 'accepted') return { applied: true };
+      setData((prev) => ({
+        ...prev,
+        objective: {
+          ...prev.objective,
+          'objective-comments': {
+            ...prev.objective['objective-comments'],
+            comments: appendParagraph(
+              prev.objective['objective-comments'].comments,
+              LEFT_KNEE_EXAM_BLOCK,
+            ),
+          },
+        },
+      }));
+      return {
+        applied: true,
+        highlight: {
+          kind: 'soap',
+          section: 'objective',
+          subsectionAnchorId: 'subsection-objective-comments',
+        },
+        appendedReadContent: { section: 'objective', text: LEFT_KNEE_EXAM_BLOCK },
+      };
+    }
+
+    case 'sug-historical': {
+      if (resolution.kind !== 'accepted') return { applied: true };
+      setData((prev) => ({
+        ...prev,
+        subjective: {
+          ...prev.subjective,
+          'history-of-present-illness': {
+            ...prev.subjective['history-of-present-illness'],
+            historyOfCondition: appendParagraph(
+              prev.subjective['history-of-present-illness'].historyOfCondition,
+              HISTORICAL_RECORDS_BLOCK,
+            ),
+          },
+        },
+      }));
+      return {
+        applied: true,
+        highlight: {
+          kind: 'soap',
+          section: 'subjective',
+          subsectionAnchorId: 'subsection-history-of-present-illness',
+        },
+        appendedReadContent: { section: 'subjective', text: HISTORICAL_RECORDS_BLOCK },
+      };
+    }
+
+    default:
+      // Unknown suggestion id — still mark as applied so we don't poll it on
+      // every render, but don't touch the note data.
+      return { applied: true };
+  }
+}
 
 export function VisitNoteContent({
   noteId: _noteId,
@@ -1294,27 +1820,233 @@ export function VisitNoteContent({
   highlightedCitationInNote,
 }: VisitNoteContentProps) {
   const isOrthoPatient = ORTHO_PATIENT_IDS.has(appointment.patientId);
+  // True once the provider has clicked "Submit to Chart" in the scribe
+  // post-processed preview for this patient. Pre-submission the note renders
+  // an empty placeholder; post-submission the SOAP content + edit-mode
+  // fields are seeded with the populated default data — i.e. the demo
+  // narrative is "the scribe just wrote your note for you".
+  const { isChartSubmittedForPatientId } = useAppScribe();
+  const isChartPopulated = isChartSubmittedForPatientId(appointment.patientId);
   const [mode, setMode] = useState<'edit' | 'read'>('read');
   const [editingReadSectionId, setEditingReadSectionId] = useState<EditingReadSectionId>(null);
-  const [data, setData] = useState<VisitNoteData>(
-    isOrthoPatient ? DEFAULT_ORTHO_VISIT_NOTE_DATA : DEFAULT_VISIT_NOTE_DATA,
+  const [data, setData] = useState<VisitNoteData>(() =>
+    isChartPopulated
+      ? isOrthoPatient
+        ? DEFAULT_ORTHO_VISIT_NOTE_DATA
+        : DEFAULT_VISIT_NOTE_DATA
+      : EMPTY_VISIT_NOTE_DATA,
   );
-  const [orthoExtras, setOrthoExtras] = useState<OrthoNoteExtras | null>(
-    isOrthoPatient ? DEFAULT_ORTHO_NOTE_EXTRAS : null,
-  );
+  const [orthoExtras, setOrthoExtras] = useState<OrthoNoteExtras | null>(() => {
+    if (!isOrthoPatient) return null;
+    return isChartPopulated ? DEFAULT_ORTHO_NOTE_EXTRAS : EMPTY_ORTHO_NOTE_EXTRAS;
+  });
   const [noteTemplate, setNoteTemplate] = useState(appointment.template);
   const [clinicalStage, setClinicalStage] = useState(appointment.clinicalStage);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [collapsedSubsections, setCollapsedSubsections] = useState<Set<string>>(new Set());
+  // Addendum flow surfaced by the toolbar once a note is signed. Reset
+  // whenever the appointment or sign-status changes so a fresh chart never
+  // boots in mid-addendum.
+  const [addendumState, setAddendumState] = useState<VisitNoteAddendumState>('none');
+  const [addendumReason, setAddendumReason] = useState('');
   const assistantShortcutOverride = useAssistantShortcutOverrideOptional();
 
+  // Reset to the correct seed (empty vs populated) whenever the underlying
+  // appointment changes. Without this, switching patients would leave the
+  // previous patient's data on screen.
   useEffect(() => {
     setNoteTemplate(appointment.template);
     setClinicalStage(appointment.clinicalStage);
     const isOrtho = ORTHO_PATIENT_IDS.has(appointment.patientId);
+    if (isChartPopulated) {
+      setData(isOrtho ? DEFAULT_ORTHO_VISIT_NOTE_DATA : DEFAULT_VISIT_NOTE_DATA);
+      setOrthoExtras(isOrtho ? DEFAULT_ORTHO_NOTE_EXTRAS : null);
+    } else {
+      setData(EMPTY_VISIT_NOTE_DATA);
+      setOrthoExtras(isOrtho ? EMPTY_ORTHO_NOTE_EXTRAS : null);
+    }
+    setAddendumState('none');
+    setAddendumReason('');
+    // Intentionally NOT depending on `isChartPopulated` — the transition
+    // from empty → populated is handled by the dedicated effect below so
+    // that manual edits made before submit-to-chart don't get clobbered on
+    // an unrelated re-render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appointment.id, appointment.template, appointment.clinicalStage]);
+
+  // Once the scribe finishes (i.e. "Submit to Chart" has been clicked for
+  // this patient), backfill the visit-note state with the populated SOAP
+  // content + extras so the demo feels like the scribe just wrote the note.
+  // The previous (empty) flag is tracked so we only run the transition
+  // once, not on every re-render where `isChartPopulated` happens to be
+  // true (e.g. after the user has further edited the populated data).
+  const prevIsChartPopulatedRef = useRef(isChartPopulated);
+  useEffect(() => {
+    const wasPopulated = prevIsChartPopulatedRef.current;
+    prevIsChartPopulatedRef.current = isChartPopulated;
+    if (wasPopulated || !isChartPopulated) return;
+    const isOrtho = ORTHO_PATIENT_IDS.has(appointment.patientId);
     setData(isOrtho ? DEFAULT_ORTHO_VISIT_NOTE_DATA : DEFAULT_VISIT_NOTE_DATA);
     setOrthoExtras(isOrtho ? DEFAULT_ORTHO_NOTE_EXTRAS : null);
-  }, [appointment.id, appointment.template, appointment.clinicalStage]);
+  }, [isChartPopulated, appointment.patientId]);
+
+  // Apply AI Check suggestion acceptances to the note's actual data so the
+  // chat-side "Accept" actions visibly mutate the chart. The effect tracks
+  // which suggestions have already been applied (keyed by appointment) so
+  // re-renders don't re-apply the same change. Reset on patient switch so
+  // a note re-opened later picks the suggestion change up again on its
+  // first render.
+  //
+  // Companion state:
+  //  - `aiAppendedReadContent` mirrors a suggestion's data mutation into the
+  //    read-view narrative, since read mode renders from a static SOAP map
+  //    rather than `data`.
+  //  - `aiHighlightTarget` triggers the scroll + flash effect; the token is
+  //    bumped on each accept so repeated accepts of different suggestions
+  //    all re-fire the animation.
+  const aiCheckActions = useAICheckActionsOptional();
+  const aiCheckResolutions = aiCheckActions?.resolutions;
+  // When the user navigates away from the visit note (closes it, switches
+  // tabs, opens a different patient, …) the assistant panel may still be
+  // sitting on an AI Check report tied to *this* note. Drop it back to a
+  // fresh chat on unmount so stale context doesn't follow them around.
+  // Read the latest callback through a ref so the cleanup only fires on
+  // actual unmount, not on every callback identity change.
+  const appAssistant = useAppAssistantOptional();
+  const resetAICheckOnUnmountRef = useRef(appAssistant?.resetAICheckChatIfShowing);
+  useEffect(() => {
+    resetAICheckOnUnmountRef.current = appAssistant?.resetAICheckChatIfShowing;
+  }, [appAssistant?.resetAICheckChatIfShowing]);
+  useEffect(() => {
+    return () => {
+      resetAICheckOnUnmountRef.current?.();
+    };
+  }, []);
+  const appliedSuggestionsRef = useRef<{
+    appointmentId: string;
+    applied: Set<string>;
+  }>({ appointmentId: appointment.id, applied: new Set() });
+  const [aiAppendedReadContent, setAiAppendedReadContent] = useState<AiAppendedReadContent>({});
+  const [aiHighlightTarget, setAiHighlightTarget] = useState<{
+    target: AICheckHighlightTarget;
+    token: number;
+  } | null>(null);
+  const aiHighlightTokenRef = useRef(0);
+  useEffect(() => {
+    if (appliedSuggestionsRef.current.appointmentId !== appointment.id) {
+      appliedSuggestionsRef.current = {
+        appointmentId: appointment.id,
+        applied: new Set(),
+      };
+      setAiAppendedReadContent({});
+      setAiHighlightTarget(null);
+    }
+  }, [appointment.id]);
+  useEffect(() => {
+    if (!aiCheckResolutions) return;
+    const applied = appliedSuggestionsRef.current.applied;
+    const isOrtho = ORTHO_PATIENT_IDS.has(appointment.patientId);
+    let latestHighlight: AICheckHighlightTarget | null = null;
+    Object.entries(aiCheckResolutions).forEach(([suggestionId, resolution]) => {
+      if (applied.has(suggestionId)) return;
+      const result = applyAICheckSuggestion({
+        suggestionId,
+        resolution,
+        isOrtho,
+        setData,
+        setOrthoExtras,
+      });
+      if (!result.applied) return;
+      applied.add(suggestionId);
+      if (result.appendedReadContent) {
+        const { section, text } = result.appendedReadContent;
+        setAiAppendedReadContent((prev) => ({
+          ...prev,
+          [section]: prev[section] ? `${prev[section]}\n\n${text}` : text,
+        }));
+      }
+      if (result.highlight) {
+        latestHighlight = result.highlight;
+      }
+    });
+    if (latestHighlight) {
+      aiHighlightTokenRef.current += 1;
+      setAiHighlightTarget({
+        target: latestHighlight,
+        token: aiHighlightTokenRef.current,
+      });
+    }
+  }, [aiCheckResolutions, appointment.patientId]);
+
+  // Scroll the note to wherever a freshly accepted suggestion landed, then
+  // flash a soft primary-tinted background over the target so the addition
+  // is visually unmistakable. Runs after the apply effect's state updates
+  // are flushed so the new content is in the DOM when we scroll/animate.
+  // The right DOM target depends on the current mode — read view anchors
+  // are `read-{sectionId}` / `ai-services-block`, edit view anchors are
+  // `subsection-{id}` / `subsection-services`.
+  const theme = useTheme();
+  useEffect(() => {
+    if (!aiHighlightTarget) return;
+    const { target } = aiHighlightTarget;
+    const domId =
+      target.kind === 'soap'
+        ? mode === 'read'
+          ? `read-${target.section}`
+          : target.subsectionAnchorId
+        : mode === 'read'
+          ? 'ai-services-block'
+          : 'subsection-services';
+    // Defer one frame so React commits the read-content/services-state
+    // updates before we measure/scroll.
+    const raf = requestAnimationFrame(() => {
+      const el = document.getElementById(domId);
+      if (!el) return;
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const flash = alpha(theme.palette.primary.main, 0.16);
+      const animation = el.animate(
+        [
+          { backgroundColor: flash, offset: 0 },
+          { backgroundColor: flash, offset: 0.35 },
+          { backgroundColor: 'rgba(0,0,0,0)', offset: 1 },
+        ],
+        { duration: 2200, easing: 'ease-out' },
+      );
+      animation.onfinish = () => {
+        // Ensure the background lands back at transparent in case the
+        // browser leaves the final keyframe applied.
+        el.style.backgroundColor = '';
+      };
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [aiHighlightTarget, theme, mode]);
+
+  const signStatus = data.notarize.notarize.signStatus;
+  // Once a note is signed, the chart is read-only until the user explicitly
+  // opens an addendum. Editing affordances (the per-section pencil in read
+  // view, the floating toolbar's Edit toggle, inline forms, etc.) are gated
+  // on this flag so the only way to mutate a signed note is via the
+  // addendum flow.
+  const canEditNote = signStatus === 'unsigned' || addendumState === 'editing';
+  // When the note becomes signed (and we aren't actively editing an
+  // addendum), the chart should be read-only. Reset any in-progress addendum
+  // state if the note is unsigned again (e.g. via the "Unsign Note" link in
+  // the Notarize section) so the toolbar returns to its normal pill. Also
+  // clear any in-progress per-section edit if the user signs the note while
+  // a SOAP section is being edited inline from read view.
+  useEffect(() => {
+    if (signStatus === 'unsigned') {
+      setAddendumState('none');
+      setAddendumReason('');
+      return;
+    }
+    if (addendumState !== 'editing') {
+      if (mode === 'edit') {
+        setMode('read');
+      }
+      setEditingReadSectionId(null);
+    }
+  }, [signStatus, addendumState, mode]);
 
   useEffect(() => {
     if (!assistantShortcutOverride) return;
@@ -1858,16 +2590,33 @@ export function VisitNoteContent({
                       </Box>
                     );
                   }
+                  // Pre-scribe-submit: render the empty placeholder block
+                  // so providers see where each SOAP section will fill in.
+                  if (!isChartPopulated) {
+                    return (
+                      <ReadViewEmptySectionBlock
+                        key={sectionId}
+                        sectionId={sectionId}
+                        title={SOAP_READ_SECTION_LABELS[sectionId]}
+                      />
+                    );
+                  }
                   const readContentSource = isOrthoPatient
                     ? SOAP_READ_VIEW_CONTENT_ORTHO
                     : SOAP_READ_VIEW_CONTENT;
+                  const baseContent = readContentSource[sectionId] ?? '';
+                  const appended = aiAppendedReadContent[sectionId];
+                  const combinedContent = appended
+                    ? `${baseContent.trimEnd()}\n\n${appended}`
+                    : baseContent;
                   return (
                     <ReadViewSectionBlock
                       key={sectionId}
                       sectionId={sectionId}
                       title={SOAP_READ_SECTION_LABELS[sectionId]}
-                      content={readContentSource[sectionId] ?? ''}
+                      content={combinedContent}
                       onEdit={() => setEditingReadSectionId(sectionId)}
+                      canEdit={canEditNote}
                       onCitationClick={onCitationClick}
                       highlightedCitationInNote={highlightedCitationInNote}
                     />
@@ -1876,8 +2625,9 @@ export function VisitNoteContent({
                 {/* Ortho-only: Orders and Services rendered as read-only visual sections.
                     Edit-mode counterparts live inside the Plan section block; here they
                     appear after the Plan narrative as standalone sections (matching the
-                    edit view layout, minus header/per-row controls). */}
-                {isOrthoPatient && orthoExtras && (
+                    edit view layout, minus header/per-row controls). Hidden pre-submit
+                    so the empty placeholder layout stays clean. */}
+                {isOrthoPatient && orthoExtras && isChartPopulated && (
                   <>
                     <Box sx={{ mb: 1 }}>
                       <VisitNoteOrdersSection
@@ -1888,7 +2638,7 @@ export function VisitNoteContent({
                         }
                       />
                     </Box>
-                    <Box>
+                    <Box id="ai-services-block" sx={{ scrollMarginTop: 24, borderRadius: 1 }}>
                       <VisitNoteServicesSection
                         readOnly
                         categories={orthoExtras.services}
@@ -2550,6 +3300,29 @@ export function VisitNoteContent({
             scribeRecordingState={scribeRecordingState}
             onScribePause={onScribePause}
             onScribeEndRecording={onScribeEndRecording}
+            signStatus={signStatus}
+            addendumState={addendumState}
+            addendumReason={addendumReason}
+            onAddendumReasonChange={setAddendumReason}
+            onAddAddendumClick={() => setAddendumState('reasonPrompt')}
+            onAddendumCancel={() => {
+              setAddendumState('none');
+              setAddendumReason('');
+            }}
+            onAddendumSkip={() => {
+              setAddendumReason('');
+              setAddendumState('editing');
+              setMode('edit');
+            }}
+            onAddendumProceed={() => {
+              setAddendumState('editing');
+              setMode('edit');
+            }}
+            onFinalizeAddendum={() => {
+              setAddendumState('none');
+              setAddendumReason('');
+              setMode('read');
+            }}
           />
         </Box>
       </Box>

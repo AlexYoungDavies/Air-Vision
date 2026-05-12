@@ -38,6 +38,7 @@ import {
 } from '../icons';
 import { ScribeRecordingEmblem } from './ScribeRecordingEmblem';
 import { ScribeReviewView } from './ScribeReviewView';
+import { ScribeScrollFadeArea } from './ScribeScrollFadeArea';
 import type { ActiveScribeRecordingSession } from './scribeRecordingSession';
 import { VISIT_NOTE_BUTTON_EXEMPT_CLASS } from '../../theme/buttonStyleConstants';
 import { AppIconButton } from '../AppIconButton';
@@ -96,64 +97,6 @@ function AudioLevelMock() {
   );
 }
 
-/**
- * Pixel height of the top/bottom fade gradients applied to the Scribe
- * scrollable content area. Kept small so the gradient feels like a soft mask
- * rather than a heavy overlay.
- */
-const SCROLL_FADE_HEIGHT = 24;
-
-/**
- * Wraps content in a flex-column scroll container with subtle gradient masks
- * pinned to the top and bottom of the visible area, so content visually fades
- * in and out of the scroll viewport. The gradients fade from the Scribe panel
- * background (`background.default`) to transparent.
- *
- * Place inside a flex-column parent (it claims `flex: 1; minHeight: 0`).
- */
-function ScrollFadeArea({ children }: { children: React.ReactNode }) {
-  return (
-    <Box sx={{ flex: 1, minHeight: 0, position: 'relative', display: 'flex', flexDirection: 'column' }}>
-      <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-        {children}
-      </Box>
-      <Box
-        aria-hidden
-        sx={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          height: SCROLL_FADE_HEIGHT,
-          background: (t) =>
-            `linear-gradient(to bottom, ${t.palette.background.default} 0%, ${alpha(
-              t.palette.background.default,
-              0,
-            )} 100%)`,
-          pointerEvents: 'none',
-          zIndex: 1,
-        }}
-      />
-      <Box
-        aria-hidden
-        sx={{
-          position: 'absolute',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: SCROLL_FADE_HEIGHT,
-          background: (t) =>
-            `linear-gradient(to top, ${t.palette.background.default} 0%, ${alpha(
-              t.palette.background.default,
-              0,
-            )} 100%)`,
-          pointerEvents: 'none',
-          zIndex: 1,
-        }}
-      />
-    </Box>
-  );
-}
 
 interface CollapsibleCardProps {
   icon?: React.ReactNode;
@@ -368,7 +311,7 @@ function PreVisitIdleView({ visit, scheduleDate, onBeginRecording }: PreVisitIdl
 
   return (
     <>
-      <ScrollFadeArea>
+      <ScribeScrollFadeArea>
         <Box
           sx={{
             display: 'flex',
@@ -484,7 +427,7 @@ function PreVisitIdleView({ visit, scheduleDate, onBeginRecording }: PreVisitIdl
           </Box>
         </Box>
         </Box>
-      </ScrollFadeArea>
+      </ScribeScrollFadeArea>
 
       <Box sx={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, pt: 1.5 }}>
         <Button
@@ -682,7 +625,7 @@ export function ScribeAppointmentView({
 
       {(phase === 'recording' || phase === 'paused') && (
         <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-          <ScrollFadeArea>
+          <ScribeScrollFadeArea>
             <Box
               sx={{
                 display: 'flex',
@@ -795,7 +738,7 @@ export function ScribeAppointmentView({
               </Select>
             </Box>
             </Box>
-          </ScrollFadeArea>
+          </ScribeScrollFadeArea>
 
           <Box sx={{ width: '100%', flexShrink: 0, pt: 1, display: 'flex', flexDirection: 'column', gap: 1.25 }}>
             {phase === 'recording' && (

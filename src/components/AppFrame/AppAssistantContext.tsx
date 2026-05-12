@@ -8,6 +8,14 @@ export interface AppAssistantContextValue {
    * history first (matching the panel's "New chat" behavior).
    */
   openAssistantWithAICheck: (report: AICheckReport) => void;
+  /**
+   * Requests that the assistant panel reset to a fresh chat — but only if
+   * the current transcript is showing an AI Check report. Used by the
+   * visit note on unmount so the stale AI Check from a previous note
+   * doesn't hang around once the user navigates somewhere else; chats the
+   * user typed manually are left alone.
+   */
+  resetAICheckChatIfShowing: () => void;
 }
 
 const AppAssistantContext = createContext<AppAssistantContextValue | null>(null);

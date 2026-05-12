@@ -79,6 +79,22 @@ const ORTHO_CONTINUED_CARE =
 const ORTHO_ADDITIONAL_NOTES =
   'Patient tolerated today\'s visit well. Weight loss counseling provided. Instructed to use prescribed knee orthosis during weight-bearing activity and to follow up if symptoms acutely worsen prior to scheduled return.';
 
+/**
+ * Empty ortho-specific extras used before the Scribe has populated the chart.
+ * Keeps the four Services categories so the table header structure renders
+ * even when no rows are present.
+ */
+export const EMPTY_ORTHO_NOTE_EXTRAS: OrthoNoteExtras = {
+  diagnosisCodes: [],
+  orders: [],
+  services: [
+    { id: 'cat-evaluations', label: 'Evaluations', rows: [] },
+    { id: 'cat-procedures', label: 'Procedures', rows: [] },
+    { id: 'cat-radiology', label: 'Radiology & Imaging', rows: [] },
+    { id: 'cat-dme', label: 'DME', rows: [] },
+  ],
+};
+
 export const DEFAULT_ORTHO_NOTE_EXTRAS: OrthoNoteExtras = {
   diagnosisCodes: [
     { code: 'M17.11', label: 'Unilateral Primary osteoarthritis, right knee' },

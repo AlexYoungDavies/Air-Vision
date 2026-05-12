@@ -3,6 +3,7 @@ import {
   Box,
   Button,
   Checkbox,
+  IconButton,
   Menu,
   MenuItem,
   Tab,
@@ -25,6 +26,7 @@ import {
   type MockScribeVisit,
 } from '../../data/mockTodaysVisits';
 import { VISIT_NOTE_BUTTON_EXEMPT_CLASS } from '../../theme/buttonStyleConstants';
+import { ScribeScrollFadeArea } from './ScribeScrollFadeArea';
 
 type TopTab = 'scribe' | 'transcript';
 type SectionFilter = 'all' | MockScribeSectionId;
@@ -371,59 +373,64 @@ export function ScribeReviewView({ visit, output, onSubmitToChart, onDiscard }: 
             ))}
           </Box>
 
-          {/* Sections list */}
-          <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto', pb: 1 }}>
-            {visibleSections.map((section) => (
-              <ScribeSectionGroup
-                key={section.id}
-                section={section}
-                includedItemIds={includedItemIds}
-                onToggleItem={toggleItem}
-              />
-            ))}
-          </Box>
+          {/* Sections list — soft top/bottom fade matches the rest of the
+              Scribe flow (pre-visit, recording, paused). */}
+          <ScribeScrollFadeArea>
+            <Box sx={{ pb: 1 }}>
+              {visibleSections.map((section) => (
+                <ScribeSectionGroup
+                  key={section.id}
+                  section={section}
+                  includedItemIds={includedItemIds}
+                  onToggleItem={toggleItem}
+                />
+              ))}
+            </Box>
+          </ScribeScrollFadeArea>
         </>
       ) : (
-        <Box sx={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+        <ScribeScrollFadeArea>
           <TranscriptView transcript={output.transcript} patientName={visit.patientName} />
-        </Box>
+        </ScribeScrollFadeArea>
       )}
 
-      {/* Footer actions: More Actions + Submit to Chart */}
+      {/* Footer actions — pill-style "Submit to Chart" + circular More Actions
+          icon, matching the recording/paused stages so all Scribe footers
+          read as the same surface. The top fade from `ScribeScrollFadeArea`
+          replaces the previous hard divider. */}
       <Box
         sx={{
+          width: '100%',
           flexShrink: 0,
+          pt: 1,
           display: 'flex',
           alignItems: 'center',
-          gap: 1,
-          pt: 1,
-          borderTop: '1px solid',
-          borderColor: 'divider',
+          gap: 1.25,
         }}
       >
-        <Button
-          variant="outlined"
-          color="primary"
-          size="medium"
-          startIcon={<MoreHorizRounded />}
-          onClick={(e) => setMoreActionsAnchor(e.currentTarget)}
+        <IconButton
+          className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
+          aria-label="More actions"
           aria-haspopup="menu"
           aria-expanded={moreActionsOpen}
+          onClick={(e) => setMoreActionsAnchor(e.currentTarget)}
           sx={{
-            textTransform: 'none',
-            fontWeight: 600,
-            fontSize: 13,
-            borderRadius: '8px',
-            color: 'text.primary',
-            borderColor: (t) => alpha(t.palette.text.primary, 0.2),
+            width: 48,
+            height: 48,
+            minWidth: 48,
+            minHeight: 48,
+            flexShrink: 0,
+            borderRadius: '50%',
+            border: '1px solid',
+            borderColor: (t) => alpha(t.palette.text.secondary, 0.4),
+            color: 'text.secondary',
             '&:hover': {
-              borderColor: 'text.primary',
               bgcolor: (t) => alpha(t.palette.text.primary, 0.04),
             },
           }}
         >
-          More Actions
-        </Button>
+          <MoreHorizRounded sx={{ fontSize: 20 }} />
+        </IconButton>
         <Button
           variant="contained"
           color="primary"
@@ -434,11 +441,11 @@ export function ScribeReviewView({ visit, output, onSubmitToChart, onDiscard }: 
           sx={{
             flex: 1,
             textTransform: 'none',
-            fontWeight: 700,
+            fontWeight: 600,
             fontSize: 14,
-            height: 40,
-            minHeight: 40,
-            borderRadius: '8px',
+            height: 48,
+            minHeight: 48,
+            borderRadius: '999px',
           }}
         >
           Submit to Chart

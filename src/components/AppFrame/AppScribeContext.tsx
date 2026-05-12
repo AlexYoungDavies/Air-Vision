@@ -7,6 +7,15 @@ export interface AppScribeContextValue {
   isGlobalScribePanelOpen: boolean;
   /** Patient id for the visit currently selected in the global Scribe panel, if any. */
   globalScribeSelectedPatientId: string | null;
+  /**
+   * True once the provider has clicked "Submit to Chart" from the
+   * post-processed Scribe preview for this patient's visit. The visit-note
+   * surface uses this to decide whether to render the populated SOAP content
+   * or the empty pre-visit placeholder.
+   */
+  isChartSubmittedForPatientId: (patientId: string) => boolean;
+  /** Records that the Scribe output has been pushed to this patient's chart. */
+  markChartSubmittedForPatientId: (patientId: string) => void;
 }
 
 const AppScribeContext = createContext<AppScribeContextValue | null>(null);

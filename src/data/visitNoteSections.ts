@@ -244,6 +244,97 @@ const ADDITIONAL_NOTES_DEFAULT =
 const HISTORY_OF_CONDITION_DEFAULT =
   'Patient reports a 2-week history of increased low back stiffness and pain following a weekend of yard work and prolonged driving. No prior lumbar surgery. Symptoms have been relatively stable over the past week with morning stiffness that eases somewhat with movement. Patient denies radicular symptoms, numbness, or weakness in the lower extremities.';
 
+/**
+ * Empty starting state used before the Scribe has populated the chart (i.e.
+ * before the provider clicks "Submit to Chart" from the post-processed
+ * preview). All text fields are blank, selects are null, arrays are empty,
+ * and measurement grids retain their shape so the UI doesn't crash. The
+ * Notarize block keeps its provider/referring scaffolding empty so a
+ * manually-filled note still has fields to populate.
+ */
+export const EMPTY_VISIT_NOTE_DATA: VisitNoteData = {
+  subjective: {
+    'chief-complaint': {
+      content: '',
+      detailedExplanation: '',
+      dateOfOnset: '',
+      painRating: null,
+    },
+    'history-of-present-illness': {
+      dateOfOnset: '',
+      dateOfSurgery: '',
+      stateOfCondition: null,
+      sideOfIssue: null,
+      historyOfCondition: '',
+    },
+    'exacerbating-factors': {
+      exacerbatingFactors: '',
+      alleviatingFactors: '',
+    },
+  },
+  objective: {
+    'objective-comments': {
+      comments: '',
+    },
+    measurements: {
+      'lumbar-mobility': [
+        ['', ''],
+        ['', ''],
+        ['', ''],
+        ['', ''],
+      ],
+      thoracic: [
+        ['', ''],
+        ['', ''],
+        ['', ''],
+        ['', ''],
+      ],
+      'general-upright': [[''], [''], [''], ['']],
+    },
+  },
+  assessment: {
+    'diagnosis-summary': {
+      cptCodes: [],
+      summary: '',
+    },
+    'continued-care': {
+      content: '',
+    },
+    'additional-notes': {
+      content: '',
+    },
+  },
+  plan: {
+    'treatment-plan': {
+      content: '',
+    },
+    goals: {
+      goals: [],
+    },
+    'plan-of-care': {
+      durationValue: '',
+      durationUnit: 'weeks',
+      frequencyValue: '',
+      frequencyUnit: 'per-week',
+      careTimelineStart: '',
+      careTimelineEnd: '',
+    },
+  },
+  notarize: {
+    notarize: {
+      selectedProviderIds: ['provider-1'],
+      overrideCredentialingValidation: false,
+      referringProviderName: '',
+      referringProviderFax: '',
+      faxNoteToReferringProvider: false,
+      faxDocumentType: 'Plan of Care PDF',
+      requestSignatureFromReferring: false,
+      includeFacesheet: false,
+      signStatus: 'unsigned',
+    },
+  },
+};
+
 export const DEFAULT_VISIT_NOTE_DATA: VisitNoteData = {
   subjective: {
     'chief-complaint': {

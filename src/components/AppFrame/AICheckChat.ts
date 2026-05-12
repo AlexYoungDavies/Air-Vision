@@ -41,9 +41,10 @@ export interface SeededAssistantChat {
 
 /**
  * Default mock AI Check report shown when the provider clicks "AI Check" on a
- * visit note. Uses realistic CPT/modifier examples (rather than the demo
- * placeholder numbers in the design mockup) so the suggestions read as
- * something a coding/billing AI might actually surface.
+ * visit note. The first two suggestions target the documented injection
+ * order so the demo's "accept → note actually changes" flow is easy to
+ * eyeball. The remaining suggestions exercise the input-style and bullet
+ * variants of the card surface.
  */
 export function buildDefaultAICheckSeed(): SeededAssistantChat {
   return {
@@ -53,10 +54,18 @@ export function buildDefaultAICheckSeed(): SeededAssistantChat {
       afterPercent: 94,
       suggestions: [
         {
-          id: 'sug-modifier-25',
-          title: 'Better modifier for billing',
+          id: 'sug-injection-units',
+          title: 'Missing units on injection order',
           description:
-            "For the 99213 office visit billed alongside 97140 (manual therapy), no modifier was added. Adding modifier -25 (significant, separately identifiable E/M service) better matches your documentation and supports separate payment for the evaluation.",
+            'You indicated you gave an injection for Hylan G-F 20 (Synvisc) but provided no value for units. Provide this to prevent a denial.',
+          action: 'input',
+          inputPlaceholder: 'Units',
+        },
+        {
+          id: 'sug-modifier-25-same-day',
+          title: 'Add modifier -25 to same-day E/M',
+          description:
+            'Documentation indicates that the injection was given same day. This requires the -25 modifier on the office visit to avoid rejection.',
           action: 'accept-decline',
         },
         {

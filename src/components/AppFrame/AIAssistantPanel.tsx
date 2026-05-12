@@ -12,6 +12,10 @@ import hoverAnimationData from '../../assets/hover.json';
 import { AppIconButton } from '../AppIconButton';
 import type { AICheckReport, AICheckSuggestion, SeededAssistantChat } from './AICheckChat';
 import {
+  useAICheckActions,
+  type AICheckSuggestionResolution,
+} from './AICheckActionsContext';
+import {
   DEFAULT_ASSISTANT_SHORTCUTS,
   type AIAssistantShortcut,
 } from './assistantPanelShortcuts';
@@ -332,6 +336,13 @@ export interface AIAssistantPanelProps {
    * Used to power "AI Check" from the visit note.
    */
   pendingAICheck?: { key: number; seed: SeededAssistantChat } | null;
+  /**
+   * When this object's `key` changes, the panel resets to a fresh chat —
+   * but only if the current transcript is showing an AI Check report
+   * (so manually-typed conversations aren't disturbed). Used by the
+   * visit note to drop stale AI Check context on unmount.
+   */
+  pendingAICheckReset?: { key: number } | null;
   /** When true, render an inline close button in the panel header (used when
    *  the panel is presented as a compact-viewport overlay popover). */
   compact?: boolean;
@@ -343,6 +354,7 @@ export function AIAssistantPanel({
   shortcuts = DEFAULT_ASSISTANT_SHORTCUTS,
   onShortcutClick,
   pendingAICheck,
+  pendingAICheckReset,
   compact,
 }: AIAssistantPanelProps) {
   const [inputValue, setInputValue] = useState('');
@@ -359,6 +371,7 @@ export function AIAssistantPanel({
   const transcriptEndRef = useRef<HTMLDivElement | null>(null);
   const thinkingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const consumedSeedKeyRef = useRef<number | null>(null);
+  const consumedResetKeyRef = useRef<number | null>(null);
 
   const hasConversation = messages.length > 0;
 
@@ -515,6 +528,35 @@ export function AIAssistantPanel({
     setViewMode('chat');
     setActiveShortcut(null);
   }, [clearThinkingTimer]);
+
+  // Parent-driven reset: when the visit note unmounts it bumps
+  // `pendingAICheckReset.key` so the now-orphaned AI Check chat can be
+  // dropped back to a fresh state. Only acts if the current transcript
+  // contains an AI Check report — typed-out conversations are left alone.
+  useEffect(() => {
+    if (!pendingAICheckReset) return;
+    if (consumedResetKeyRef.current === pendingAICheckReset.key) return;
+    consumedResetKeyRef.current = pendingAICheckReset.key;
+    setMessages((prev) => {
+      const hasAICheck = prev.some((m) => m.kind === 'ai-check-report');
+      if (!hasAICheck) return prev;
+      clearThinkingTimer();
+      const firstUserText = findFirstUserText(prev);
+      if (firstUserText) {
+        const title = firstUserText.length > 40 ? firstUserText.slice(0, 40) + '…' : firstUserText;
+        setChatHistory((h) => [
+          { id: nextHistoryId(), title, lastAccessed: new Date(), messages: prev },
+          ...h,
+        ]);
+      }
+      setDemoPhase('greeting');
+      setInputValue('');
+      setIsAssistantThinking(false);
+      setViewMode('chat');
+      setActiveShortcut(null);
+      return [];
+    });
+  }, [pendingAICheckReset, clearThinkingTimer]);
 
   const handleSend = () => {
     const text = inputValue.trim();
@@ -1379,13 +1421,29 @@ function AICheckAcceptanceCard({
   );
 }
 
-type SuggestionStatus = 'pending' | 'accepted' | 'declined';
-
 function AICheckSuggestionCard({ suggestion }: { suggestion: AICheckSuggestion }) {
-  const [status, setStatus] = useState<SuggestionStatus>('pending');
-  const [inputValue, setInputValue] = useState('');
+  const { resolutions, resolveSuggestion } = useAICheckActions();
+  const resolution: AICheckSuggestionResolution | undefined = resolutions[suggestion.id];
+  const decided = resolution !== undefined;
 
-  const decided = status !== 'pending';
+  const isAccepted =
+    resolution?.kind === 'accepted' || resolution?.kind === 'input-accepted';
+
+  // Input-style cards remember their last value so a re-render after
+  // acceptance keeps the captured text visible in the field.
+  const [inputValue, setInputValue] = useState(() =>
+    resolution?.kind === 'input-accepted' ? resolution.value : '',
+  );
+
+  // Mark accepted input as edited-once so we can keep it read-only after
+  // confirmation without losing the value the user typed.
+  const inputLocked = resolution?.kind === 'input-accepted';
+
+  const handleAcceptInput = () => {
+    const trimmed = inputValue.trim();
+    if (!trimmed) return;
+    resolveSuggestion(suggestion.id, { kind: 'input-accepted', value: trimmed });
+  };
 
   return (
     <Box
@@ -1450,49 +1508,38 @@ function AICheckSuggestionCard({ suggestion }: { suggestion: AICheckSuggestion }
       )}
 
       {suggestion.action === 'input' ? (
-        <TextField
-          fullWidth
-          size="small"
+        <AICheckSuggestionInputRow
           placeholder={suggestion.inputPlaceholder ?? 'Add details…'}
           value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          variant="outlined"
-          sx={{
-            '& .MuiOutlinedInput-root': {
-              fontSize: 13,
-              borderRadius: 1.5,
-              bgcolor: 'action.hover',
-              '& fieldset': { borderColor: 'transparent' },
-              '&:hover fieldset': { borderColor: 'divider' },
-              '&.Mui-focused fieldset': { borderColor: 'primary.main' },
-            },
-            '& .MuiOutlinedInput-input': {
-              py: 0.875,
-              px: 1.25,
-            },
-          }}
+          onChange={setInputValue}
+          onAccept={handleAcceptInput}
+          onDecline={() =>
+            resolveSuggestion(suggestion.id, { kind: 'input-declined' })
+          }
+          decided={decided}
+          locked={inputLocked}
+          isAccepted={isAccepted}
         />
       ) : decided ? (
         <Chip
           size="small"
           icon={
-            status === 'accepted' ? (
+            isAccepted ? (
               <CheckOutlined sx={{ fontSize: 14 }} />
             ) : (
               <CloseOutlined sx={{ fontSize: 14 }} />
             )
           }
-          label={status === 'accepted' ? 'Accepted' : 'Declined'}
+          label={isAccepted ? 'Accepted' : 'Declined'}
           sx={(theme) => ({
             height: 24,
             fontSize: 11,
             fontWeight: 600,
             borderRadius: '999px',
-            bgcolor:
-              status === 'accepted'
-                ? alpha(theme.palette.primary.main, 0.1)
-                : 'action.hover',
-            color: status === 'accepted' ? 'primary.main' : 'text.secondary',
+            bgcolor: isAccepted
+              ? alpha(theme.palette.primary.main, 0.1)
+              : 'action.hover',
+            color: isAccepted ? 'primary.main' : 'text.secondary',
             '& .MuiChip-icon': {
               color: 'inherit',
               ml: '6px',
@@ -1505,7 +1552,7 @@ function AICheckSuggestionCard({ suggestion }: { suggestion: AICheckSuggestion }
           <Button
             variant="outlined"
             size="small"
-            onClick={() => setStatus('accepted')}
+            onClick={() => resolveSuggestion(suggestion.id, { kind: 'accepted' })}
             startIcon={<CheckOutlined sx={{ fontSize: 14 }} />}
             sx={{
               minHeight: 28,
@@ -1528,7 +1575,7 @@ function AICheckSuggestionCard({ suggestion }: { suggestion: AICheckSuggestion }
           <Button
             variant="text"
             size="small"
-            onClick={() => setStatus('declined')}
+            onClick={() => resolveSuggestion(suggestion.id, { kind: 'declined' })}
             startIcon={<CloseOutlined sx={{ fontSize: 14 }} />}
             sx={{
               minHeight: 28,
@@ -1547,6 +1594,158 @@ function AICheckSuggestionCard({ suggestion }: { suggestion: AICheckSuggestion }
             Decline
           </Button>
         </Box>
+      )}
+    </Box>
+  );
+}
+
+/**
+ * Inline input + check/X icon buttons used by every "input" style AI Check
+ * suggestion. Once the user confirms with the check icon (or dismisses with
+ * the X) the row becomes read-only and the icons hide so the resolved value
+ * still reads back inside the card.
+ */
+function AICheckSuggestionInputRow({
+  placeholder,
+  value,
+  onChange,
+  onAccept,
+  onDecline,
+  decided,
+  locked,
+  isAccepted,
+}: {
+  placeholder: string;
+  value: string;
+  onChange: (next: string) => void;
+  onAccept: () => void;
+  onDecline: () => void;
+  decided: boolean;
+  locked: boolean;
+  isAccepted: boolean;
+}) {
+  const canAccept = value.trim().length > 0;
+  return (
+    <Box
+      sx={(theme) => ({
+        display: 'flex',
+        alignItems: 'center',
+        gap: 0.5,
+        borderRadius: 1.5,
+        bgcolor: 'action.hover',
+        border: `1px solid ${alpha(theme.palette.divider, 0.6)}`,
+        pr: 0.5,
+        '&:focus-within': {
+          borderColor: theme.palette.primary.main,
+        },
+      })}
+    >
+      <TextField
+        fullWidth
+        size="small"
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={locked}
+        variant="outlined"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && canAccept && !decided) {
+            e.preventDefault();
+            onAccept();
+          }
+        }}
+        sx={{
+          flex: 1,
+          '& .MuiOutlinedInput-root': {
+            fontSize: 13,
+            borderRadius: 0,
+            bgcolor: 'transparent',
+            '& fieldset': { border: 'none' },
+            '&:hover fieldset': { border: 'none' },
+            '&.Mui-focused fieldset': { border: 'none' },
+            '&.Mui-disabled': {
+              color: 'text.primary',
+              WebkitTextFillColor: 'unset',
+            },
+          },
+          '& .MuiOutlinedInput-input': {
+            py: 0.875,
+            px: 1.25,
+          },
+          '& .MuiOutlinedInput-input.Mui-disabled': {
+            WebkitTextFillColor: 'unset',
+            color: 'text.primary',
+          },
+        }}
+      />
+      {decided ? (
+        <Chip
+          size="small"
+          icon={
+            isAccepted ? (
+              <CheckOutlined sx={{ fontSize: 12 }} />
+            ) : (
+              <CloseOutlined sx={{ fontSize: 12 }} />
+            )
+          }
+          label={isAccepted ? 'Saved' : 'Dismissed'}
+          sx={(theme) => ({
+            height: 22,
+            fontSize: 10,
+            fontWeight: 600,
+            borderRadius: '999px',
+            mr: 0.25,
+            bgcolor: isAccepted
+              ? alpha(theme.palette.primary.main, 0.1)
+              : 'action.selected',
+            color: isAccepted ? 'primary.main' : 'text.secondary',
+            '& .MuiChip-icon': {
+              color: 'inherit',
+              ml: '4px',
+              mr: '-2px',
+            },
+            '& .MuiChip-label': { px: 0.75 },
+          })}
+        />
+      ) : (
+        <>
+          <AppIconButton
+            tooltip="Accept suggestion"
+            size="small"
+            onClick={onAccept}
+            disabled={!canAccept}
+            sx={(theme) => ({
+              width: 26,
+              height: 26,
+              borderRadius: '50%',
+              color: 'primary.main',
+              '&:hover': {
+                bgcolor: alpha(theme.palette.primary.main, 0.1),
+              },
+              '&.Mui-disabled': {
+                color: 'text.disabled',
+              },
+            })}
+          >
+            <CheckOutlined sx={{ fontSize: 16 }} />
+          </AppIconButton>
+          <AppIconButton
+            tooltip="Dismiss suggestion"
+            size="small"
+            onClick={onDecline}
+            sx={(theme) => ({
+              width: 26,
+              height: 26,
+              borderRadius: '50%',
+              color: 'text.secondary',
+              '&:hover': {
+                bgcolor: alpha(theme.palette.text.primary, 0.06),
+              },
+            })}
+          >
+            <CloseOutlined sx={{ fontSize: 16 }} />
+          </AppIconButton>
+        </>
       )}
     </Box>
   );
