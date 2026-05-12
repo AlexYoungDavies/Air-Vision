@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useRef, useEffect, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Accordion,
   AccordionSummary,
@@ -28,7 +29,7 @@ import InfoOutlined from '@mui/icons-material/InfoOutlined';
 import BoltOutlined from '@mui/icons-material/BoltOutlined';
 import StopOutlined from '@mui/icons-material/StopOutlined';
 import PauseOutlined from '@mui/icons-material/PauseOutlined';
-import { alpha } from '@mui/material/styles';
+import { alpha, type SxProps, type Theme } from '@mui/material/styles';
 import { keyframes } from '@mui/system';
 import {
   VisitNoteTextArea,
@@ -1018,6 +1019,204 @@ export function ScribePanelContent({
  */
 export type VisitNoteAddendumState = 'none' | 'reasonPrompt' | 'editing';
 
+// Phase durations for the floating-toolbar morph animation. Total ≈ 560ms.
+//   out    : current content fades to 0 (the shell stays visible)
+//   morph  : container width/height + shell properties ease to the new
+//            variant's measured dimensions and visual styling
+//   in     : new content fades from 0 to 1
+const TOOLBAR_MORPH_OUT_MS = 140;
+const TOOLBAR_MORPH_RESIZE_MS = 260;
+const TOOLBAR_MORPH_IN_MS = 160;
+const TOOLBAR_MORPH_EASE = 'cubic-bezier(0.32, 0.72, 0.24, 1)';
+
+/**
+ * Per-variant rendering split so `ToolbarMorph` can animate the toolbar
+ * shell (background, border, shadow, radius) independently of the content
+ * sitting inside it. Keeping the shell on its own always-visible layer is
+ * what produces the "the toolbar resizes while the content fades" feel —
+ * if we faded the whole inner subtree the shell would vanish mid-morph.
+ */
+interface ToolbarVariant {
+  /**
+   * sx applied to the shell layer (the visible pill/card/recording card).
+   * Width/height are managed by `ToolbarMorph` during transitions and
+   * must NOT be set here — set `minWidth` if a variant needs to be
+   * intrinsically wider than its content.
+   */
+  shellSx: SxProps<Theme>;
+  /** Inner content (buttons, text, inputs) rendered on the fading layer. */
+  content: ReactNode;
+}
+
+/**
+ * Animates between the visit-note toolbar variants in a coordinated three
+ * phase sequence so swapping between e.g. the open-note toolbar and the
+ * signed/addendum pill feels intentional rather than abrupt:
+ *
+ *   1. fade out the currently displayed content (shell stays visible)
+ *   2. ease the wrapper from the old dimensions to the new variant's
+ *      measured dimensions, while CSS-transitioning the shell's
+ *      bg/border/shadow/radius to the new variant's shell styling
+ *   3. fade the new content in
+ *
+ * Target dimensions are pulled from a `visibility: hidden` mirror of the
+ * new variant rendered into a portal on `document.body`. Rendering the
+ * variant in a hidden mirror keeps measurement honest if the layout
+ * changes, and `visibility: hidden` removes it from the tab order so
+ * `autoFocus` and click handlers on the duplicated DOM can't steal focus
+ * or fire.
+ *
+ * When the variant prop doesn't change, the wrapper transparently keeps
+ * the latest content on screen so things like the recording timer can
+ * tick without triggering a transition.
+ */
+function ToolbarMorph({
+  variantKey,
+  variant,
+}: {
+  variantKey: string;
+  variant: ToolbarVariant;
+}) {
+  const [displayedKey, setDisplayedKey] = useState(variantKey);
+  const [displayedVariant, setDisplayedVariant] = useState<ToolbarVariant>(variant);
+  const [phase, setPhase] = useState<'idle' | 'out' | 'morph' | 'in'>('idle');
+  const [explicitSize, setExplicitSize] = useState<{ w: number; h: number } | null>(null);
+
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const measureRef = useRef<HTMLDivElement | null>(null);
+  const latestVariantRef = useRef(variant);
+  useEffect(() => {
+    latestVariantRef.current = variant;
+  }, [variant]);
+  // Mirror `displayedKey` into a ref so the transition effect can read
+  // the latest value without depending on it. If it depended on the
+  // state, `setDisplayedKey` inside the t1 callback would trigger a
+  // cleanup that cancels the still-pending t2/t3 timers, leaving the
+  // animation stuck in the morph phase with content at opacity 0.
+  const displayedKeyRef = useRef(displayedKey);
+  useEffect(() => {
+    displayedKeyRef.current = displayedKey;
+  }, [displayedKey]);
+
+  // Keep displayed content in sync with the latest prop while the variant
+  // is stable so per-frame updates (recording timer, mode toggle, etc.)
+  // flow through without retriggering the animation.
+  useEffect(() => {
+    if (phase === 'idle' && variantKey === displayedKey) {
+      setDisplayedVariant(variant);
+    }
+  }, [variant, phase, variantKey, displayedKey]);
+
+  useEffect(() => {
+    if (variantKey === displayedKeyRef.current) return;
+
+    // Freeze the current visible dimensions so the wrapper has something
+    // concrete to morph *from* (otherwise it'd be at `auto`, which CSS
+    // can't transition).
+    const currentRect = containerRef.current?.getBoundingClientRect();
+    if (currentRect) {
+      setExplicitSize({ w: currentRect.width, h: currentRect.height });
+    }
+    setPhase('out');
+
+    const t1 = window.setTimeout(() => {
+      setDisplayedKey(variantKey);
+      setDisplayedVariant(latestVariantRef.current);
+      setPhase('morph');
+      // Wait for the new variant to mount in the hidden mirror, then
+      // pull the natural dimensions from there.
+      requestAnimationFrame(() => {
+        const newRect = measureRef.current?.getBoundingClientRect();
+        if (newRect && newRect.width > 0 && newRect.height > 0) {
+          setExplicitSize({ w: newRect.width, h: newRect.height });
+        }
+      });
+    }, TOOLBAR_MORPH_OUT_MS);
+
+    const t2 = window.setTimeout(() => {
+      setPhase('in');
+    }, TOOLBAR_MORPH_OUT_MS + TOOLBAR_MORPH_RESIZE_MS);
+
+    const t3 = window.setTimeout(() => {
+      setPhase('idle');
+      setExplicitSize(null);
+    }, TOOLBAR_MORPH_OUT_MS + TOOLBAR_MORPH_RESIZE_MS + TOOLBAR_MORPH_IN_MS);
+
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+      window.clearTimeout(t3);
+    };
+  }, [variantKey]);
+
+  const isContentHidden = phase === 'out' || phase === 'morph';
+  // We transition the shell's visual properties (color, border, shadow,
+  // radius) so that e.g. the pill border-radius can change between
+  // variants without an abrupt switch.
+  const shellTransition = `background-color ${TOOLBAR_MORPH_RESIZE_MS}ms ${TOOLBAR_MORPH_EASE}, background ${TOOLBAR_MORPH_RESIZE_MS}ms ${TOOLBAR_MORPH_EASE}, border-color ${TOOLBAR_MORPH_RESIZE_MS}ms ${TOOLBAR_MORPH_EASE}, box-shadow ${TOOLBAR_MORPH_RESIZE_MS}ms ${TOOLBAR_MORPH_EASE}, border-radius ${TOOLBAR_MORPH_RESIZE_MS}ms ${TOOLBAR_MORPH_EASE}`;
+  const sizeTransition = `width ${TOOLBAR_MORPH_RESIZE_MS}ms ${TOOLBAR_MORPH_EASE}, height ${TOOLBAR_MORPH_RESIZE_MS}ms ${TOOLBAR_MORPH_EASE}`;
+  const contentOpacityTransition = `opacity ${
+    phase === 'out' ? TOOLBAR_MORPH_OUT_MS : TOOLBAR_MORPH_IN_MS
+  }ms ease`;
+
+  return (
+    <>
+      {/*
+        The morph wrapper IS the toolbar shell — putting the visual
+        styling here avoids an extra nesting layer that was both
+        clipping the shell's drop shadow (when the outer had
+        `overflow: hidden`) and breaking percentage sizing of the
+        content layer once the wrapper relaxed back to `auto`.
+
+        Content fades via a `& > *` opacity selector applied to direct
+        children of the shell, so the shell's own bg/border/shadow stays
+        at full opacity throughout the animation while the buttons /
+        textarea / etc. inside it fade out → morph → fade in.
+      */}
+      <Box
+        ref={containerRef}
+        sx={[
+          displayedVariant.shellSx as SxProps<Theme>,
+          {
+            width: explicitSize ? `${explicitSize.w}px` : undefined,
+            height: explicitSize ? `${explicitSize.h}px` : undefined,
+            transition: `${sizeTransition}, ${shellTransition}`,
+            willChange: 'width, height, background-color, border-color, box-shadow, border-radius',
+            '& > *': {
+              opacity: isContentHidden ? 0 : 1,
+              transition: contentOpacityTransition,
+              willChange: 'opacity',
+            },
+          },
+        ] as SxProps<Theme>}
+      >
+        {displayedVariant.content}
+      </Box>
+      {typeof document !== 'undefined' &&
+        createPortal(
+          <Box
+            ref={measureRef}
+            aria-hidden
+            sx={[
+              variant.shellSx as SxProps<Theme>,
+              {
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                visibility: 'hidden',
+                pointerEvents: 'none',
+                zIndex: -1,
+              },
+            ] as SxProps<Theme>}
+          >
+            {variant.content}
+          </Box>,
+          document.body,
+        )}
+    </>
+  );
+}
+
 /** Floating toolbar at bottom center: Scribe, AI Check, Dictate | view/edit toggle. */
 function VisitNoteFloatingToolbar({
   mode,
@@ -1089,22 +1288,86 @@ function VisitNoteFloatingToolbar({
     ? '0 8px 28px rgba(0,0,0,0.25)'
     : `0 8px 28px ${alpha(theme.palette.primary.main, 0.18)}`;
 
+  const modeToggleTrackBg = isDark ? alpha(theme.palette.common.white, 0.08) : theme.palette.grey[200];
+
+  // Shared sticky-bottom anchor used by every toolbar variant so they all
+  // live in the same spot on screen regardless of which one is rendering.
+  const stickyAnchorSx = {
+    position: 'sticky',
+    bottom: 12,
+    left: 0,
+    right: 0,
+    display: 'flex',
+    justifyContent: 'center',
+    zIndex: 10,
+  } as const;
+
+  // Pill-shape shared by the signed and addendum-editing variants so they
+  // visually match the dimensions of the normal note toolbar.
+  const pillSx = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 1.5,
+    borderRadius: '9999px',
+    border: '1px solid',
+    borderColor: toolbarBorder,
+    bgcolor: toolbarBg,
+    boxShadow: `${toolbarShadow}, ${toolbarGlow}`,
+    pl: 0.5,
+    pr: 0.5,
+    py: 0.5,
+    minWidth: 480,
+  } as const;
+
+  // Shared rounded-rect shell used by the toolbar variants whose visual
+  // footprint matches the open-note bar (signed-locked, signed-editing,
+  // open). The morph wrapper CSS-transitions between these shells so
+  // e.g. signed → open feels like the same physical bar resizing. We
+  // intentionally use the same 24px corner radius as the addendum-reason
+  // and recording cards so transitions between any pair of variants
+  // morph the width without a jarring radius jump as well.
+  const pillShellSx: SxProps<Theme> = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: 1.5,
+    borderRadius: 3,
+    border: '1px solid',
+    borderColor: toolbarBorder,
+    bgcolor: toolbarBg,
+    boxShadow: `${toolbarShadow}, ${toolbarGlow}`,
+    pl: 0.5,
+    pr: 0.5,
+    py: 0.5,
+  };
+
+  // Single keying scheme so the morph wrapper knows when to fire its
+  // out → resize → in animation. Anything that changes the visible
+  // toolbar variant becomes its own key. Things that just tweak the
+  // visible content within a variant (mode toggle, recording timer)
+  // do NOT change the key, so they update in place.
+  let variantKey: string;
+  let variant: ToolbarVariant;
+
   if (isProcessing || isRecordingActive) {
+    variantKey = isProcessing
+      ? 'recording-processing'
+      : `recording-${scribeRecordingState ?? 'recording'}`;
     const gradientBg = `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`;
-    return (
-      <Box sx={{ position: 'sticky', bottom: 12, left: 0, right: 0, display: 'flex', justifyContent: 'center', zIndex: 10 }}>
-        <Box
-          sx={{
-            display: 'inline-flex',
-            flexDirection: 'column',
-            alignItems: 'stretch',
-            borderRadius: 3,
-            minWidth: 320,
-            overflow: 'hidden',
-            background: gradientBg,
-            boxShadow: 3,
-          }}
-        >
+    variant = {
+      shellSx: {
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'stretch',
+        borderRadius: 3,
+        minWidth: 320,
+        border: '1px solid transparent',
+        background: gradientBg,
+        boxShadow: 3,
+        overflow: 'hidden',
+      },
+      content: (
+        <>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 1.5, py: 0.75 }}>
             <Typography variant="caption" sx={{ color: 'primary.contrastText', fontWeight: 600 }}>
               {isProcessing ? 'Processing...' : 'Recording'}
@@ -1176,47 +1439,15 @@ function VisitNoteFloatingToolbar({
               </Box>
             </>
           )}
-        </Box>
-      </Box>
-    );
-  }
-
-  const modeToggleTrackBg = isDark ? alpha(theme.palette.common.white, 0.08) : theme.palette.grey[200];
-
-  // Shared sticky-bottom anchor used by every toolbar variant so they all
-  // live in the same spot on screen regardless of which one is rendering.
-  const stickyAnchorSx = {
-    position: 'sticky',
-    bottom: 12,
-    left: 0,
-    right: 0,
-    display: 'flex',
-    justifyContent: 'center',
-    zIndex: 10,
-  } as const;
-
-  // Pill-shape shared by the signed and addendum-editing variants so they
-  // visually match the dimensions of the normal note toolbar.
-  const pillSx = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 1.5,
-    borderRadius: '9999px',
-    border: '1px solid',
-    borderColor: toolbarBorder,
-    bgcolor: toolbarBg,
-    boxShadow: `${toolbarShadow}, ${toolbarGlow}`,
-    pl: 0.5,
-    pr: 0.5,
-    py: 0.5,
-    minWidth: 480,
-  } as const;
-
-  // Signed, no addendum in progress → "This note has been signed." pill.
-  if (signStatus === 'signed' && addendumState === 'none') {
-    return (
-      <Box sx={stickyAnchorSx}>
-        <Box sx={pillSx}>
+        </>
+      ),
+    };
+  } else if (signStatus === 'signed' && addendumState === 'none') {
+    variantKey = 'signed-locked';
+    variant = {
+      shellSx: { ...pillShellSx, minWidth: 480 },
+      content: (
+        <>
           <Box
             sx={{
               width: 36,
@@ -1228,6 +1459,7 @@ function VisitNoteFloatingToolbar({
               justifyContent: 'center',
               color: 'text.secondary',
               flexShrink: 0,
+              ml: '4px',
             }}
           >
             <LockOutlined sx={{ fontSize: 20 }} />
@@ -1262,30 +1494,27 @@ function VisitNoteFloatingToolbar({
           >
             Add Addendum
           </Button>
-        </Box>
-      </Box>
-    );
-  }
-
-  // Addendum reason prompt — wider/taller card with a textarea + actions.
-  if (signStatus === 'signed' && addendumState === 'reasonPrompt') {
+        </>
+      ),
+    };
+  } else if (signStatus === 'signed' && addendumState === 'reasonPrompt') {
+    variantKey = 'signed-reason';
     const reasonProvided = addendumReason.trim().length > 0;
-    return (
-      <Box sx={stickyAnchorSx}>
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 1.5,
-            width: 'min(720px, calc(100% - 32px))',
-            borderRadius: 3,
-            border: '1px solid',
-            borderColor: toolbarBorder,
-            bgcolor: toolbarBg,
-            boxShadow: `${toolbarShadow}, ${toolbarGlow}`,
-            p: 2,
-          }}
-        >
+    variant = {
+      shellSx: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 1.5,
+        width: 'min(720px, calc(100vw - 32px))',
+        borderRadius: 3,
+        border: '1px solid',
+        borderColor: toolbarBorder,
+        bgcolor: toolbarBg,
+        boxShadow: `${toolbarShadow}, ${toolbarGlow}`,
+        p: 2,
+      },
+      content: (
+        <>
           <Typography sx={{ fontSize: 15, fontWeight: 700, color: 'text.primary' }}>
             To proceed, provide an addendum reason.
           </Typography>
@@ -1373,16 +1602,15 @@ function VisitNoteFloatingToolbar({
               Proceed
             </Button>
           </Box>
-        </Box>
-      </Box>
-    );
-  }
-
-  // Addendum editing → "Finalize changes…" pill with Finalize & Re-sign.
-  if (signStatus === 'signed' && addendumState === 'editing') {
-    return (
-      <Box sx={stickyAnchorSx}>
-        <Box sx={pillSx}>
+        </>
+      ),
+    };
+  } else if (signStatus === 'signed' && addendumState === 'editing') {
+    variantKey = 'signed-editing';
+    variant = {
+      shellSx: { ...pillShellSx, minWidth: 480 },
+      content: (
+        <>
           <Typography
             sx={{
               flex: 1,
@@ -1416,185 +1644,179 @@ function VisitNoteFloatingToolbar({
           >
             Finalize & Re-sign
           </Button>
-        </Box>
-      </Box>
-    );
+        </>
+      ),
+    };
+  } else {
+    variantKey = 'open';
+    variant = {
+      shellSx: { ...pillShellSx, gap: 1 },
+      content: (
+        <>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'nowrap' }}>
+            {/* Scribe (primary, left) */}
+            <Button
+              variant="contained"
+              color="primary"
+              size="small"
+              className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
+              onClick={onScribeClick}
+              startIcon={<ScribeIcon sx={{ fontSize: 20, color: 'primary.contrastText' }} />}
+              sx={{
+                height: 44,
+                minHeight: 44,
+                py: 0,
+                px: 2,
+                borderRadius: '9999px',
+                fontSize: 14,
+                fontWeight: 600,
+                textTransform: 'none',
+                minWidth: 0,
+                boxShadow: 'none',
+                '&:hover': { boxShadow: 'none', bgcolor: 'primary.dark' },
+                ...(isScribePanelOpen && { boxShadow: 'none' }),
+              }}
+            >
+              Scribe
+            </Button>
+
+            {/* AI Check */}
+            <Button
+              variant="text"
+              size="small"
+              className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
+              onClick={onAICheckClick}
+              startIcon={<AICheckIcon sx={{ fontSize: 24, color: 'primary.main' }} />}
+              endIcon={
+                aiCheckSuggestionCount && aiCheckSuggestionCount > 0 ? (
+                  <Box
+                    component="span"
+                    sx={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      height: 18,
+                      minWidth: 18,
+                      px: 0.5,
+                      borderRadius: '9999px',
+                      bgcolor: (t) => alpha(t.palette.warning.main, 0.16),
+                      color: 'warning.dark',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      lineHeight: 1,
+                      verticalAlign: 'middle',
+                    }}
+                  >
+                    {aiCheckSuggestionCount}
+                  </Box>
+                ) : undefined
+              }
+              sx={{
+                height: 44,
+                minHeight: 44,
+                py: 0,
+                px: 1.5,
+                borderRadius: '9999px',
+                color: 'primary.main',
+                fontSize: 14,
+                fontWeight: 500,
+                textTransform: 'none',
+                minWidth: 0,
+                width: 'auto',
+                flexShrink: 0,
+                whiteSpace: 'nowrap',
+                '&:hover': { bgcolor: 'action.hover' },
+                '& .MuiButton-endIcon > *:nth-of-type(1)': { fontSize: 12 },
+              }}
+            >
+              AI Check
+            </Button>
+
+            {/* Dictate */}
+            <Button
+              variant="text"
+              size="small"
+              className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
+              startIcon={<DictateIcon sx={{ fontSize: 20, color: 'primary.main' }} />}
+              sx={{
+                height: 44,
+                minHeight: 44,
+                py: 0,
+                px: 1.5,
+                borderRadius: '9999px',
+                color: 'primary.main',
+                fontSize: 14,
+                fontWeight: 500,
+                textTransform: 'none',
+                minWidth: 0,
+                '&:hover': { bgcolor: 'action.hover' },
+              }}
+            >
+              Dictate
+            </Button>
+          </Box>
+
+          <Box sx={{ width: '1px', height: 24, flexShrink: 0, bgcolor: 'divider', borderRadius: 1 }} role="separator" />
+
+          {/* View (read) / Edit segmented control */}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+              borderRadius: '9999px',
+              bgcolor: modeToggleTrackBg,
+              p: 0.5,
+              flexShrink: 0,
+            }}
+          >
+            <IconButton
+              size="small"
+              onClick={() => onModeChange('read')}
+              aria-label="View note"
+              title="View"
+              className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
+              aria-pressed={mode === 'read'}
+              sx={{
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                color: mode === 'read' ? 'primary.main' : 'text.secondary',
+                bgcolor: mode === 'read' ? 'background.paper' : 'transparent',
+                boxShadow: mode === 'read' ? (isDark ? '0 1px 4px rgba(0,0,0,0.45)' : '0 1px 4px rgba(0,0,0,0.12)') : 'none',
+                '&:hover': { bgcolor: mode === 'read' ? 'background.paper' : 'action.hover' },
+              }}
+            >
+              <VisibilityOutlined sx={{ fontSize: 20 }} />
+            </IconButton>
+            <IconButton
+              size="small"
+              onClick={() => onModeChange('edit')}
+              aria-label="Edit note"
+              title="Edit"
+              className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
+              aria-pressed={mode === 'edit'}
+              sx={{
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                color: mode === 'edit' ? 'primary.main' : 'text.secondary',
+                bgcolor: mode === 'edit' ? 'background.paper' : 'transparent',
+                boxShadow: mode === 'edit' ? (isDark ? '0 1px 4px rgba(0,0,0,0.45)' : '0 1px 4px rgba(0,0,0,0.12)') : 'none',
+                '&:hover': { bgcolor: mode === 'edit' ? 'background.paper' : 'action.hover' },
+              }}
+            >
+              <EditOutlined sx={{ fontSize: 20 }} />
+            </IconButton>
+          </Box>
+        </>
+      ),
+    };
   }
 
   return (
     <Box sx={stickyAnchorSx}>
-      <Box
-        sx={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 1,
-          borderRadius: '9999px',
-          border: '1px solid',
-          borderColor: toolbarBorder,
-          bgcolor: toolbarBg,
-          boxShadow: `${toolbarShadow}, ${toolbarGlow}`,
-          pl: 0.5,
-          pr: 0.5,
-          py: 0.5,
-        }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'nowrap' }}>
-          {/* Scribe (primary, left) */}
-          <Button
-            variant="contained"
-            color="primary"
-            size="small"
-            className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
-            onClick={onScribeClick}
-            startIcon={<ScribeIcon sx={{ fontSize: 20, color: 'primary.contrastText' }} />}
-            sx={{
-              height: 44,
-              minHeight: 44,
-              py: 0,
-              px: 2,
-              borderRadius: '9999px',
-              fontSize: 14,
-              fontWeight: 600,
-              textTransform: 'none',
-              minWidth: 0,
-              boxShadow: 'none',
-              '&:hover': { boxShadow: 'none', bgcolor: 'primary.dark' },
-              ...(isScribePanelOpen && { boxShadow: 'none' }),
-            }}
-          >
-            Scribe
-          </Button>
-
-          {/* AI Check */}
-          <Button
-            variant="text"
-            size="small"
-            className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
-            onClick={onAICheckClick}
-            startIcon={<AICheckIcon sx={{ fontSize: 24, color: 'primary.main' }} />}
-            endIcon={
-              aiCheckSuggestionCount && aiCheckSuggestionCount > 0 ? (
-                <Box
-                  component="span"
-                  sx={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    height: 18,
-                    minWidth: 18,
-                    px: 0.5,
-                    borderRadius: '9999px',
-                    bgcolor: (theme) => alpha(theme.palette.warning.main, 0.16),
-                    color: 'warning.dark',
-                    fontSize: 12,
-                    fontWeight: 700,
-                    lineHeight: 1,
-                    verticalAlign: 'middle',
-                  }}
-                >
-                  {aiCheckSuggestionCount}
-                </Box>
-              ) : undefined
-            }
-            sx={{
-              height: 44,
-              minHeight: 44,
-              py: 0,
-              px: 1.5,
-              borderRadius: '9999px',
-              color: 'primary.main',
-              fontSize: 14,
-              fontWeight: 500,
-              textTransform: 'none',
-              minWidth: 0,
-              width: 'auto',
-              flexShrink: 0,
-              whiteSpace: 'nowrap',
-              '&:hover': { bgcolor: 'action.hover' },
-              '& .MuiButton-endIcon > *:nth-of-type(1)': { fontSize: 12 },
-            }}
-          >
-            AI Check
-          </Button>
-
-          {/* Dictate */}
-          <Button
-            variant="text"
-            size="small"
-            className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
-            startIcon={<DictateIcon sx={{ fontSize: 20, color: 'primary.main' }} />}
-            sx={{
-              height: 44,
-              minHeight: 44,
-              py: 0,
-              px: 1.5,
-              borderRadius: '9999px',
-              color: 'primary.main',
-              fontSize: 14,
-              fontWeight: 500,
-              textTransform: 'none',
-              minWidth: 0,
-              '&:hover': { bgcolor: 'action.hover' },
-            }}
-          >
-            Dictate
-          </Button>
-        </Box>
-
-        <Box sx={{ width: '1px', height: 24, flexShrink: 0, bgcolor: 'divider', borderRadius: 1 }} role="separator" />
-
-        {/* View (read) / Edit segmented control */}
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.5,
-            borderRadius: '9999px',
-            bgcolor: modeToggleTrackBg,
-            p: 0.5,
-            flexShrink: 0,
-          }}
-        >
-          <IconButton
-            size="small"
-            onClick={() => onModeChange('read')}
-            aria-label="View note"
-            title="View"
-            className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
-            aria-pressed={mode === 'read'}
-            sx={{
-              width: 36,
-              height: 36,
-              borderRadius: '50%',
-              color: mode === 'read' ? 'primary.main' : 'text.secondary',
-              bgcolor: mode === 'read' ? 'background.paper' : 'transparent',
-              boxShadow: mode === 'read' ? (isDark ? '0 1px 4px rgba(0,0,0,0.45)' : '0 1px 4px rgba(0,0,0,0.12)') : 'none',
-              '&:hover': { bgcolor: mode === 'read' ? 'background.paper' : 'action.hover' },
-            }}
-          >
-            <VisibilityOutlined sx={{ fontSize: 20 }} />
-          </IconButton>
-          <IconButton
-            size="small"
-            onClick={() => onModeChange('edit')}
-            aria-label="Edit note"
-            title="Edit"
-            className={VISIT_NOTE_BUTTON_EXEMPT_CLASS}
-            aria-pressed={mode === 'edit'}
-            sx={{
-              width: 36,
-              height: 36,
-              borderRadius: '50%',
-              color: mode === 'edit' ? 'primary.main' : 'text.secondary',
-              bgcolor: mode === 'edit' ? 'background.paper' : 'transparent',
-              boxShadow: mode === 'edit' ? (isDark ? '0 1px 4px rgba(0,0,0,0.45)' : '0 1px 4px rgba(0,0,0,0.12)') : 'none',
-              '&:hover': { bgcolor: mode === 'edit' ? 'background.paper' : 'action.hover' },
-            }}
-          >
-            <EditOutlined sx={{ fontSize: 20 }} />
-          </IconButton>
-        </Box>
-      </Box>
+      <ToolbarMorph variantKey={variantKey} variant={variant} />
     </Box>
   );
 }
