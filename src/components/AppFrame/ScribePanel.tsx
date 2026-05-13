@@ -1,4 +1,5 @@
 import { useState, type ComponentProps, type Dispatch, type ReactNode, type SetStateAction } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
   Typography,
@@ -319,6 +320,7 @@ export function ScribePanel({
   onClose,
 }: ScribePanelProps) {
   const { markChartSubmittedForPatientId } = useAppScribe();
+  const navigate = useNavigate();
   const [scheduleDate, setScheduleDate] = useState<Dayjs>(() => dayjs().startOf('day'));
   const [datePickerAnchor, setDatePickerAnchor] = useState<HTMLElement | null>(null);
   const datePickerOpen = Boolean(datePickerAnchor);
@@ -482,6 +484,12 @@ export function ScribePanel({
             markChartSubmittedForPatientId(selectedVisit.patientId);
             onActiveRecordingChange(null);
             onSelectedVisitChange(null);
+            // Send the provider to the patient's visit note for this visit.
+            // PatientProfilePage handles ?openNote=1 idempotently — if the
+            // note tab is already open it just activates it, otherwise it
+            // opens a fresh tab — so this is safe to fire from anywhere
+            // (home page, calendar, other patient's profile, etc.).
+            navigate(`/patients/${selectedVisit.patientId}?openNote=1`);
           }}
           onDiscardPostProcessed={() => {
             onActiveRecordingChange(null);

@@ -416,21 +416,31 @@ export function PatientProfilePage({
     return () => cancelAnimationFrame(frame);
   }, [overflowTabVisible, overflowTabFadeIn]);
 
-  // When navigated from home page "Open Note" (e.g. ?openNote=1), open this patient's visit note
+  // When navigated from elsewhere with ?openNote=1 (home page "Open Note",
+  // Scribe "Submit to Chart", etc.), open this patient's visit note. If a tab
+  // for the target appointment is already open, we activate it instead of
+  // appending a duplicate, so callers can fire this navigation safely.
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     if (params.get('openNote') !== '1') return;
     const appointments = getAppointmentsForPatient(patient.id);
     const toOpen = appointments.find((a) => a.status === 'Complete') ?? appointments[0];
-    if (toOpen) {
-      navigate(location.pathname, { replace: true });
+    if (!toOpen) return;
+
+    navigate(location.pathname, { replace: true });
+    setOpenVisitNotes((prev) => {
+      const existing = prev.find((n) => n.appointment.id === toOpen.id);
+      if (existing) {
+        setActiveVisitNoteId(existing.id);
+        return prev;
+      }
       const id = `visit-note-${toOpen.id}-${Date.now()}`;
-      setOpenVisitNotes((prev) => [...prev, { id, appointment: toOpen }]);
       setActiveVisitNoteId(id);
       setLastOpenedNoteId(id);
       if (openNoteAnimationTimerRef.current) clearTimeout(openNoteAnimationTimerRef.current);
       openNoteAnimationTimerRef.current = setTimeout(() => setLastOpenedNoteId(null), 220);
-    }
+      return [...prev, { id, appointment: toOpen }];
+    });
   }, [location.search, location.pathname, patient.id, navigate]);
 
   const secondaryPanelOpen = secondaryPanelMode !== null;
