@@ -25,7 +25,8 @@ import { SpotlightSearch } from './SpotlightSearch';
 import { useAccent } from '../../theme/AppThemeProvider';
 import type { ActiveScribeRecordingSession } from './scribeRecordingSession';
 import { getScribeVisitForPatientId, type MockScribeVisit } from '../../data/mockTodaysVisits';
-import { AppScribeProvider } from './AppScribeContext';
+import { MOCK_PATIENTS } from '../../data/mockPatients';
+import { AppScribeProvider, type ScribePendingOrderTask } from './AppScribeContext';
 import { AppAssistantProvider, type AppAssistantContextValue } from './AppAssistantContext';
 import { AICheckActionsProvider } from './AICheckActionsContext';
 import type { AICheckReport, SeededAssistantChat } from './AICheckChat';
@@ -273,6 +274,12 @@ export function AppFrame({ children }: AppFrameProps) {
   const [submittedScribeChartPatientIds, setSubmittedScribeChartPatientIds] = useState<
     ReadonlySet<string>
   >(() => new Set());
+  // Pending scribe-captured orders awaiting provider approve/decline. Surfaces
+  // in the home page "Tasks" list once the provider submits a scribe output
+  // to the chart so they can confirm orders staged during the visit.
+  const [scribePendingOrderTasks, setScribePendingOrderTasks] = useState<
+    readonly ScribePendingOrderTask[]
+  >([]);
   const isChartSubmittedForPatientId = useCallback(
     (patientId: string) => submittedScribeChartPatientIds.has(patientId),
     [submittedScribeChartPatientIds],
@@ -284,6 +291,30 @@ export function AppFrame({ children }: AppFrameProps) {
       next.add(patientId);
       return next;
     });
+    // When the scribe submits to chart, the X-ray order it staged during the
+    // visit needs the provider's approval — surface it as a Task. Dedup by
+    // patient id so re-submitting the same chart doesn't pile up tasks.
+    setScribePendingOrderTasks((prev) => {
+      if (prev.some((t) => t.patientId === patientId)) return prev;
+      const patient = MOCK_PATIENTS.find((p) => p.id === patientId);
+      if (!patient) return prev;
+      const task: ScribePendingOrderTask = {
+        id: `scribe-order-${patientId}-${Date.now()}`,
+        patientId,
+        patientName: patient.fullName,
+        orderName: 'Radiologic examination, knee; 3 views',
+        orderProvider: 'X-rays Delight LLC.',
+        visitDateLabel: 'Today',
+        createdAt: Date.now(),
+      };
+      return [...prev, task];
+    });
+  }, []);
+  const approveScribeOrderTask = useCallback((id: string) => {
+    setScribePendingOrderTasks((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+  const declineScribeOrderTask = useCallback((id: string) => {
+    setScribePendingOrderTasks((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
   useEffect(() => {
@@ -351,6 +382,9 @@ export function AppFrame({ children }: AppFrameProps) {
       globalScribeSelectedPatientId: scribeSelectedVisit?.patientId ?? null,
       isChartSubmittedForPatientId,
       markChartSubmittedForPatientId,
+      scribePendingOrderTasks,
+      approveScribeOrderTask,
+      declineScribeOrderTask,
     }),
     [
       openScribeForPatientId,
@@ -359,6 +393,9 @@ export function AppFrame({ children }: AppFrameProps) {
       scribeSelectedVisit?.patientId,
       isChartSubmittedForPatientId,
       markChartSubmittedForPatientId,
+      scribePendingOrderTasks,
+      approveScribeOrderTask,
+      declineScribeOrderTask,
     ],
   );
 

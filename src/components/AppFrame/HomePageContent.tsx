@@ -46,6 +46,9 @@ import {
 import { VisitNoteContent } from './VisitNoteContent';
 import { ThingsToReviewAlertItem } from './ThingsToReviewAlertItem';
 import { AICheckIcon } from '../icons';
+import { useAppScribe, type ScribePendingOrderTask } from './AppScribeContext';
+import CheckOutlined from '@mui/icons-material/CheckOutlined';
+import CloseOutlined from '@mui/icons-material/CloseOutlined';
 
 // Icons matching global nav: Patients (person/group), Messages (chat). Custom: Notes (signature), Tasks (checklist). Settings at bottom.
 function PatientsNavIcon(props: React.ComponentProps<typeof SvgIcon>) {
@@ -123,11 +126,41 @@ const MOCK_NOTES = [
   { id: 'n3', patient: 'Emily Davis', date: 'Aug 7', template: 'Annual Physical' },
 ];
 
-const MOCK_TASKS = [
+interface MockTask {
+  id: string;
+  title: string;
+  due: string;
+}
+
+const MOCK_TASKS: MockTask[] = [
   { id: 't1', title: 'Review lab results', due: 'Today' },
   { id: 't2', title: 'Call patient re: medication', due: 'Today' },
   { id: 't3', title: 'Sign off on referral', due: 'Tomorrow' },
 ];
+
+/** Unified Task row used by the home page Tasks list + detail panel. */
+type HomeTask =
+  | { kind: 'mock'; id: string; title: string; due: string }
+  | {
+      kind: 'scribe-order';
+      id: string;
+      title: string;
+      due: string;
+      order: ScribePendingOrderTask;
+    };
+
+function buildHomeTasks(scribeOrders: readonly ScribePendingOrderTask[]): HomeTask[] {
+  const scribeTasks: HomeTask[] = scribeOrders.map((order) => ({
+    kind: 'scribe-order',
+    id: order.id,
+    title: `Approve order: ${order.orderName}`,
+    due: `${order.patientName} · ${order.visitDateLabel}`,
+    order,
+  }));
+  const mockTasks: HomeTask[] = MOCK_TASKS.map((t) => ({ kind: 'mock', ...t }));
+  // Scribe-captured orders appear first — provider just finished the visit.
+  return [...scribeTasks, ...mockTasks];
+}
 
 // ----- Left panel content per tab -----
 
@@ -433,9 +466,11 @@ function NotesListPanel({
 }
 
 function TasksListPanel({
+  tasks,
   selectedId,
   onSelect,
 }: {
+  tasks: HomeTask[];
   selectedId: string | null;
   onSelect: (id: string) => void;
 }) {
@@ -445,27 +480,38 @@ function TasksListPanel({
         <Typography sx={{ fontSize: 12, fontWeight: 600, color: 'text.primary' }}>
           Outstanding tasks
         </Typography>
-        <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.25 }}>{MOCK_TASKS.length} assigned to you</Typography>
+        <Typography sx={{ fontSize: 11, color: 'text.secondary', mt: 0.25 }}>
+          {tasks.length} assigned to you
+        </Typography>
       </Box>
       <List dense disablePadding sx={{ flex: 1, overflow: 'auto', py: 0.5 }}>
-        {MOCK_TASKS.map((t) => (
-          <ListItemButton
-            key={t.id}
-            selected={selectedId === t.id}
-            onClick={() => onSelect(t.id)}
-            sx={{ borderRadius: 1, mx: 0.5, mb: 0.25 }}
-          >
-            <ListItemIcon sx={{ minWidth: 32 }}>
-              <TaskAltOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
-            </ListItemIcon>
-            <ListItemText
-              primary={t.title}
-              secondary={t.due}
-              primaryTypographyProps={{ fontSize: 13, fontWeight: 500 }}
-              secondaryTypographyProps={{ fontSize: 11 }}
-            />
-          </ListItemButton>
-        ))}
+        {tasks.map((t) => {
+          const isScribeOrder = t.kind === 'scribe-order';
+          const Icon = isScribeOrder ? ImageOutlined : TaskAltOutlined;
+          return (
+            <ListItemButton
+              key={t.id}
+              selected={selectedId === t.id}
+              onClick={() => onSelect(t.id)}
+              sx={{ borderRadius: 1, mx: 0.5, mb: 0.25 }}
+            >
+              <ListItemIcon sx={{ minWidth: 32 }}>
+                <Icon
+                  sx={{
+                    fontSize: 16,
+                    color: isScribeOrder ? 'primary.main' : 'text.secondary',
+                  }}
+                />
+              </ListItemIcon>
+              <ListItemText
+                primary={t.title}
+                secondary={t.due}
+                primaryTypographyProps={{ fontSize: 13, fontWeight: 500 }}
+                secondaryTypographyProps={{ fontSize: 11 }}
+              />
+            </ListItemButton>
+          );
+        })}
       </List>
     </Box>
   );
@@ -692,7 +738,7 @@ function AdditionalInfoDataTable({ columns, rows }: { columns: readonly string[]
   );
 }
 
-function getDaySummaryStats() {
+function getDaySummaryStats(tasksOutstanding: number) {
   const patientsToday = TODAYS_PATIENTS.length;
   const newLabsImages = TODAYS_PATIENTS.reduce(
     (sum, p) => sum + (p.hasNewLabs ? 1 : 0) + (p.hasNewImaging ? 1 : 0),
@@ -703,7 +749,7 @@ function getDaySummaryStats() {
     patientsToday,
     notesToSign: MOCK_NOTES.length,
     newLabsImages,
-    tasksOutstanding: MOCK_TASKS.length,
+    tasksOutstanding,
     messagesUnread,
   };
 }
@@ -1198,19 +1244,109 @@ function NotePreviewPanel({ noteId }: { noteId: string | null }) {
   );
 }
 
-function TaskDetailPanel({ taskId }: { taskId: string | null }) {
-  if (!taskId) {
+function TaskDetailPanel({
+  task,
+  onApproveScribeOrder,
+  onDeclineScribeOrder,
+}: {
+  task: HomeTask | null;
+  onApproveScribeOrder: (id: string) => void;
+  onDeclineScribeOrder: (id: string) => void;
+}) {
+  if (!task) {
     return (
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'text.secondary', fontSize: 13 }}>
         Select a task to view details
       </Box>
     );
   }
+
+  if (task.kind === 'scribe-order') {
+    const { order } = task;
+    return (
+      <Box sx={{ p: 3, overflow: 'auto', height: '100%', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+        <Box>
+          <Typography
+            variant="caption"
+            sx={{ fontWeight: 700, color: 'primary.main', textTransform: 'uppercase', letterSpacing: 0.5 }}
+          >
+            Scribe-captured order · awaiting approval
+          </Typography>
+          <Typography sx={{ fontSize: 20, fontWeight: 700, mt: 0.5 }}>
+            {order.orderName}
+          </Typography>
+          <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.5 }}>
+            For{' '}
+            <Box component={Link} to={`/patients/${order.patientId}`} sx={{ color: 'primary.main', fontWeight: 600 }}>
+              {order.patientName}
+            </Box>{' '}
+            · {order.visitDateLabel}
+          </Typography>
+        </Box>
+
+        <Box
+          sx={{
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 2,
+            p: 2,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 1.25,
+            bgcolor: 'background.paper',
+          }}
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
+            <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Order</Typography>
+            <Typography sx={{ fontSize: 13, fontWeight: 500, textAlign: 'right' }}>{order.orderName}</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
+            <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Fulfillment</Typography>
+            <Typography sx={{ fontSize: 13, fontWeight: 500, textAlign: 'right' }}>{order.orderProvider}</Typography>
+          </Box>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
+            <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Source</Typography>
+            <Typography sx={{ fontSize: 13, fontWeight: 500, textAlign: 'right' }}>Scribe — staged during visit</Typography>
+          </Box>
+        </Box>
+
+        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<CheckOutlined />}
+            onClick={() => onApproveScribeOrder(task.id)}
+            sx={{ textTransform: 'none', fontWeight: 600, borderRadius: '8px' }}
+          >
+            Approve order
+          </Button>
+          <Button
+            variant="outlined"
+            color="inherit"
+            startIcon={<CloseOutlined />}
+            onClick={() => onDeclineScribeOrder(task.id)}
+            sx={{ textTransform: 'none', fontWeight: 600, borderRadius: '8px' }}
+          >
+            Decline
+          </Button>
+          <Button
+            component={Link}
+            to={`/patients/${order.patientId}?openNote=1`}
+            variant="text"
+            startIcon={<ContentPasteOutlined />}
+            sx={{ textTransform: 'none', fontWeight: 500 }}
+          >
+            View visit note
+          </Button>
+        </Box>
+      </Box>
+    );
+  }
+
   return (
-    <Box sx={{ p: 2, overflow: 'auto' }}>
-      <Typography variant="body2" color="text.secondary">
-        Task details (placeholder). Task ID: {taskId}
-      </Typography>
+    <Box sx={{ p: 3, overflow: 'auto', height: '100%' }}>
+      <Typography sx={{ fontSize: 20, fontWeight: 700 }}>{task.title}</Typography>
+      <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.5 }}>{task.due}</Typography>
     </Box>
   );
 }
@@ -1334,6 +1470,9 @@ function getFirstChatId(): string | null {
 }
 
 export function HomePageContent() {
+  const { scribePendingOrderTasks, approveScribeOrderTask, declineScribeOrderTask } = useAppScribe();
+  const homeTasks = buildHomeTasks(scribePendingOrderTasks);
+
   const [activeTab, setActiveTab] = useState<HomeViewTab>('patients');
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(() =>
     getNextUpcomingTodayPatientId(TODAYS_PATIENTS)
@@ -1345,15 +1484,27 @@ export function HomePageContent() {
   useEffect(() => {
     if (activeTab === 'notes' && MOCK_NOTES.length > 0) {
       setSelectedNoteId(MOCK_NOTES[0].id);
-    } else if (activeTab === 'tasks' && MOCK_TASKS.length > 0) {
-      setSelectedTaskId(MOCK_TASKS[0].id);
+    } else if (activeTab === 'tasks' && homeTasks.length > 0) {
+      setSelectedTaskId(homeTasks[0].id);
     } else if (activeTab === 'messages') {
       setSelectedChatId(getFirstChatId());
     }
+    // homeTasks intentionally excluded — only auto-select on tab change so we
+    // don't yank the user's selection when a pending order is approved.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
+  // If the currently selected task disappears (approved/declined), fall back
+  // to the next task or clear the selection.
+  useEffect(() => {
+    if (activeTab !== 'tasks') return;
+    if (selectedTaskId && homeTasks.some((t) => t.id === selectedTaskId)) return;
+    setSelectedTaskId(homeTasks.length > 0 ? homeTasks[0].id : null);
+  }, [activeTab, selectedTaskId, homeTasks]);
+
   const selectedPatient = selectedPatientId ? TODAYS_PATIENTS.find((p) => p.id === selectedPatientId) ?? null : null;
-  const stats = getDaySummaryStats();
+  const selectedTask = homeTasks.find((t) => t.id === selectedTaskId) ?? null;
+  const stats = getDaySummaryStats(homeTasks.length);
 
   const tabCounts: Record<HomeViewTab, number> = {
     patients: stats.patientsToday,
@@ -1511,7 +1662,7 @@ export function HomePageContent() {
               <NotesListPanel selectedId={selectedNoteId} onSelect={setSelectedNoteId} />
             )}
             {activeTab === 'tasks' && (
-              <TasksListPanel selectedId={selectedTaskId} onSelect={setSelectedTaskId} />
+              <TasksListPanel tasks={homeTasks} selectedId={selectedTaskId} onSelect={setSelectedTaskId} />
             )}
             {activeTab === 'messages' && (
               <MessagesListPanel selectedId={selectedChatId} onSelect={setSelectedChatId} />
@@ -1532,7 +1683,13 @@ export function HomePageContent() {
           >
             {activeTab === 'patients' && <PatientVisitDetailPanel patient={selectedPatient} />}
             {activeTab === 'notes' && <NotePreviewPanel noteId={selectedNoteId} />}
-            {activeTab === 'tasks' && <TaskDetailPanel taskId={selectedTaskId} />}
+            {activeTab === 'tasks' && (
+              <TaskDetailPanel
+                task={selectedTask}
+                onApproveScribeOrder={approveScribeOrderTask}
+                onDeclineScribeOrder={declineScribeOrderTask}
+              />
+            )}
             {activeTab === 'messages' && <OpenChatPanel chatId={selectedChatId} />}
           </Box>
         </Box>
