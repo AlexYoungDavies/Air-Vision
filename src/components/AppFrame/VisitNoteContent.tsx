@@ -1302,23 +1302,6 @@ function VisitNoteFloatingToolbar({
     zIndex: 10,
   } as const;
 
-  // Pill-shape shared by the signed and addendum-editing variants so they
-  // visually match the dimensions of the normal note toolbar.
-  const pillSx = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 1.5,
-    borderRadius: '9999px',
-    border: '1px solid',
-    borderColor: toolbarBorder,
-    bgcolor: toolbarBg,
-    boxShadow: `${toolbarShadow}, ${toolbarGlow}`,
-    pl: 0.5,
-    pr: 0.5,
-    py: 0.5,
-    minWidth: 480,
-  } as const;
-
   // Shared rounded-rect shell used by the toolbar variants whose visual
   // footprint matches the open-note bar (signed-locked, signed-editing,
   // open). The morph wrapper CSS-transitions between these shells so
