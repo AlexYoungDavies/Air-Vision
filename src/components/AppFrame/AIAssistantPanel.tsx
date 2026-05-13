@@ -18,6 +18,7 @@ import {
   DEFAULT_ASSISTANT_SHORTCUTS,
   type AIAssistantShortcut,
 } from './assistantPanelShortcuts';
+import { END_OF_DAY_LABEL, getTodaysVisitsSummary } from '../../data/mockTodaysVisits';
 
 /** Matches `AppFrame` side panel width. */
 const PANEL_WIDTH = 280;
@@ -189,8 +190,63 @@ function buildInitialHistory(): ChatHistoryItem[] {
   ];
 }
 
-const AI_DAY_OVERVIEW =
-  "Here's what's worth knowing about today's visits: several patients on your schedule have open pre-visit tasks or results to review before you see them.\n\nHeads-up: your last appointment is a New Patient visit. With the booked duration, it runs about 15 minutes past your published end-of-day availability—worth adjusting that block or your rules if you need to protect your end time.";
+function formatTypeBreakdown(typeCounts: ReturnType<typeof getTodaysVisitsSummary>['typeCounts']): string {
+  const labelFor: Record<keyof typeof typeCounts, { singular: string; plural: string }> = {
+    'Follow-up Visit': { singular: 'follow-up', plural: 'follow-ups' },
+    'Post-op Visit': { singular: 'post-op', plural: 'post-ops' },
+    'Initial Consultation': { singular: 'initial consultation', plural: 'initial consultations' },
+    'New Patient': { singular: 'new patient visit', plural: 'new patient visits' },
+  };
+  const parts: string[] = [];
+  (['Follow-up Visit', 'Post-op Visit', 'Initial Consultation', 'New Patient'] as const).forEach((key) => {
+    const n = typeCounts[key];
+    if (n > 0) {
+      const label = n === 1 ? labelFor[key].singular : labelFor[key].plural;
+      parts.push(`${n} ${label}`);
+    }
+  });
+  if (parts.length === 0) return '';
+  if (parts.length === 1) return parts[0];
+  return `${parts.slice(0, -1).join(', ')}, and ${parts[parts.length - 1]}`;
+}
+
+function buildDayOverviewText(): string {
+  const summary = getTodaysVisitsSummary();
+  const breakdown = formatTypeBreakdown(summary.typeCounts);
+
+  const reviewBits: string[] = [];
+  if (summary.labsCount > 0) reviewBits.push(`${summary.labsCount} with new labs`);
+  if (summary.imagingCount > 0) reviewBits.push(`${summary.imagingCount} with new imaging`);
+  const reviewDetail = reviewBits.length > 0 ? ` (${reviewBits.join(', ')})` : '';
+
+  const reviewLine =
+    summary.patientsWithReviewItems > 0
+      ? `• ${summary.patientsWithReviewItems} ${summary.patientsWithReviewItems === 1 ? 'patient has' : 'patients have'} items to review before their visit${reviewDetail}.`
+      : `• No patients have outstanding items to review before their visit.`;
+
+  const overrun = summary.overrunPatients[0];
+  let overrunLine = '';
+  if (overrun?.appointmentTime) {
+    const minutesOver = (() => {
+      const [, end] = overrun.appointmentTime.split(/\s*[–-]\s*/);
+      const endLabel = end?.trim();
+      return endLabel ? `to ${endLabel}` : '';
+    })();
+    overrunLine = `• Heads-up: your last appointment is a New Patient visit at ${overrun.appointmentTime}. The booked duration runs ${minutesOver} — about 15 minutes past your published ${END_OF_DAY_LABEL} availability. Worth tightening that block or moving the visit if you need to protect your end time.`;
+  }
+
+  return [
+    `Here's how today's schedule looks at a glance:`,
+    '',
+    `• ${summary.totalVisits} visits booked${breakdown ? ` — ${breakdown}` : ''}.`,
+    reviewLine,
+    overrunLine,
+  ]
+    .filter(Boolean)
+    .join('\n');
+}
+
+const AI_DAY_OVERVIEW = buildDayOverviewText();
 
 const AI_KEY_ALERTS =
   "Here are the key alerts for today: you have patients with open pre-visit tasks or critical results to review before their visits.\n\nImportant: your last slot is a New Patient appointment. It extends about 15 minutes past your published availability for the day, so you may want to tighten your scheduling rules or move that visit.";

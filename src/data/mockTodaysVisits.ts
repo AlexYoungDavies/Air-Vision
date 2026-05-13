@@ -1,6 +1,6 @@
 import type { AccentKey } from '../theme/accents';
 import { ACCENT_KEYS } from '../theme/accents';
-import { MOCK_PATIENTS, TODAYS_PATIENTS } from './mockPatients';
+import { MOCK_PATIENTS, TODAYS_PATIENTS, type Patient } from './mockPatients';
 import { getPatientVisitPanelData } from './mockPatientVisitPanel';
 
 export type ScribeVisitGroup = 'upcoming' | 'action' | 'completed';
@@ -146,6 +146,75 @@ export function getHomeVisitAppointmentStatus(
   if (nowMinutes >= range.end) return 'completed';
   if (nowMinutes >= range.start) return 'active';
   return 'upcoming';
+}
+
+/**
+ * Published provider end-of-day availability in minutes past midnight.
+ * Currently 5:00 PM — anything that ends after this minute count is "running past"
+ * the published availability window.
+ */
+export const END_OF_DAY_MINUTES = 17 * 60;
+
+/** Pretty version of `END_OF_DAY_MINUTES` used in UI strings ("5:00 PM"). */
+export const END_OF_DAY_LABEL = '5:00 PM';
+
+/**
+ * Number of minutes the visit ends past the provider's published end-of-day
+ * availability. Returns 0 when the visit ends on or before availability, or
+ * when the appointment time can't be parsed.
+ */
+export function getVisitOverrunMinutes(appointmentTime: string | undefined): number {
+  if (!appointmentTime) return 0;
+  const range = parseAppointmentRangeMinutes(appointmentTime);
+  if (!range) return 0;
+  return Math.max(0, range.end - END_OF_DAY_MINUTES);
+}
+
+export interface TodaysVisitsSummary {
+  totalVisits: number;
+  /** Counts of each appointment type, e.g. { 'Follow-up Visit': 5, ... }. */
+  typeCounts: Record<NonNullable<Patient['appointmentType']>, number>;
+  /** Number of patients with at least one labs/imaging/items-to-review flag. */
+  patientsWithReviewItems: number;
+  labsCount: number;
+  imagingCount: number;
+  /** Appointments that end after the published end-of-day availability. */
+  overrunPatients: Patient[];
+}
+
+/**
+ * Aggregates today's visit roster into the figures used by both the AI day
+ * overview prompt and the home page Visits list, so the spoken summary and
+ * the on-screen list stay in sync.
+ */
+export function getTodaysVisitsSummary(): TodaysVisitsSummary {
+  const typeCounts: TodaysVisitsSummary['typeCounts'] = {
+    'Initial Consultation': 0,
+    'Follow-up Visit': 0,
+    'Post-op Visit': 0,
+    'New Patient': 0,
+  };
+  let labsCount = 0;
+  let imagingCount = 0;
+  let patientsWithReviewItems = 0;
+  const overrunPatients: Patient[] = [];
+
+  for (const p of TODAYS_PATIENTS) {
+    if (p.appointmentType) typeCounts[p.appointmentType] += 1;
+    if (p.hasNewLabs) labsCount += 1;
+    if (p.hasNewImaging) imagingCount += 1;
+    if (p.hasNewLabs || p.hasNewImaging) patientsWithReviewItems += 1;
+    if (getVisitOverrunMinutes(p.appointmentTime) > 0) overrunPatients.push(p);
+  }
+
+  return {
+    totalVisits: TODAYS_PATIENTS.length,
+    typeCounts,
+    patientsWithReviewItems,
+    labsCount,
+    imagingCount,
+    overrunPatients,
+  };
 }
 
 /** @deprecated Use `TODAYS_SCRIBE_VISITS` — kept for any external imports. */

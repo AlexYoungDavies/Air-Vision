@@ -38,7 +38,11 @@ import { MOCK_PATIENTS, TODAYS_PATIENTS, getNextUpcomingTodayPatientId, type Pat
 import { getAppointmentsForPatient, type Appointment } from '../../data/mockAppointments';
 import { getPatientVisitPanelData, type ProfileInfoRow } from '../../data/mockPatientVisitPanel';
 import { MOCK_CHATS, getChatById, getMessagesForChat } from '../../data/mockChats';
-import { getHomeVisitAppointmentStatus } from '../../data/mockTodaysVisits';
+import {
+  END_OF_DAY_LABEL,
+  getHomeVisitAppointmentStatus,
+  getVisitOverrunMinutes,
+} from '../../data/mockTodaysVisits';
 import { VisitNoteContent } from './VisitNoteContent';
 import { ThingsToReviewAlertItem } from './ThingsToReviewAlertItem';
 import { AICheckIcon } from '../icons';
@@ -189,6 +193,8 @@ function PatientsListPanel({
           const appointmentStatus = getHomeVisitAppointmentStatus(p.appointmentTime, now);
           const isCompleted = appointmentStatus === 'completed';
           const isActive = appointmentStatus === 'active';
+          const overrunMinutes = getVisitOverrunMinutes(p.appointmentTime);
+          const runsPastEod = overrunMinutes > 0;
           const blockColor =
             p.appointmentType === 'Initial Consultation' || p.appointmentType === 'New Patient'
               ? theme.palette.info.main
@@ -328,11 +334,37 @@ function PatientsListPanel({
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     mt: 0.25,
+                    gap: 0.5,
+                    minWidth: 0,
                   }}
                 >
-                  <Typography sx={{ fontSize: 11, color: 'text.secondary' }}>
-                    {p.appointmentTime ?? '—'}
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0, flexShrink: 1 }}>
+                    <Typography sx={{ fontSize: 11, color: 'text.secondary', whiteSpace: 'nowrap' }}>
+                      {p.appointmentTime ?? '—'}
+                    </Typography>
+                    {runsPastEod && (
+                      <Tooltip title={`Runs ${overrunMinutes} min past your ${END_OF_DAY_LABEL} availability`}>
+                        <Box
+                          component="span"
+                          sx={{
+                            flexShrink: 0,
+                            px: 0.5,
+                            py: 0,
+                            borderRadius: '4px',
+                            bgcolor: (theme) => alpha(theme.palette.warning.main, 0.18),
+                            color: 'warning.dark',
+                            fontSize: 10,
+                            fontWeight: 700,
+                            lineHeight: 1.5,
+                            letterSpacing: 0.2,
+                            textTransform: 'uppercase',
+                          }}
+                        >
+                          Past {END_OF_DAY_LABEL}
+                        </Box>
+                      </Tooltip>
+                    )}
+                  </Box>
                   {(showDangerAlerts || showLabs || showImaging) && (
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
                       {showDangerAlerts && (
