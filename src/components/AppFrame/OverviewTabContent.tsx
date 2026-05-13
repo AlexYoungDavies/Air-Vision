@@ -52,9 +52,13 @@ const OVERVIEW_SUB_TABS = [
 
 type OverviewSubTabId = (typeof OVERVIEW_SUB_TABS)[number]['id'];
 
+export type SecondaryPanelIconMode = 'pin' | 'chat' | 'tasks' | 'history';
+
 export interface OverviewTabContentProps {
   patient: Patient;
-  onSecondaryPanelMode?: (mode: 'pin' | 'chat' | 'tasks' | 'history' | null) => void;
+  onSecondaryPanelMode?: (mode: SecondaryPanelIconMode | null) => void;
+  /** The currently open secondary panel mode (if any) so icon buttons can show an active state. */
+  secondaryPanelMode?: SecondaryPanelIconMode | null;
   /** Navigate to a main profile tab (e.g. appointments, billing, medications). */
   onNavigateToTab?: (tabId: string) => void;
   /** Called when user clicks "Open Note" on a complete appointment. Opens a visit note tab. */
@@ -796,7 +800,7 @@ function ProfileView({ patient }: { patient: Patient }) {
   );
 }
 
-export function OverviewTabContent({ patient, onSecondaryPanelMode, onNavigateToTab, onOpenNote }: OverviewTabContentProps) {
+export function OverviewTabContent({ patient, onSecondaryPanelMode, secondaryPanelMode, onNavigateToTab, onOpenNote }: OverviewTabContentProps) {
   const [subTab, setSubTab] = useState<OverviewSubTabId>('summary');
 
   return (
@@ -833,17 +837,21 @@ export function OverviewTabContent({ patient, onSecondaryPanelMode, onNavigateTo
                 { mode: 'chat' as const, Icon: QuestionAnswerOutlined, title: 'Chat' },
                 { mode: 'tasks' as const, Icon: TaskAltOutlined, title: 'Tasks' },
                 { mode: 'history' as const, Icon: HistoryOutlined, title: 'History' },
-              ].map(({ mode, Icon, title }) => (
-                <Tooltip key={mode} title={title}>
-                  <IconButton
-                    size="small"
-                    onClick={() => onSecondaryPanelMode?.(mode)}
+              ].map(({ mode, Icon, title }) => {
+                const isActive = secondaryPanelMode === mode;
+                return (
+                  <AppIconButton
+                    key={mode}
+                    tooltip={title}
+                    aria-label={title}
+                    active={isActive}
+                    onClick={() => onSecondaryPanelMode?.(isActive ? null : mode)}
                     sx={{ borderRadius: '52px' }}
                   >
                     <Icon sx={{ fontSize: 20 }} />
-                  </IconButton>
-                </Tooltip>
-              ))}
+                  </AppIconButton>
+                );
+              })}
             </Box>
           </Box>
           <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', typography: 'body2' }}>
@@ -896,6 +904,7 @@ export function OverviewTabContent({ patient, onSecondaryPanelMode, onNavigateTo
             <SummaryView
               patient={patient}
               onSecondaryPanelMode={onSecondaryPanelMode}
+              secondaryPanelMode={secondaryPanelMode}
               onNavigateToTab={onNavigateToTab}
               onOpenNote={onOpenNote}
               onSetOverviewSubTab={setSubTab}

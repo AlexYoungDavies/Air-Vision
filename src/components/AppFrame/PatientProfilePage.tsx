@@ -20,12 +20,10 @@ import { keyframes } from '@mui/system';
 import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined';
 import MoreHorizOutlined from '@mui/icons-material/MoreHorizOutlined';
 import CloseOutlined from '@mui/icons-material/CloseOutlined';
-import PushPinOutlined from '@mui/icons-material/PushPinOutlined';
-import QuestionAnswerOutlined from '@mui/icons-material/QuestionAnswerOutlined';
-import TaskAltOutlined from '@mui/icons-material/TaskAltOutlined';
-import HistoryOutlined from '@mui/icons-material/HistoryOutlined';
+import { PinIcon, ConversationIcon, CircleCheckIcon, HistoryIcon } from '../icons';
 import type { Patient } from '../../data/mockPatients';
 import { getAppointmentsForPatient, type Appointment } from '../../data/mockAppointments';
+import { AppIconButton } from '../AppIconButton';
 import { AppointmentsTabContent } from './AppointmentsTabContent';
 import { AttachmentsTabContent } from './AttachmentsTabContent';
 import { BillingTabContent } from './BillingTabContent';
@@ -746,31 +744,23 @@ export function PatientProfilePage({
               const active = secondaryPanelMode === mode;
               const Icon =
                 mode === 'pin'
-                  ? PushPinOutlined
+                  ? PinIcon
                   : mode === 'chat'
-                    ? QuestionAnswerOutlined
+                    ? ConversationIcon
                     : mode === 'tasks'
-                      ? TaskAltOutlined
-                      : HistoryOutlined;
+                      ? CircleCheckIcon
+                      : HistoryIcon;
               return (
-                <IconButton
+                <AppIconButton
                   key={mode}
-                  size="small"
+                  tooltip={title}
+                  aria-label={title}
+                  active={active}
                   onClick={() => handleSecondaryIconClick(mode)}
-                  title={title}
-                  sx={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: '8px',
-                    ...(active && {
-                      bgcolor: 'action.selected',
-                      color: 'primary.main',
-                      '&:hover': { bgcolor: 'action.selected' },
-                    }),
-                  }}
+                  sx={{ width: 28, height: 28, borderRadius: '8px' }}
                 >
                   <Icon sx={{ fontSize: 18 }} />
-                </IconButton>
+                </AppIconButton>
               );
             })}
           </Box>
@@ -821,6 +811,9 @@ export function PatientProfilePage({
             <OverviewTabContent
               patient={patient}
               onSecondaryPanelMode={(mode) => setSecondaryPanelMode(mode)}
+              secondaryPanelMode={
+                secondaryPanelMode === 'citations' ? null : secondaryPanelMode
+              }
               onNavigateToTab={(tabId) => setActiveTab(tabId as ProfileTabId)}
               onOpenNote={handleOpenNote}
             />

@@ -20,3 +20,7 @@ export { PauseRecordingIcon } from './PauseRecordingIcon';
 export { PlayRecordingIcon } from './PlayRecordingIcon';
 export { StopRecordingIcon } from './StopRecordingIcon';
 export { StopBlockedRecordingIcon } from './StopBlockedRecordingIcon';
+export { PinIcon } from './PinIcon';
+export { ConversationIcon } from './ConversationIcon';
+export { CircleCheckIcon } from './CircleCheckIcon';
+export { HistoryIcon } from './HistoryIcon';
