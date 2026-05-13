@@ -49,6 +49,10 @@ import { AICheckIcon } from '../icons';
 import { useAppScribe, type ScribePendingOrderTask } from './AppScribeContext';
 import CheckOutlined from '@mui/icons-material/CheckOutlined';
 import CloseOutlined from '@mui/icons-material/CloseOutlined';
+import MedicationOutlined from '@mui/icons-material/MedicationOutlined';
+
+/** Provider whose home page this is — used as the assignee for any task in the demo. */
+const HOME_PROVIDER_NAME = 'Dr. Garcia';
 
 // Icons matching global nav: Patients (person/group), Messages (chat). Custom: Notes (signature), Tasks (checklist). Settings at bottom.
 function PatientsNavIcon(props: React.ComponentProps<typeof SvgIcon>) {
@@ -126,21 +130,98 @@ const MOCK_NOTES = [
   { id: 'n3', patient: 'Emily Davis', date: 'Aug 7', template: 'Annual Physical' },
 ];
 
+/** One labelled row inside an order/medication details card. */
+interface MockTaskOrderDetailRow {
+  label: string;
+  value: string;
+}
+
+/** Details surfaced inside the order/medication card on the task detail panel. */
+interface MockTaskOrderCard {
+  /** Drives the section heading ("Medication" vs "Order"). */
+  kind: 'medication' | 'order';
+  /** Short summary line shown at the top of the card (e.g. drug name + strength). */
+  summary: string;
+  rows: MockTaskOrderDetailRow[];
+}
+
+/** Icon component used in the task list row. */
+type MockTaskIcon = typeof TaskAltOutlined;
+
 interface MockTask {
   id: string;
   title: string;
   due: string;
+  /** Optional short description; omit if the title is self-explanatory. */
+  description?: string;
+  /** Who this task is assigned to — the provider whose home page this is. */
+  assignedTo: string;
+  /** Who created the task (lab system, MA, patient, etc.). */
+  createdBy: string;
+  /** When set, the detail panel renders order details and Approve/Decline buttons. */
+  orderCard?: MockTaskOrderCard;
+  /** Icon shown next to the task in the list. Defaults to a checklist mark. */
+  Icon?: MockTaskIcon;
 }
 
 const MOCK_TASKS: MockTask[] = [
-  { id: 't1', title: 'Review lab results', due: 'Today' },
-  { id: 't2', title: 'Call patient re: medication', due: 'Today' },
-  { id: 't3', title: 'Sign off on referral', due: 'Tomorrow' },
+  {
+    id: 't1',
+    title: 'Review lab results',
+    due: 'Today',
+    description:
+      "Michael Chen's HbA1c came back at 7.6% (up from 7.1%). Review and update the diabetes care plan before his follow-up next week.",
+    assignedTo: HOME_PROVIDER_NAME,
+    createdBy: 'Quest Diagnostics · lab interface',
+    Icon: ScienceOutlined,
+  },
+  {
+    id: 't2',
+    title: 'Approve medication refill',
+    due: 'Today',
+    description:
+      'Refill request submitted through the patient portal. Last filled 22 days ago — verify adherence before approving.',
+    assignedTo: HOME_PROVIDER_NAME,
+    createdBy: 'Michael Chen · patient portal',
+    Icon: MedicationOutlined,
+    orderCard: {
+      kind: 'medication',
+      summary: 'Sertraline 50 mg, oral tablet',
+      rows: [
+        { label: 'Medication', value: 'Sertraline 50 mg tablet' },
+        { label: 'SIG', value: 'Take 1 tablet by mouth once daily' },
+        { label: 'Quantity', value: '30 tablets' },
+        { label: 'Refills', value: '3' },
+        { label: 'Pharmacy', value: 'Walgreens — 423 Main St.' },
+      ],
+    },
+  },
+  {
+    id: 't3',
+    title: 'Sign off on referral',
+    due: 'Tomorrow',
+    description:
+      "Physical therapy referral queued after this morning's post-op visit. Confirm provider preference before it goes out.",
+    assignedTo: HOME_PROVIDER_NAME,
+    createdBy: 'Maria L. · medical assistant',
+    Icon: AssignmentOutlined,
+    orderCard: {
+      kind: 'order',
+      summary: 'Physical Therapy referral · OrthoPT Group',
+      rows: [
+        { label: 'Referral', value: 'Outpatient Physical Therapy' },
+        { label: 'Reason', value: 'Right knee ACL post-op rehabilitation' },
+        { label: 'Provider', value: 'OrthoPT Group (in-network)' },
+        { label: 'Frequency', value: '12 visits over 8 weeks' },
+        { label: 'Effective', value: 'Within 7 days' },
+      ],
+    },
+  },
 ];
 
 /** Unified Task row used by the home page Tasks list + detail panel. */
 type HomeTask =
-  | { kind: 'mock'; id: string; title: string; due: string }
+  | { kind: 'mock'; id: string; title: string; due: string; task: MockTask }
   | {
       kind: 'scribe-order';
       id: string;
@@ -149,7 +230,10 @@ type HomeTask =
       order: ScribePendingOrderTask;
     };
 
-function buildHomeTasks(scribeOrders: readonly ScribePendingOrderTask[]): HomeTask[] {
+function buildHomeTasks(
+  scribeOrders: readonly ScribePendingOrderTask[],
+  resolvedMockTaskIds: ReadonlySet<string>,
+): HomeTask[] {
   const scribeTasks: HomeTask[] = scribeOrders.map((order) => ({
     kind: 'scribe-order',
     id: order.id,
@@ -157,7 +241,15 @@ function buildHomeTasks(scribeOrders: readonly ScribePendingOrderTask[]): HomeTa
     due: `${order.patientName} · ${order.visitDateLabel}`,
     order,
   }));
-  const mockTasks: HomeTask[] = MOCK_TASKS.map((t) => ({ kind: 'mock', ...t }));
+  const mockTasks: HomeTask[] = MOCK_TASKS.filter((t) => !resolvedMockTaskIds.has(t.id)).map(
+    (task) => ({
+      kind: 'mock',
+      id: task.id,
+      title: task.title,
+      due: task.due,
+      task,
+    }),
+  );
   // Scribe-captured orders appear first — provider just finished the visit.
   return [...scribeTasks, ...mockTasks];
 }
@@ -487,7 +579,9 @@ function TasksListPanel({
       <List dense disablePadding sx={{ flex: 1, overflow: 'auto', py: 0.5 }}>
         {tasks.map((t) => {
           const isScribeOrder = t.kind === 'scribe-order';
-          const Icon = isScribeOrder ? ImageOutlined : TaskAltOutlined;
+          const Icon = isScribeOrder
+            ? ImageOutlined
+            : (t.task.Icon ?? TaskAltOutlined);
           return (
             <ListItemButton
               key={t.id}
@@ -1244,14 +1338,103 @@ function NotePreviewPanel({ noteId }: { noteId: string | null }) {
   );
 }
 
+/** Shared label/value row used inside order detail cards. */
+function TaskDetailRow({ label, value }: { label: string; value: string }) {
+  return (
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
+      <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{label}</Typography>
+      <Typography sx={{ fontSize: 13, fontWeight: 500, textAlign: 'right' }}>{value}</Typography>
+    </Box>
+  );
+}
+
+/** Header block (eyebrow + title + meta line) shared by every task type. */
+function TaskDetailHeader({
+  eyebrow,
+  title,
+  meta,
+}: {
+  eyebrow: string;
+  title: string;
+  meta?: React.ReactNode;
+}) {
+  return (
+    <Box>
+      <Typography
+        variant="caption"
+        sx={{ fontWeight: 700, color: 'primary.main', textTransform: 'uppercase', letterSpacing: 0.5 }}
+      >
+        {eyebrow}
+      </Typography>
+      <Typography sx={{ fontSize: 20, fontWeight: 700, mt: 0.5 }}>{title}</Typography>
+      {meta && (
+        <Typography component="div" sx={{ fontSize: 13, color: 'text.secondary', mt: 0.5 }}>
+          {meta}
+        </Typography>
+      )}
+    </Box>
+  );
+}
+
+/** People/meta block — assignee, creator, due date. */
+function TaskDetailMetaGrid({
+  assignedTo,
+  createdBy,
+  due,
+}: {
+  assignedTo: string;
+  createdBy: string;
+  due: string;
+}) {
+  return (
+    <Box
+      sx={{
+        display: 'grid',
+        gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' },
+        gap: 1.5,
+        p: 1.5,
+        borderRadius: 2,
+        border: '1px solid',
+        borderColor: 'divider',
+        bgcolor: 'action.hover',
+      }}
+    >
+      {[
+        { label: 'Assigned to', value: assignedTo },
+        { label: 'Created by', value: createdBy },
+        { label: 'Due', value: due },
+      ].map(({ label, value }) => (
+        <Box key={label}>
+          <Typography
+            sx={{
+              fontSize: 10,
+              fontWeight: 600,
+              letterSpacing: 0.4,
+              textTransform: 'uppercase',
+              color: 'text.secondary',
+            }}
+          >
+            {label}
+          </Typography>
+          <Typography sx={{ fontSize: 13, fontWeight: 500, color: 'text.primary', mt: 0.25 }}>
+            {value}
+          </Typography>
+        </Box>
+      ))}
+    </Box>
+  );
+}
+
 function TaskDetailPanel({
   task,
   onApproveScribeOrder,
   onDeclineScribeOrder,
+  onResolveMockTask,
 }: {
   task: HomeTask | null;
   onApproveScribeOrder: (id: string) => void;
   onDeclineScribeOrder: (id: string) => void;
+  onResolveMockTask: (id: string) => void;
 }) {
   if (!task) {
     return (
@@ -1265,24 +1448,25 @@ function TaskDetailPanel({
     const { order } = task;
     return (
       <Box sx={{ p: 3, overflow: 'auto', height: '100%', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-        <Box>
-          <Typography
-            variant="caption"
-            sx={{ fontWeight: 700, color: 'primary.main', textTransform: 'uppercase', letterSpacing: 0.5 }}
-          >
-            Scribe-captured order · awaiting approval
-          </Typography>
-          <Typography sx={{ fontSize: 20, fontWeight: 700, mt: 0.5 }}>
-            {order.orderName}
-          </Typography>
-          <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.5 }}>
-            For{' '}
-            <Box component={Link} to={`/patients/${order.patientId}`} sx={{ color: 'primary.main', fontWeight: 600 }}>
-              {order.patientName}
-            </Box>{' '}
-            · {order.visitDateLabel}
-          </Typography>
-        </Box>
+        <TaskDetailHeader
+          eyebrow="Scribe-captured order · awaiting approval"
+          title={order.orderName}
+          meta={
+            <>
+              For{' '}
+              <Box component={Link} to={`/patients/${order.patientId}`} sx={{ color: 'primary.main', fontWeight: 600 }}>
+                {order.patientName}
+              </Box>{' '}
+              · {order.visitDateLabel}
+            </>
+          }
+        />
+
+        <TaskDetailMetaGrid
+          assignedTo={HOME_PROVIDER_NAME}
+          createdBy={`Scribe · ${order.patientName} visit`}
+          due={task.due}
+        />
 
         <Box
           sx={{
@@ -1296,18 +1480,9 @@ function TaskDetailPanel({
             bgcolor: 'background.paper',
           }}
         >
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
-            <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Order</Typography>
-            <Typography sx={{ fontSize: 13, fontWeight: 500, textAlign: 'right' }}>{order.orderName}</Typography>
-          </Box>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
-            <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Fulfillment</Typography>
-            <Typography sx={{ fontSize: 13, fontWeight: 500, textAlign: 'right' }}>{order.orderProvider}</Typography>
-          </Box>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', gap: 2 }}>
-            <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>Source</Typography>
-            <Typography sx={{ fontSize: 13, fontWeight: 500, textAlign: 'right' }}>Scribe — staged during visit</Typography>
-          </Box>
+          <TaskDetailRow label="Order" value={order.orderName} />
+          <TaskDetailRow label="Fulfillment" value={order.orderProvider} />
+          <TaskDetailRow label="Source" value="Scribe — staged during visit" />
         </Box>
 
         <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
@@ -1343,10 +1518,82 @@ function TaskDetailPanel({
     );
   }
 
+  // Static mock task — may or may not include an order/medication card.
+  const { task: mock } = task;
+  const orderCard = mock.orderCard;
+  const isMedication = orderCard?.kind === 'medication';
+  const eyebrow = orderCard
+    ? `${isMedication ? 'Medication' : 'Order'} · awaiting approval`
+    : 'Task';
   return (
-    <Box sx={{ p: 3, overflow: 'auto', height: '100%' }}>
-      <Typography sx={{ fontSize: 20, fontWeight: 700 }}>{task.title}</Typography>
-      <Typography sx={{ fontSize: 13, color: 'text.secondary', mt: 0.5 }}>{task.due}</Typography>
+    <Box sx={{ p: 3, overflow: 'auto', height: '100%', display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+      <TaskDetailHeader
+        eyebrow={eyebrow}
+        title={mock.title}
+        meta={mock.description}
+      />
+
+      <TaskDetailMetaGrid
+        assignedTo={mock.assignedTo}
+        createdBy={mock.createdBy}
+        due={mock.due}
+      />
+
+      {orderCard && (
+        <Box
+          sx={{
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 2,
+            p: 2,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 1.25,
+            bgcolor: 'background.paper',
+          }}
+        >
+          <Typography
+            sx={{
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: 0.5,
+              textTransform: 'uppercase',
+              color: 'text.secondary',
+            }}
+          >
+            {isMedication ? 'Medication details' : 'Order details'}
+          </Typography>
+          <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'text.primary' }}>
+            {orderCard.summary}
+          </Typography>
+          {orderCard.rows.map((row) => (
+            <TaskDetailRow key={row.label} label={row.label} value={row.value} />
+          ))}
+        </Box>
+      )}
+
+      {orderCard && (
+        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<CheckOutlined />}
+            onClick={() => onResolveMockTask(task.id)}
+            sx={{ textTransform: 'none', fontWeight: 600, borderRadius: '8px' }}
+          >
+            {isMedication ? 'Approve refill' : 'Approve order'}
+          </Button>
+          <Button
+            variant="outlined"
+            color="inherit"
+            startIcon={<CloseOutlined />}
+            onClick={() => onResolveMockTask(task.id)}
+            sx={{ textTransform: 'none', fontWeight: 600, borderRadius: '8px' }}
+          >
+            Decline
+          </Button>
+        </Box>
+      )}
     </Box>
   );
 }
@@ -1471,7 +1718,21 @@ function getFirstChatId(): string | null {
 
 export function HomePageContent() {
   const { scribePendingOrderTasks, approveScribeOrderTask, declineScribeOrderTask } = useAppScribe();
-  const homeTasks = buildHomeTasks(scribePendingOrderTasks);
+  // Track mock tasks the provider has already approved/declined this session
+  // so they disappear from the list (real app would persist this).
+  const [resolvedMockTaskIds, setResolvedMockTaskIds] = useState<ReadonlySet<string>>(
+    () => new Set<string>(),
+  );
+  const homeTasks = buildHomeTasks(scribePendingOrderTasks, resolvedMockTaskIds);
+
+  const handleResolveMockTask = (id: string) => {
+    setResolvedMockTaskIds((prev) => {
+      if (prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+  };
 
   const [activeTab, setActiveTab] = useState<HomeViewTab>('patients');
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(() =>
@@ -1688,6 +1949,7 @@ export function HomePageContent() {
                 task={selectedTask}
                 onApproveScribeOrder={approveScribeOrderTask}
                 onDeclineScribeOrder={declineScribeOrderTask}
+                onResolveMockTask={handleResolveMockTask}
               />
             )}
             {activeTab === 'messages' && <OpenChatPanel chatId={selectedChatId} />}
