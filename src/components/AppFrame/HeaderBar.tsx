@@ -1,9 +1,24 @@
-import { useRef, useEffect, useLayoutEffect, useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Box, IconButton, Button, SvgIcon, Popover, List, ListItemButton, Typography, Tooltip } from '@mui/material';
+import { useMemo, useRef, useLayoutEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
+import {
+  Box,
+  IconButton,
+  Button,
+  SvgIcon,
+  Popover,
+  List,
+  ListItemButton,
+  Typography,
+  Tooltip,
+  Tabs,
+  Tab,
+  Badge,
+} from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { keyframes } from '@mui/system';
 import StopRounded from '@mui/icons-material/StopRounded';
+import NotificationsNoneOutlined from '@mui/icons-material/NotificationsNoneOutlined';
+import ArticleOutlined from '@mui/icons-material/ArticleOutlined';
 import { SearchIcon, MicrophoneIcon, SpeakingIcon } from '../icons';
 import { ScribeLiveActivityBar } from './ScribeLiveActivityBar';
 import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
@@ -72,12 +87,13 @@ function DictationSoundWaveBars({ active = true }: { active?: boolean }) {
 
 const ICON_SIZE = 20;
 const LOTTIE_SIZE = 22;
-const MAX_HISTORY = 10;
 
-const PATH_LABELS: Record<string, string> = {
+// ----- Header page-name (left of the collapse button) -----
+
+const PAGE_LABELS: Record<string, string> = {
   '/': 'Home',
   '/visits': 'Visits',
-  '/messages': 'Messages',
+  '/messages': 'Messages & Tasks',
   '/patients': 'Patients',
   '/orders': 'Orders',
   '/pharmacies': 'Pharmacies',
@@ -86,6 +102,7 @@ const PATH_LABELS: Record<string, string> = {
   '/outreach': 'Outreach',
   '/reports': 'Reports',
   '/automations': 'Automations',
+  '/encounters': 'Automations',
   '/claims': 'Claims',
   '/remittances': 'Remittances',
   '/eobs': 'EoBs',
@@ -94,44 +111,145 @@ const PATH_LABELS: Record<string, string> = {
   '/preferences': 'Preferences',
 };
 
-function getLabelForLocation(pathname: string, search: string): string {
+function getPageLabel(pathname: string, search: string): string {
   const patientMatch = pathname.match(/^\/patients\/([^/]+)$/);
   if (patientMatch) {
     const patient = MOCK_PATIENTS.find((p) => p.id === patientMatch[1]);
     const name = patient?.fullName ?? 'Patient profile';
-    return search.includes('openNote=1') ? `${name} (Visit note)` : name;
+    return search.includes('openNote=1') ? `${name} · Visit note` : name;
   }
-  return PATH_LABELS[pathname] ?? (pathname || 'Home');
+  return PAGE_LABELS[pathname] ?? 'Page';
 }
 
-function ArrowLeftIcon(props: React.ComponentProps<typeof SvgIcon>) {
-  return (
-    <SvgIcon {...props} viewBox="0 0 24 24">
-      <path d="M6.81066 11.25L11.5303 6.53033L10.5 5.5L4 12L10.5 18.5L11.5303 17.4697L6.81066 12.75H20V11.25H6.81066Z" />
-    </SvgIcon>
-  );
+// ----- Notifications popover mock data -----
+
+type NotificationTabId = 'general' | 'request-center' | 'messages' | 'tasks' | 'medications';
+
+const NOTIFICATION_TABS: { id: NotificationTabId; label: string }[] = [
+  { id: 'general', label: 'General' },
+  { id: 'request-center', label: 'Request Center' },
+  { id: 'messages', label: 'Messages' },
+  { id: 'tasks', label: 'Tasks' },
+  { id: 'medications', label: 'Medications' },
+];
+
+interface NotificationItem {
+  id: string;
+  title: string;
+  subtitle?: string;
+  time: string;
+  unread?: boolean;
 }
 
-function ArrowRightIcon(props: React.ComponentProps<typeof SvgIcon>) {
-  return (
-    <SvgIcon {...props} viewBox="0 0 24 24">
-      <path d="M17.1893 12.75L12.4697 17.4697L13.5 18.5L20 12L13.5 5.5L12.4697 6.53033L17.1893 11.25H4V12.75H17.1893Z" />
-    </SvgIcon>
-  );
-}
-
-function HistoryIcon(props: React.ComponentProps<typeof SvgIcon>) {
-  return (
-    <SvgIcon {...props} viewBox="0 0 24 24">
-      <path d="M5.70976 8.25C7.04318 5.96362 9.20366 4.75 12 4.75C16.0858 4.75 19.25 7.91421 19.25 12C19.25 16.0858 16.0858 19.25 12 19.25C8.3771 19.25 5.48651 16.7639 4.87143 13.3664L3.39542 13.6336C4.13968 17.7447 7.65151 20.75 12 20.75C16.9142 20.75 20.75 16.9142 20.75 12C20.75 7.08579 16.9142 3.25 12 3.25C8.88327 3.25 6.37104 4.55955 4.75 6.95978V4H3.25V9.75H9V8.25H5.70976Z" />
-      <path
-        fillRule="evenodd"
-        clipRule="evenodd"
-        d="M11.25 12.9636V7.96355H12.75V12.5L15.3354 13.7927L14.6646 15.1344L11.6646 13.6344L11.25 12.9636Z"
-      />
-    </SvgIcon>
-  );
-}
+const MOCK_NOTIFICATIONS: Record<NotificationTabId, NotificationItem[]> = {
+  general: [
+    {
+      id: 'g1',
+      title: 'Weekly digest is ready',
+      subtitle: '14 charts signed · 3 outstanding from last week.',
+      time: '8m',
+      unread: true,
+    },
+    {
+      id: 'g2',
+      title: 'EHR sync completed',
+      subtitle: '4 patients refreshed from the Athelas data layer.',
+      time: '1h',
+      unread: true,
+    },
+    {
+      id: 'g3',
+      title: 'New release · scribe orders',
+      subtitle: 'Captured orders now flow into your home Tasks list.',
+      time: 'Yesterday',
+    },
+  ],
+  'request-center': [
+    {
+      id: 'r1',
+      title: 'Insurance verification needed',
+      subtitle: 'Front desk flagged Jennifer Davis ahead of her 2:30 visit.',
+      time: '12m',
+      unread: true,
+    },
+    {
+      id: 'r2',
+      title: 'Records request from Bay Area Cardiology',
+      subtitle: 'Requesting last 12 months for Michael Chen.',
+      time: '1h',
+    },
+    {
+      id: 'r3',
+      title: 'PA appeal queued',
+      subtitle: 'Aimovig 70 mg for Sarah Johnson — denial received.',
+      time: 'Yesterday',
+    },
+  ],
+  messages: [
+    {
+      id: 'm1',
+      title: 'Anya Patel sent you a message',
+      subtitle: '"Hi Dr. Garcia — quick question about my refill…"',
+      time: '5m',
+      unread: true,
+    },
+    {
+      id: 'm2',
+      title: 'Maria L. replied in "Lipid panel review"',
+      subtitle: 'Tagged you and shared the latest labs.',
+      time: '32m',
+      unread: true,
+    },
+    {
+      id: 'm3',
+      title: 'Care team thread updated',
+      subtitle: 'New comment from Dr. Lee on the post-op plan.',
+      time: 'Yesterday',
+    },
+  ],
+  tasks: [
+    {
+      id: 't1',
+      title: 'Approve medication refill',
+      subtitle: 'Sertraline 50 mg · Michael Chen',
+      time: 'Today',
+      unread: true,
+    },
+    {
+      id: 't2',
+      title: 'Sign off on PT referral',
+      subtitle: 'OrthoPT Group · 12 visits / 8 weeks',
+      time: 'Tomorrow',
+    },
+    {
+      id: 't3',
+      title: 'Review lab results',
+      subtitle: "Michael Chen's HbA1c trending up to 7.6%.",
+      time: 'Today',
+    },
+  ],
+  medications: [
+    {
+      id: 'rx1',
+      title: 'Refill request: Sertraline 50 mg',
+      subtitle: 'Michael Chen · via patient portal.',
+      time: 'Today',
+      unread: true,
+    },
+    {
+      id: 'rx2',
+      title: 'PA approved: Ozempic 1 mg',
+      subtitle: 'Jennifer Davis · ready to send to pharmacy.',
+      time: '12m',
+    },
+    {
+      id: 'rx3',
+      title: 'Pharmacy callback',
+      subtitle: 'Walgreens needs SIG clarification for Lisinopril 20 mg — David Lee.',
+      time: '1h',
+    },
+  ],
+};
 
 function LeftPanelIcon(props: React.ComponentProps<typeof SvgIcon>) {
   return (
@@ -170,8 +288,6 @@ export interface HeaderBarProps {
   onSearchClick?: () => void;
 }
 
-export type NavHistoryEntry = { pathname: string; search: string; label: string };
-
 export function HeaderBar({
   navCollapsed = false,
   onToggleNav,
@@ -184,14 +300,17 @@ export function HeaderBar({
   assistantOpen = false,
   onSearchClick,
 }: HeaderBarProps = {}) {
-  const navigate = useNavigate();
   const location = useLocation();
-  const cameFromBackRef = useRef(false);
+  const pageLabel = getPageLabel(location.pathname, location.search);
   const askAthelasLottieRef = useRef<LottieRefCurrentProps | null>(null);
-  const historyButtonRef = useRef<HTMLButtonElement>(null);
-  const [canGoForward, setCanGoForward] = useState(false);
-  const [navHistory, setNavHistory] = useState<NavHistoryEntry[]>([]);
-  const [historyOpen, setHistoryOpen] = useState(false);
+  const notificationsButtonRef = useRef<HTMLButtonElement>(null);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [activeNotificationTab, setActiveNotificationTab] = useState<NotificationTabId>('general');
+
+  const hasUnreadNotifications = useMemo(
+    () => Object.values(MOCK_NOTIFICATIONS).some((items) => items.some((n) => n.unread)),
+    [],
+  );
 
   type ScribeLiveSlotProps = NonNullable<HeaderBarProps['scribeLiveActivity']>;
   const scribeLiveSnapshotRef = useRef<ScribeLiveSlotProps | null>(null);
@@ -222,39 +341,6 @@ export function HeaderBar({
     const w = Math.ceil(el.getBoundingClientRect().width);
     if (w > 0) setScribeLiveMeasuredWidth(w);
   }, [scribeLiveActivity, scribeLiveMounted, liveBarProps, liveBarProps?.seconds, liveBarProps?.phase]);
-
-  useEffect(() => {
-    const key = location.pathname + location.search;
-    const label = getLabelForLocation(location.pathname, location.search);
-    setNavHistory((prev) => {
-      const filtered = prev.filter((e) => e.pathname + e.search !== key);
-      const next = [...filtered, { pathname: location.pathname, search: location.search, label }];
-      return next.slice(-MAX_HISTORY);
-    });
-  }, [location.pathname, location.search]);
-
-  useEffect(() => {
-    if (cameFromBackRef.current) {
-      setCanGoForward(true);
-      cameFromBackRef.current = false;
-    } else {
-      setCanGoForward(false);
-    }
-  }, [location.key]);
-
-  const handleBack = () => {
-    cameFromBackRef.current = true;
-    navigate(-1);
-  };
-
-  const handleForward = () => {
-    navigate(1);
-  };
-
-  const handleHistoryItemClick = (pathname: string, search: string) => {
-    navigate(pathname + search);
-    setHistoryOpen(false);
-  };
 
   return (
     <Box
@@ -296,105 +382,127 @@ export function HeaderBar({
             />
           </IconButton>
         )}
-        <IconButton
-          size="small"
-          aria-label="Back"
-          onClick={handleBack}
+        <Box
           sx={{
-            color: 'text.secondary',
-            width: 28,
-            height: 28,
-            minHeight: 28,
-            maxHeight: 28,
-            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.75,
+            ml: 0.75,
+            minWidth: 0,
           }}
         >
-          <ArrowLeftIcon sx={{ fontSize: ICON_SIZE }} />
-        </IconButton>
-        <IconButton
-          size="small"
-          aria-label="Forward"
-          onClick={handleForward}
-          disabled={!canGoForward}
-          sx={{
-            color: 'text.secondary',
-            width: 28,
-            height: 28,
-            minHeight: 28,
-            maxHeight: 28,
-            borderRadius: '8px',
-          }}
-        >
-          <ArrowRightIcon sx={{ fontSize: ICON_SIZE }} />
-        </IconButton>
-        <IconButton
-          ref={historyButtonRef}
-          size="small"
-          aria-label="History"
-          aria-haspopup="listbox"
-          aria-expanded={historyOpen}
-          onClick={() => setHistoryOpen((open) => !open)}
-          sx={{
-            color: 'text.secondary',
-            width: 28,
-            height: 28,
-            minHeight: 28,
-            maxHeight: 28,
-            borderRadius: '8px',
-          }}
-        >
-          <HistoryIcon sx={{ fontSize: ICON_SIZE }} />
-        </IconButton>
+          <ArticleOutlined sx={{ fontSize: 16, color: 'text.secondary', flexShrink: 0 }} />
+          <Typography
+            sx={{
+              fontSize: 13,
+              fontWeight: 500,
+              color: 'text.primary',
+              lineHeight: 1,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              maxWidth: 240,
+            }}
+          >
+            {pageLabel}
+          </Typography>
+        </Box>
       </Box>
 
       <Box
-        component="button"
-        type="button"
-        onClick={onSearchClick}
-        aria-label="Search"
         sx={{
           position: 'absolute',
           left: '50%',
           top: '50%',
           zIndex: 1,
           transform: 'translate(-50%, -50%)',
-          width: 360,
-          height: 28,
-          minHeight: 28,
-          maxHeight: 28,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
           gap: '6px',
-          px: 1.5,
-          borderRadius: '8px',
-          border: 'none',
-          bgcolor: 'action.hover',
-          cursor: 'pointer',
-          textAlign: 'left',
-          color: 'text.secondary',
-          fontSize: 14,
-          '&:hover': {
-            bgcolor: 'action.selected',
-          },
-          '&:focus-visible': {
-            outline: '2px solid',
-            outlineOffset: 2,
-            outlineColor: 'primary.main',
-          },
         }}
       >
-        <SearchIcon sx={{ fontSize: ICON_SIZE, color: 'text.disabled', flexShrink: 0 }} />
+        <Tooltip title="Notifications">
+          <IconButton
+            ref={notificationsButtonRef}
+            size="small"
+            aria-label="Notifications"
+            aria-haspopup="dialog"
+            aria-expanded={notificationsOpen}
+            onClick={() => setNotificationsOpen((open) => !open)}
+            sx={{
+              color: 'text.secondary',
+              width: 28,
+              height: 28,
+              minHeight: 28,
+              maxHeight: 28,
+              borderRadius: '8px',
+            }}
+          >
+            <Badge
+              variant="dot"
+              invisible={!hasUnreadNotifications}
+              overlap="circular"
+              anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+              sx={{
+                '& .MuiBadge-badge': {
+                  bgcolor: 'error.main',
+                  minWidth: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  border: (theme) => `2px solid ${theme.palette.background.paper}`,
+                  top: 3,
+                  right: 3,
+                },
+              }}
+            >
+              <NotificationsNoneOutlined sx={{ fontSize: ICON_SIZE }} />
+            </Badge>
+          </IconButton>
+        </Tooltip>
         <Box
-          component="span"
+          component="button"
+          type="button"
+          onClick={onSearchClick}
+          aria-label="Search"
           sx={{
-            width: 'fit-content',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
+            width: 360,
+            height: 28,
+            minHeight: 28,
+            maxHeight: 28,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px',
+            px: 1.5,
+            borderRadius: '8px',
+            border: 'none',
+            bgcolor: 'action.hover',
+            cursor: 'pointer',
+            textAlign: 'left',
+            color: 'text.secondary',
+            fontSize: 14,
+            '&:hover': {
+              bgcolor: 'action.selected',
+            },
+            '&:focus-visible': {
+              outline: '2px solid',
+              outlineOffset: 2,
+              outlineColor: 'primary.main',
+            },
           }}
         >
-          Search for anything
+          <SearchIcon sx={{ fontSize: ICON_SIZE, color: 'text.disabled', flexShrink: 0 }} />
+          <Box
+            component="span"
+            sx={{
+              width: 'fit-content',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            Search for anything
+          </Box>
         </Box>
       </Box>
 
@@ -672,53 +780,155 @@ export function HeaderBar({
       </Box>
 
       <Popover
-        open={historyOpen}
-        anchorEl={historyButtonRef.current}
-        onClose={() => setHistoryOpen(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        open={notificationsOpen}
+        anchorEl={notificationsButtonRef.current}
+        onClose={() => setNotificationsOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'center' }}
         slotProps={{
           paper: {
-            sx: { mt: 1, borderRadius: 2, minWidth: 260, maxWidth: 360 },
+            sx: {
+              mt: 1,
+              borderRadius: 2,
+              width: 380,
+              maxWidth: 'calc(100vw - 32px)',
+              overflow: 'hidden',
+            },
           },
         }}
       >
-        <Box sx={{ pt: 1, pb: '8px' }}>
-          <Typography
-            variant="caption"
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            px: 2,
+            pt: 1.25,
+            pb: 0.75,
+          }}
+        >
+          <Typography sx={{ fontSize: 14, fontWeight: 600, color: 'text.primary' }}>
+            Notifications
+          </Typography>
+          <Button
+            size="small"
+            variant="text"
             sx={{
-              display: 'block',
-              px: 2,
-              py: 0.5,
-              fontWeight: 700,
+              textTransform: 'none',
+              fontSize: 12,
+              fontWeight: 500,
+              minWidth: 0,
+              px: 0.75,
               color: 'text.secondary',
-              textTransform: 'uppercase',
-              letterSpacing: '0.05em',
+              '&:hover': { bgcolor: 'transparent', color: 'primary.main' },
             }}
           >
-            Recent places
-          </Typography>
-          {navHistory.length === 0 ? (
-            <Typography variant="body2" color="text.secondary" sx={{ px: 2, py: 2 }}>
-              No history yet. Navigate around the app to see recent places here.
-            </Typography>
-          ) : (
-            <List dense disablePadding sx={{ maxHeight: 320, overflow: 'auto' }}>
-              {[...navHistory].reverse().map((entry) => (
-                <ListItemButton
-                  key={`${entry.pathname}${entry.search}`}
-                  onClick={() => handleHistoryItemClick(entry.pathname, entry.search)}
-                  sx={{ py: 0.75 }}
-                >
-                  <Typography variant="body2" noWrap sx={{ flex: 1 }}>
-                    {entry.label}
-                  </Typography>
-                </ListItemButton>
-              ))}
-            </List>
-          )}
+            Mark all read
+          </Button>
         </Box>
+        <Tabs
+          value={activeNotificationTab}
+          onChange={(_, v: NotificationTabId) => setActiveNotificationTab(v)}
+          variant="scrollable"
+          scrollButtons={false}
+          sx={{
+            px: 1,
+            borderBottom: 1,
+            borderColor: 'divider',
+            minHeight: 36,
+            '& .MuiTab-root': {
+              minHeight: 36,
+              py: 0.5,
+              px: 1.25,
+              textTransform: 'none',
+              fontSize: 12,
+              fontWeight: 500,
+              color: 'text.secondary',
+            },
+            '& .Mui-selected': { color: 'primary.main', fontWeight: 600 },
+          }}
+        >
+          {NOTIFICATION_TABS.map(({ id, label }) => (
+            <Tab key={id} value={id} label={label} />
+          ))}
+        </Tabs>
+        <NotificationsTabPanel items={MOCK_NOTIFICATIONS[activeNotificationTab]} />
       </Popover>
     </Box>
+  );
+}
+
+function NotificationsTabPanel({ items }: { items: NotificationItem[] }) {
+  if (items.length === 0) {
+    return (
+      <Box sx={{ px: 2, py: 4, textAlign: 'center', color: 'text.secondary' }}>
+        <Typography sx={{ fontSize: 13 }}>You're all caught up.</Typography>
+      </Box>
+    );
+  }
+  return (
+    <List dense disablePadding sx={{ maxHeight: 360, overflow: 'auto', py: 0.5 }}>
+      {items.map((item) => (
+        <ListItemButton
+          key={item.id}
+          sx={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 1.25,
+            py: 1,
+            px: 2,
+          }}
+        >
+          <Box
+            sx={{
+              flexShrink: 0,
+              width: 8,
+              height: 8,
+              mt: '6px',
+              borderRadius: '50%',
+              bgcolor: item.unread ? 'primary.main' : 'transparent',
+              border: (theme) =>
+                item.unread ? 'none' : `1px solid ${theme.palette.divider}`,
+            }}
+          />
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography
+              sx={{
+                fontSize: 13,
+                fontWeight: item.unread ? 600 : 500,
+                color: 'text.primary',
+                lineHeight: 1.3,
+              }}
+            >
+              {item.title}
+            </Typography>
+            {item.subtitle && (
+              <Typography
+                sx={{
+                  fontSize: 12,
+                  color: 'text.secondary',
+                  lineHeight: 1.35,
+                  mt: 0.25,
+                  whiteSpace: 'normal',
+                }}
+              >
+                {item.subtitle}
+              </Typography>
+            )}
+          </Box>
+          <Typography
+            sx={{
+              flexShrink: 0,
+              fontSize: 11,
+              color: 'text.secondary',
+              mt: '2px',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {item.time}
+          </Typography>
+        </ListItemButton>
+      ))}
+    </List>
   );
 }
