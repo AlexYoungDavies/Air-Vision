@@ -18,7 +18,6 @@ import { alpha } from '@mui/material/styles';
 import { keyframes } from '@mui/system';
 import StopRounded from '@mui/icons-material/StopRounded';
 import NotificationsNoneOutlined from '@mui/icons-material/NotificationsNoneOutlined';
-import ArticleOutlined from '@mui/icons-material/ArticleOutlined';
 import { SearchIcon, MicrophoneIcon, SpeakingIcon } from '../icons';
 import { ScribeLiveActivityBar } from './ScribeLiveActivityBar';
 import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
@@ -359,7 +358,7 @@ export function HeaderBar({
         flexShrink: 0,
       }}
     >
-      <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
+      <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '0px', flexShrink: 0 }}>
         {onToggleNav && (
           <IconButton
             size="small"
@@ -382,31 +381,21 @@ export function HeaderBar({
             />
           </IconButton>
         )}
-        <Box
+        <Typography
           sx={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.75,
-            ml: 0.75,
-            minWidth: 0,
+            ml: 1,
+            fontSize: 15,
+            fontWeight: 500,
+            color: 'text.primary',
+            lineHeight: 1,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            maxWidth: 260,
           }}
         >
-          <ArticleOutlined sx={{ fontSize: 16, color: 'text.secondary', flexShrink: 0 }} />
-          <Typography
-            sx={{
-              fontSize: 13,
-              fontWeight: 500,
-              color: 'text.primary',
-              lineHeight: 1,
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              maxWidth: 240,
-            }}
-          >
-            {pageLabel}
-          </Typography>
-        </Box>
+          {pageLabel}
+        </Typography>
       </Box>
 
       <Box
@@ -506,7 +495,7 @@ export function HeaderBar({
         </Box>
       </Box>
 
-      <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
+      <Box sx={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '0px', flexShrink: 0 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
           <Tooltip title={dictateActive ? 'Stop dictation' : 'Dictate'}>
             <Box
