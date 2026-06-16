@@ -41,6 +41,7 @@ import {
   AllergiesTabContent,
   ImmunizationsTabContent,
 } from './OverflowTabContent';
+import { AddCaseReviewDrawer } from './AddCaseReviewDrawer';
 
 const visitNoteTabSlideUp = keyframes`
   0% { transform: translateY(10px); opacity: 0.7; }
@@ -68,10 +69,13 @@ const SPLIT_BUTTON_ACTIONS = [
   { id: 'create-task', label: 'Create Task' },
   { id: 'prescribe-med', label: 'Prescribe Med' },
   { id: 'create-order', label: 'Create Order' },
+  { id: 'add-case-review', label: 'Add Case Review' },
   { id: 'print-sheet', label: 'Print Patient Sheet' },
   { id: 'charge-patient', label: 'Charge Patient' },
   { id: 'print-statements', label: 'Print Statements' },
 ] as const;
+
+type SplitButtonActionId = (typeof SPLIT_BUTTON_ACTIONS)[number]['id'];
 
 export type PrimaryTabId = (typeof PRIMARY_TABS)[number]['id'];
 export type MoreTabId = (typeof MORE_TAB_OPTIONS)[number]['id'];
@@ -328,6 +332,14 @@ export function PatientProfilePage({
   const [overflowTabFadingOut, setOverflowTabFadingOut] = useState<MoreTabId | null>(null);
   const [overflowTabFadeIn, setOverflowTabFadeIn] = useState(false);
   const [highlightedCitationNumber, setHighlightedCitationNumber] = useState<number | undefined>(undefined);
+  const [caseReviewDrawerOpen, setCaseReviewDrawerOpen] = useState(false);
+
+  const handleSplitMenuAction = (id: SplitButtonActionId) => {
+    setSplitMenuAnchor(null);
+    if (id === 'add-case-review') {
+      setCaseReviewDrawerOpen(true);
+    }
+  };
   const {
     openScribeForPatientId,
     closeGlobalScribePanel,
@@ -553,13 +565,13 @@ export function PatientProfilePage({
               transformOrigin={{ vertical: 'top', horizontal: 'right' }}
             >
               {SPLIT_BUTTON_ACTIONS.slice(0, -2).map(({ id, label }) => (
-                <MenuItem key={id} onClick={() => setSplitMenuAnchor(null)}>
+                <MenuItem key={id} onClick={() => handleSplitMenuAction(id)}>
                   {label}
                 </MenuItem>
               ))}
               <Divider component="li" sx={{ my: 0.5 }} />
               {SPLIT_BUTTON_ACTIONS.slice(-2).map(({ id, label }) => (
-                <MenuItem key={id} onClick={() => setSplitMenuAnchor(null)}>
+                <MenuItem key={id} onClick={() => handleSplitMenuAction(id)}>
                   {label}
                 </MenuItem>
               ))}
@@ -950,6 +962,11 @@ export function PatientProfilePage({
       >
         <MenuItem onClick={() => setPatientMenuAnchor(null)}>Switch patient</MenuItem>
       </Menu>
+      <AddCaseReviewDrawer
+        open={caseReviewDrawerOpen}
+        patient={patient}
+        onClose={() => setCaseReviewDrawerOpen(false)}
+      />
     </Box>
     </Box>
   );
