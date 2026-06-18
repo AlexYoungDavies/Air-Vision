@@ -1,8 +1,20 @@
 import { createTheme } from '@mui/material/styles';
-import type { PaletteOptions } from '@mui/material/styles';
+import type { PaletteOptions, Theme } from '@mui/material/styles';
 import type { AccentKey, PaletteMode } from './accents';
 import { getPrimaryPaletteForAccent, getBackgroundPaletteForAccent } from './accents';
-import { VISIT_NOTE_BUTTON_EXEMPT_CLASS } from './buttonStyleConstants';
+import {
+  VISIT_NOTE_BUTTON_EXEMPT_CLASS,
+  BUTTON_BORDER_RADIUS_BY_SIZE,
+  BUTTON_LINK_CLASS,
+  FIELD_BORDER_RADIUS,
+} from './buttonStyleConstants';
+import {
+  getTactileNeutralButtonStyles,
+  getTactileNeutralTextInheritStyles,
+  getTactilePrimaryButtonStyles,
+  getTertiaryButtonStyles,
+  getNeutralBorderColor,
+} from './buttonTactileStyles';
 
 /**
  * Semantic palettes for badges, chips, and alerts.
@@ -136,7 +148,7 @@ const DARK_BASE = {
   },
 };
 
-/** Global button / icon-button standards: 8px radius, no elevation, no ripple, sizes 28 / 36 / 44. */
+/** Global button / icon-button standards: size-based radius, tactile depth, sizes 28 / 36 / 44. */
 const BUTTON_STANDARD_COMPONENTS = {
   MuiButtonBase: {
     defaultProps: {
@@ -149,25 +161,35 @@ const BUTTON_STANDARD_COMPONENTS = {
     },
     styleOverrides: {
       root: {
-        borderRadius: 8,
         boxSizing: 'border-box',
-        boxShadow: 'none',
         textTransform: 'none',
-        '&:hover': { boxShadow: 'none' },
-        '&:active': { boxShadow: 'none' },
-        '&.Mui-focusVisible': { boxShadow: 'none' },
+        [`&.${BUTTON_LINK_CLASS}`]: {
+          boxShadow: 'none',
+          backgroundColor: 'transparent',
+          border: 'none',
+        },
       },
-      contained: {
-        boxShadow: 'none',
-        '&:hover': { boxShadow: 'none' },
-        '&:active': { boxShadow: 'none' },
-      },
+      containedPrimary: ({ theme }: { theme: Theme }) =>
+        getTactilePrimaryButtonStyles(theme.palette.mode),
+      outlined: ({ theme }: { theme: Theme }) => ({
+        ...getTactileNeutralButtonStyles(theme.palette.mode, theme.palette.background.paper),
+        borderColor: getNeutralBorderColor(theme.palette.mode),
+      }),
+      outlinedInherit: ({ theme }: { theme: Theme }) => ({
+        ...getTactileNeutralButtonStyles(theme.palette.mode, theme.palette.background.paper),
+        borderColor: getNeutralBorderColor(theme.palette.mode),
+        color: 'text.primary',
+      }),
+      textInherit: ({ theme }: { theme: Theme }) =>
+        getTactileNeutralTextInheritStyles(theme.palette.mode, theme.palette.background.paper),
+      textPrimary: ({ theme }: { theme: Theme }) => getTertiaryButtonStyles(theme),
       sizeSmall: {
         [`&:not(.${VISIT_NOTE_BUTTON_EXEMPT_CLASS})`]: {
           minHeight: 28,
           height: 28,
           paddingLeft: 12,
           paddingRight: 12,
+          borderRadius: BUTTON_BORDER_RADIUS_BY_SIZE.small,
         },
       },
       sizeMedium: {
@@ -176,6 +198,7 @@ const BUTTON_STANDARD_COMPONENTS = {
           height: 36,
           paddingLeft: 16,
           paddingRight: 16,
+          borderRadius: BUTTON_BORDER_RADIUS_BY_SIZE.medium,
         },
       },
       sizeLarge: {
@@ -184,6 +207,7 @@ const BUTTON_STANDARD_COMPONENTS = {
           height: 44,
           paddingLeft: 20,
           paddingRight: 20,
+          borderRadius: BUTTON_BORDER_RADIUS_BY_SIZE.large,
         },
       },
     },
@@ -191,14 +215,10 @@ const BUTTON_STANDARD_COMPONENTS = {
   MuiIconButton: {
     styleOverrides: {
       root: {
-        borderRadius: 8,
         boxSizing: 'border-box',
-        boxShadow: 'none',
-        '&:hover': { boxShadow: 'none' },
       },
       sizeSmall: {
         [`&:not(.${VISIT_NOTE_BUTTON_EXEMPT_CLASS})`]: {
-          // Square hit area: MUI default minWidth (e.g. 48px) would make width > height.
           width: 28,
           minWidth: 28,
           maxWidth: 28,
@@ -207,6 +227,7 @@ const BUTTON_STANDARD_COMPONENTS = {
           maxHeight: 28,
           padding: 0,
           flexShrink: 0,
+          borderRadius: BUTTON_BORDER_RADIUS_BY_SIZE.small,
         },
       },
       sizeMedium: {
@@ -219,6 +240,7 @@ const BUTTON_STANDARD_COMPONENTS = {
           maxHeight: 36,
           padding: 0,
           flexShrink: 0,
+          borderRadius: BUTTON_BORDER_RADIUS_BY_SIZE.medium,
         },
       },
       sizeLarge: {
@@ -231,14 +253,54 @@ const BUTTON_STANDARD_COMPONENTS = {
           maxHeight: 44,
           padding: 0,
           flexShrink: 0,
+          borderRadius: BUTTON_BORDER_RADIUS_BY_SIZE.large,
         },
       },
+    },
+  },
+  MuiSwitch: {
+    styleOverrides: {
+      root: {
+        overflow: 'hidden',
+        padding: 0,
+        boxSizing: 'border-box',
+      },
+      switchBase: {
+        padding: 0,
+        margin: 0,
+        '&:hover': {
+          backgroundColor: 'transparent',
+        },
+        '&.Mui-checked': {
+          color: 'primary.main',
+          '& + .MuiSwitch-track': {
+            opacity: 1,
+            bgcolor: 'primary.main',
+          },
+          '& .MuiSwitch-thumb': {
+            bgcolor: 'background.paper',
+          },
+        },
+      },
+      thumb: {
+        bgcolor: 'background.paper',
+        boxShadow: '0 1px 2px rgba(0, 0, 0, 0.14)',
+      },
+      track: ({ theme }: { theme: Theme }) => ({
+        opacity: 1,
+        bgcolor:
+          theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.08)',
+        boxShadow:
+          theme.palette.mode === 'dark'
+            ? 'inset 0 1px 1px rgba(0, 0, 0, 0.22)'
+            : 'inset 0 1px 1px rgba(0, 0, 0, 0.1)',
+      }),
     },
   },
   MuiToggleButton: {
     styleOverrides: {
       root: {
-        borderRadius: 8,
+        borderRadius: BUTTON_BORDER_RADIUS_BY_SIZE.medium,
         boxShadow: 'none',
         textTransform: 'none',
         '&:hover': { boxShadow: 'none' },
@@ -267,7 +329,7 @@ const BUTTON_STANDARD_COMPONENTS = {
 
 const SHARED_OPTIONS = {
   shape: {
-    borderRadius: 8,
+    borderRadius: FIELD_BORDER_RADIUS,
   },
   typography: {
     fontFamily: '"Satoshi", "Inter", "Helvetica", "Arial", sans-serif',

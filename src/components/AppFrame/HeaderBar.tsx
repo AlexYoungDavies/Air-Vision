@@ -108,6 +108,7 @@ const PAGE_LABELS: Record<string, string> = {
   '/payments': 'Payments',
   '/statements': 'Statements',
   '/preferences': 'Preferences',
+  '/components': 'Components',
 };
 
 function getPageLabel(pathname: string, search: string): string {

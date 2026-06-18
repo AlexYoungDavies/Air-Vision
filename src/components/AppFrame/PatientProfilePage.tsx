@@ -10,6 +10,7 @@ import {
   IconButton,
   Menu,
   MenuItem,
+  ListItemIcon,
   Tabs,
   Tab,
   Paper,
@@ -20,6 +21,11 @@ import { keyframes } from '@mui/system';
 import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined';
 import MoreHorizOutlined from '@mui/icons-material/MoreHorizOutlined';
 import CloseOutlined from '@mui/icons-material/CloseOutlined';
+import AddOutlined from '@mui/icons-material/AddOutlined';
+import ChecklistOutlined from '@mui/icons-material/ChecklistOutlined';
+import AttachMoneyOutlined from '@mui/icons-material/AttachMoneyOutlined';
+import ReceiptLongOutlined from '@mui/icons-material/ReceiptLongOutlined';
+import PrintOutlined from '@mui/icons-material/PrintOutlined';
 import { PinIcon, ConversationIcon, CircleCheckIcon, HistoryIcon } from '../icons';
 import type { Patient } from '../../data/mockPatients';
 import { getAppointmentsForPatient, type Appointment } from '../../data/mockAppointments';
@@ -42,6 +48,7 @@ import {
   ImmunizationsTabContent,
 } from './OverflowTabContent';
 import { AddCaseReviewDrawer } from './AddCaseReviewDrawer';
+import { HistoryPanelContent } from './HistoryPanelContent';
 
 const visitNoteTabSlideUp = keyframes`
   0% { transform: translateY(10px); opacity: 0.7; }
@@ -50,7 +57,7 @@ const visitNoteTabSlideUp = keyframes`
 
 const PRIMARY_TABS = [
   { id: 'overview', label: 'Overview' },
-  { id: 'appointments', label: 'Appointments' },
+  { id: 'appointments', label: 'Visits & Notes' },
   { id: 'billing', label: 'Billing' },
   { id: 'attachment', label: 'Attachment' },
 ] as const;
@@ -65,17 +72,29 @@ const MORE_TAB_OPTIONS = [
   { id: 'immunizations', label: 'Immunizations' },
 ] as const;
 
-const SPLIT_BUTTON_ACTIONS = [
-  { id: 'create-task', label: 'Create Task' },
-  { id: 'prescribe-med', label: 'Prescribe Med' },
-  { id: 'create-order', label: 'Create Order' },
-  { id: 'add-case-review', label: 'Add Case Review' },
-  { id: 'print-sheet', label: 'Print Patient Sheet' },
-  { id: 'charge-patient', label: 'Charge Patient' },
-  { id: 'print-statements', label: 'Print Statements' },
+const SPLIT_BUTTON_MENU_SECTIONS = [
+  {
+    actions: [{ id: 'add-case-review', label: 'Non-visit Note', Icon: AddOutlined }],
+  },
+  {
+    actions: [
+      { id: 'create-order', label: 'New Order', Icon: AddOutlined },
+      { id: 'create-task', label: 'New Patient Task', Icon: ChecklistOutlined },
+    ],
+  },
+  {
+    actions: [
+      { id: 'charge-patient', label: 'Charge Patient', Icon: AttachMoneyOutlined },
+      { id: 'print-statements', label: 'Print Statement', Icon: ReceiptLongOutlined },
+    ],
+  },
+  {
+    actions: [{ id: 'print-sheet', label: 'Print Patient Sheet', Icon: PrintOutlined }],
+  },
 ] as const;
 
-type SplitButtonActionId = (typeof SPLIT_BUTTON_ACTIONS)[number]['id'];
+type SplitButtonActionId =
+  (typeof SPLIT_BUTTON_MENU_SECTIONS)[number]['actions'][number]['id'];
 
 export type PrimaryTabId = (typeof PRIMARY_TABS)[number]['id'];
 export type MoreTabId = (typeof MORE_TAB_OPTIONS)[number]['id'];
@@ -231,84 +250,6 @@ function TasksPanelContent() {
           </Box>
         </Paper>
       ))}
-    </Box>
-  );
-}
-
-const TIMELINE_LINE_OFFSET_PX = 11;
-const TIMELINE_ICON_SIZE = 12;
-const TIMELINE_LEFT_PADDING = 32;
-
-const MOCK_ACTIVITY = [
-  { id: '1', label: 'Patient profile created', date: 'Jan 15, 2024', time: '10:02 AM' },
-  { id: '2', label: 'Intake forms completed', date: 'Jan 16, 2024', time: '2:30 PM' },
-  { id: '3', label: 'Insurance added', date: 'Jan 16, 2024', time: '2:35 PM' },
-  { id: '4', label: 'First appointment scheduled', date: 'Jan 18, 2024', time: '9:00 AM' },
-  { id: '5', label: 'Appointment completed', date: 'Jan 25, 2024', time: '11:45 AM' },
-  { id: '6', label: 'Labs ordered', date: 'Jan 25, 2024', time: '12:00 PM' },
-  { id: '7', label: 'Authorizations added', date: 'Feb 1, 2024', time: '9:15 AM' },
-  { id: '8', label: 'Patient information updated', date: 'Feb 10, 2024', time: '3:20 PM' },
-  { id: '9', label: 'Appointment scheduled', date: 'Mar 5, 2025', time: '10:00 AM' },
-  { id: '10', label: 'Appointment completed', date: 'Mar 12, 2025', time: '2:00 PM' },
-];
-
-function HistoryPanelContent() {
-  return (
-    <Box sx={{ p: 2, display: 'flex', flexDirection: 'column' }}>
-      <Box
-        sx={{
-          position: 'relative',
-          pl: `${TIMELINE_LEFT_PADDING}px`,
-        }}
-      >
-        {/* Vertical line running through icon centers */}
-        <Box
-          sx={{
-            position: 'absolute',
-            left: TIMELINE_LINE_OFFSET_PX,
-            top: TIMELINE_ICON_SIZE / 2,
-            bottom: TIMELINE_ICON_SIZE / 2,
-            width: 2,
-            bgcolor: 'divider',
-            borderRadius: 1,
-          }}
-        />
-        {[...MOCK_ACTIVITY].reverse().map((item, i) => (
-          <Box
-            key={item.id}
-            sx={{
-              position: 'relative',
-              display: 'flex',
-              alignItems: 'flex-start',
-              pb: i < MOCK_ACTIVITY.length - 1 ? 2 : 0,
-            }}
-          >
-            {/* Icon centered on the vertical line at TIMELINE_LINE_OFFSET_PX */}
-            <Box
-              sx={{
-                position: 'absolute',
-                left: TIMELINE_LINE_OFFSET_PX - TIMELINE_ICON_SIZE / 2 - TIMELINE_LEFT_PADDING,
-                top: 2,
-                width: TIMELINE_ICON_SIZE,
-                height: TIMELINE_ICON_SIZE,
-                borderRadius: '50%',
-                bgcolor: 'primary.main',
-                border: '2px solid',
-                borderColor: 'background.paper',
-                boxSizing: 'border-box',
-              }}
-            />
-            <Box sx={{ flex: 1, minWidth: 0 }}>
-              <Typography variant="body2" sx={{ fontSize: 13, fontWeight: 500 }}>
-                {item.label}
-              </Typography>
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
-                {item.date} · {item.time}
-              </Typography>
-            </Box>
-          </Box>
-        ))}
-      </Box>
     </Box>
   );
 }
@@ -517,25 +458,15 @@ export function PatientProfilePage({
             </Box>
           </Box>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <Box
-              sx={{
-                display: 'flex',
-                borderRadius: '9px',
-                overflow: 'hidden',
-                border: '1px solid',
-                borderColor: 'divider',
-              }}
-            >
+            <Box sx={{ display: 'inline-flex', alignItems: 'stretch' }}>
               <Button
-                variant="text"
+                variant="outlined"
+                color="inherit"
                 size="small"
                 sx={{
-                  height: 28,
                   px: 1,
-                  py: 0.375,
-                  borderRadius: 0,
-                  borderRight: '1px solid',
-                  borderColor: 'divider',
+                  borderTopRightRadius: 0,
+                  borderBottomRightRadius: 0,
                   textTransform: 'none',
                   fontWeight: 500,
                   fontSize: 14,
@@ -544,18 +475,25 @@ export function PatientProfilePage({
               >
                 Book Appointment
               </Button>
-              <IconButton
+              <Button
+                variant="outlined"
+                color="inherit"
                 size="small"
                 onClick={(e) => setSplitMenuAnchor(e.currentTarget)}
+                aria-label="More appointment actions"
                 sx={{
+                  minWidth: 28,
                   width: 28,
-                  height: 28,
-                  borderRadius: 0,
+                  px: 0,
+                  borderTopLeftRadius: 0,
+                  borderBottomLeftRadius: 0,
+                  borderLeft: 'none',
                   color: 'text.primary',
+                  ml: '-1px',
                 }}
               >
                 <KeyboardArrowDownOutlined sx={{ fontSize: 18 }} />
-              </IconButton>
+              </Button>
             </Box>
             <Menu
               anchorEl={splitMenuAnchor}
@@ -563,18 +501,21 @@ export function PatientProfilePage({
               onClose={() => setSplitMenuAnchor(null)}
               anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
               transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+              slotProps={{ paper: { sx: { mt: '4px' } } }}
             >
-              {SPLIT_BUTTON_ACTIONS.slice(0, -2).map(({ id, label }) => (
-                <MenuItem key={id} onClick={() => handleSplitMenuAction(id)}>
-                  {label}
-                </MenuItem>
-              ))}
-              <Divider component="li" sx={{ my: 0.5 }} />
-              {SPLIT_BUTTON_ACTIONS.slice(-2).map(({ id, label }) => (
-                <MenuItem key={id} onClick={() => handleSplitMenuAction(id)}>
-                  {label}
-                </MenuItem>
-              ))}
+              {SPLIT_BUTTON_MENU_SECTIONS.map((section, sectionIndex) => [
+                ...(sectionIndex > 0
+                  ? [<Divider key={`split-divider-${sectionIndex}`} component="li" sx={{ my: 0.5 }} />]
+                  : []),
+                ...section.actions.map(({ id, label, Icon }) => (
+                  <MenuItem key={id} onClick={() => handleSplitMenuAction(id)}>
+                    <ListItemIcon sx={{ minWidth: 32 }}>
+                      <Icon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                    </ListItemIcon>
+                    {label}
+                  </MenuItem>
+                )),
+              ])}
             </Menu>
           </Box>
         </Box>
@@ -779,7 +720,7 @@ export function PatientProfilePage({
                   aria-label={title}
                   active={active}
                   onClick={() => handleSecondaryIconClick(mode)}
-                  sx={{ width: 28, height: 28, borderRadius: '8px' }}
+                  sx={{ width: 28, height: 28 }}
                 >
                   <Icon sx={{ fontSize: 18 }} />
                 </AppIconButton>
@@ -929,15 +870,15 @@ export function PatientProfilePage({
                         <CloseOutlined sx={{ fontSize: 20 }} />
                       </IconButton>
                     </Box>
-                    {currentMode === 'chat' ? (
+                    {currentMode === 'chat' || currentMode === 'history' ? (
                       <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                        <ChatPanelContent />
+                        {currentMode === 'chat' && <ChatPanelContent />}
+                        {currentMode === 'history' && <HistoryPanelContent patientId={patient.id} />}
                       </Box>
                     ) : (
                       <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
                         {currentMode === 'pin' && <PinPanelContent patient={patient} />}
                         {currentMode === 'tasks' && <TasksPanelContent />}
-                        {currentMode === 'history' && <HistoryPanelContent />}
                         {currentMode === 'citations' && (
                           <CitationPanelContent
                             highlightedCitationNumber={highlightedCitationNumber}

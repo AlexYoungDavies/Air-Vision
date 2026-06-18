@@ -176,10 +176,10 @@ function OrderExpandedDetail({
               <MenuItem value="LT">LT</MenuItem>
               <MenuItem value="Mod">Mod</MenuItem>
             </Select>
-            <IconButton size="small" sx={{ width: 24, height: 24, border: '1px solid', borderColor: 'divider', borderRadius: '50%' }}>
+            <IconButton size="small" sx={{ width: 28, height: 28, border: '1px solid', borderColor: 'divider', borderRadius: '50%' }}>
               <Typography sx={{ fontSize: 14, lineHeight: 1 }}>−</Typography>
             </IconButton>
-            <IconButton size="small" sx={{ width: 24, height: 24, border: '1px solid', borderColor: 'divider', borderRadius: '50%' }}>
+            <IconButton size="small" sx={{ width: 28, height: 28, border: '1px solid', borderColor: 'divider', borderRadius: '50%' }}>
               <Typography sx={{ fontSize: 14, lineHeight: 1 }}>+</Typography>
             </IconButton>
           </Box>
@@ -315,7 +315,7 @@ function OrderExpandedDetail({
                   sx={{ fontSize: 12, height: 24 }}
                 />
               ))}
-              <Button size="small" startIcon={<AddOutlined sx={{ fontSize: 14 }} />} sx={{ fontSize: 12, height: 24, textTransform: 'none' }}>
+              <Button size="small" startIcon={<AddOutlined sx={{ fontSize: 14 }} />} sx={{ fontSize: 12, textTransform: 'none' }}>
                 Add
               </Button>
             </Box>

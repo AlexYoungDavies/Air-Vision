@@ -1,5 +1,5 @@
 /**
- * Mock appointment data per patient. Used in the Appointments tab of the patient profile.
+ * Mock appointment data per patient. Used in the Visits & Notes tab of the patient profile.
  */
 
 export type AppointmentStatus =
@@ -49,7 +49,7 @@ const MOCK_TODAY = new Date(2025, 2, 11);
 const TIMES = ['8:00 AM', '9:00 AM', '9:30 AM', '10:00 AM', '11:00 AM', '2:00 PM', '2:30 PM', '3:30 PM', '4:00 PM'];
 
 function buildAppointmentsForPatient(patientId: string, patientIndex: number): Appointment[] {
-  const appointments: Appointment[] = [];
+  const entries: { sortTime: number; appointment: Appointment }[] = [];
 
   // Each patient has 10–14 appointments (at least 10, some more)
   const totalCount = 10 + (patientIndex % 5);
@@ -98,24 +98,52 @@ function buildAppointmentsForPatient(patientId: string, patientIndex: number): A
         : chronoIndex % 7 === 0
           ? 'Progress Note'
           : 'Follow-up';
-    appointments.push({
-      id: `apt-${patientId}-${i + 1}`,
-      patientId,
-      date: formatDateOrdinal(d),
-      time: pick(TIMES, patientIndex + i),
-      status,
-      caseName: `Case ${patientId}-${i + 1}`,
-      caseId: `C-${1000 + parseInt(patientId, 10) * 10 + i}`,
-      template: pick(TEMPLATES, patientIndex + i),
-      clinicalStage,
-      provider: pick(PROVIDERS, patientIndex + i),
-      insurance: SINGLE_INSURANCE,
-      facility: SINGLE_FACILITY,
-      tags: i % 3 === 0 ? ['Urgent', 'Follow-up'].slice(0, 1 + (i % 2)) : undefined,
+    entries.push({
+      sortTime: d.getTime(),
+      appointment: {
+        id: `apt-${patientId}-${i + 1}`,
+        patientId,
+        date: formatDateOrdinal(d),
+        time: pick(TIMES, patientIndex + i),
+        status,
+        caseName: `Case ${patientId}-${i + 1}`,
+        caseId: `C-${1000 + parseInt(patientId, 10) * 10 + i}`,
+        template: pick(TEMPLATES, patientIndex + i),
+        clinicalStage,
+        provider: pick(PROVIDERS, patientIndex + i),
+        insurance: SINGLE_INSURANCE,
+        facility: SINGLE_FACILITY,
+        tags: i % 3 === 0 ? ['Urgent', 'Follow-up'].slice(0, 1 + (i % 2)) : undefined,
+      },
     });
   });
 
-  return appointments;
+  // Three case reviews (documentation-only visits, not scheduled appointments)
+  for (let cr = 0; cr < 3; cr++) {
+    const d = new Date(MOCK_TODAY);
+    d.setDate(d.getDate() - (7 + cr * 14));
+    entries.push({
+      sortTime: d.getTime(),
+      appointment: {
+        id: `apt-${patientId}-cr-${cr + 1}`,
+        patientId,
+        date: formatDateOrdinal(d),
+        time: pick(TIMES, patientIndex + cr + 100),
+        status: 'Complete',
+        caseName: `Case ${patientId}-${cr + 1}`,
+        caseId: `C-${1000 + parseInt(patientId, 10) * 10 + cr}`,
+        template: 'Case Review',
+        clinicalStage: 'Case Review',
+        provider: pick(PROVIDERS, patientIndex + cr + 50),
+        insurance: SINGLE_INSURANCE,
+        facility: SINGLE_FACILITY,
+        tags: ['Case Review'],
+      },
+    });
+  }
+
+  entries.sort((a, b) => b.sortTime - a.sortTime);
+  return entries.map((entry) => entry.appointment);
 }
 
 /** All appointments keyed by patient id. */

@@ -10,8 +10,6 @@ import {
   TableHead,
   TableRow,
   Paper,
-  TextField,
-  InputAdornment,
   Chip,
   IconButton,
   Tooltip,
@@ -19,7 +17,7 @@ import {
   MenuItem,
 } from '@mui/material';
 import AddOutlined from '@mui/icons-material/AddOutlined';
-import { SearchIcon } from '../icons';
+import { AppSearchField } from '../ui';
 import DownloadOutlined from '@mui/icons-material/DownloadOutlined';
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined';
 import EditOutlined from '@mui/icons-material/EditOutlined';
@@ -103,39 +101,22 @@ export function AppointmentsTabContent({ patientId, onOpenNote }: AppointmentsTa
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            All Appointments
+            Visits & Notes
           </Typography>
           <Button
-            variant="text"
-            color="primary"
+            variant="outlined"
+            color="inherit"
             size="small"
             startIcon={<AddOutlined sx={{ fontSize: 18 }} />}
-            sx={{ textTransform: 'none', fontWeight: 600, boxShadow: 'none', minWidth: 'auto', px: 1 }}
+            sx={{ textTransform: 'none', fontWeight: 600, minWidth: 'auto', px: 1 }}
           >
             Book
           </Button>
         </Box>
-        <TextField
-          placeholder="Search"
-          size="small"
+        <AppSearchField
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon sx={{ fontSize: 20, color: 'text.secondary' }} />
-              </InputAdornment>
-            ),
-          }}
-          sx={{
-            width: 220,
-            '& .MuiOutlinedInput-root': {
-              height: 36,
-              borderRadius: '8px',
-              bgcolor: 'grey.50',
-              fontSize: 14,
-            },
-          }}
+          sx={{ width: 220 }}
         />
       </Box>
       <TableContainer component={Paper} sx={{ flex: 1, minHeight: 0, overflow: 'auto', borderRadius: 0, boxShadow: 'none' }}>

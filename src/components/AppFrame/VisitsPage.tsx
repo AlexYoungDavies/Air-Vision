@@ -271,8 +271,6 @@ function VisitsCalendarHeaderBar({
           sx={{
             textTransform: 'none',
             fontWeight: 600,
-            borderRadius: '8px',
-            boxShadow: 'none',
             px: 2,
             minHeight: HEADER_CONTROL_HEIGHT,
             height: HEADER_CONTROL_HEIGHT,

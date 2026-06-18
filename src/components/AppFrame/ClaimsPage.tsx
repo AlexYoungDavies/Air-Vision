@@ -63,8 +63,6 @@ const REMITTANCE_STYLE_TABS_SX = {
 const TOOLBAR_TEXT_BUTTON_SX = {
   textTransform: 'none' as const,
   fontWeight: 500,
-  borderRadius: '10px',
-  minHeight: HEADER_CONTROL_HEIGHT,
 };
 
 const TABLE_HEADER_SX = {
@@ -320,29 +318,26 @@ export function ClaimsPage() {
             <AppIconButton
               tooltip="History"
               aria-label="History"
-              sx={{ width: HEADER_CONTROL_HEIGHT, height: HEADER_CONTROL_HEIGHT, borderRadius: '10px' }}
+              sx={{ width: HEADER_CONTROL_HEIGHT, height: HEADER_CONTROL_HEIGHT }}
             >
               <HistoryOutlined fontSize="small" />
             </AppIconButton>
             <AppIconButton
               tooltip="Download"
               aria-label="Download"
-              sx={{ width: HEADER_CONTROL_HEIGHT, height: HEADER_CONTROL_HEIGHT, borderRadius: '10px' }}
+              sx={{ width: HEADER_CONTROL_HEIGHT, height: HEADER_CONTROL_HEIGHT }}
             >
               <DownloadOutlined fontSize="small" />
             </AppIconButton>
             <Button
               variant="contained"
+              size="medium"
               startIcon={<AddOutlined sx={{ fontSize: 18 }} />}
               sx={{
                 textTransform: 'none',
                 fontWeight: 600,
                 fontSize: 14,
-                borderRadius: '10px',
-                boxShadow: 'none',
                 ml: 0.5,
-                minHeight: HEADER_CONTROL_HEIGHT,
-                height: HEADER_CONTROL_HEIGHT,
                 py: 0,
                 px: 2,
               }}
@@ -369,15 +364,12 @@ export function ClaimsPage() {
         >
         <Button
           variant="outlined"
+          color="inherit"
           size="small"
           startIcon={<FilterListOutlined fontSize="small" />}
           sx={{
             textTransform: 'none',
             fontWeight: 500,
-            borderRadius: '10px',
-            minHeight: HEADER_CONTROL_HEIGHT,
-            borderColor: 'divider',
-            color: 'text.primary',
           }}
         >
           Filter
@@ -385,23 +377,20 @@ export function ClaimsPage() {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
           <Button
             variant="outlined"
+            color="inherit"
             size="small"
             startIcon={<TuneOutlined fontSize="small" />}
             sx={{
               textTransform: 'none',
               fontWeight: 500,
-              borderRadius: '10px',
-              minHeight: HEADER_CONTROL_HEIGHT,
-              borderColor: 'divider',
-              color: 'text.primary',
             }}
           >
             Display
           </Button>
-          <Button variant="text" color="primary" size="small" sx={{ ...TOOLBAR_TEXT_BUTTON_SX, px: 1.25 }}>
+          <Button variant="outlined" color="inherit" size="small" sx={{ ...TOOLBAR_TEXT_BUTTON_SX, px: 1.25 }}>
             Clear
           </Button>
-          <Button variant="text" size="small" disabled sx={{ ...TOOLBAR_TEXT_BUTTON_SX, px: 1.25 }}>
+          <Button variant="outlined" color="inherit" size="small" disabled sx={{ ...TOOLBAR_TEXT_BUTTON_SX, px: 1.25 }}>
             Save
           </Button>
         </Box>

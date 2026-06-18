@@ -23,6 +23,7 @@ import { alpha, darken, lighten, useTheme, type Theme } from '@mui/material/styl
 import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined';
 import ChevronRightOutlined from '@mui/icons-material/ChevronRightOutlined';
 import ChevronLeftOutlined from '@mui/icons-material/ChevronLeftOutlined';
+import WidgetsOutlined from '@mui/icons-material/WidgetsOutlined';
 import PersonOutline from '@mui/icons-material/PersonOutline';
 import LogoutOutlined from '@mui/icons-material/LogoutOutlined';
 import SvgIcon from '@mui/material/SvgIcon';
@@ -515,6 +516,7 @@ function collapsedFooterTooltip(collapsed: boolean, title: string, child: ReactE
 }
 
 const PREFERENCES_PATH = '/preferences';
+const COMPONENTS_PATH = '/components';
 
 function SideNavFooter({ collapsed }: { collapsed: boolean }) {
   const theme = useTheme();
@@ -830,6 +832,12 @@ function SideNavFooter({ collapsed }: { collapsed: boolean }) {
           <ChevronRightOutlined sx={{ fontSize: 18, color: 'text.secondary', ml: 'auto' }} />
         </MenuItem>
         <Divider sx={{ my: 0.5 }} />
+        <MenuItem component={Link} to={COMPONENTS_PATH} onClick={closeAccount}>
+          <ListItemIcon>
+            <WidgetsOutlined sx={{ fontSize: 20, color: menuIconColor }} />
+          </ListItemIcon>
+          <ListItemText primary="Components" primaryTypographyProps={{ fontSize: 14, fontWeight: 500 }} />
+        </MenuItem>
         <MenuItem component={Link} to={PREFERENCES_PATH} onClick={closeAccount}>
           <ListItemIcon>
             <MenuUserSettingsIcon sx={{ fontSize: 20, color: menuIconColor }} />

@@ -301,10 +301,10 @@ function PatientsListPanel({
           Aug 8th, 2024
         </Typography>
         <Box sx={{ display: 'flex', gap: 0.25 }}>
-          <IconButton size="small" aria-label="Previous" sx={{ width: 28, height: 28, borderRadius: '9px', color: 'text.primary' }}>
+          <IconButton size="small" aria-label="Previous" sx={{ color: 'text.primary' }}>
             <ChevronLeftOutlined sx={{ fontSize: ICON_SIZE }} />
           </IconButton>
-          <IconButton size="small" aria-label="Next" sx={{ width: 28, height: 28, borderRadius: '9px', color: 'text.primary' }}>
+          <IconButton size="small" aria-label="Next" sx={{ color: 'text.primary' }}>
             <ChevronRightOutlined sx={{ fontSize: ICON_SIZE }} />
           </IconButton>
         </Box>
@@ -1491,7 +1491,7 @@ function TaskDetailPanel({
             color="primary"
             startIcon={<CheckOutlined />}
             onClick={() => onApproveScribeOrder(task.id)}
-            sx={{ textTransform: 'none', fontWeight: 600, borderRadius: '8px' }}
+            sx={{ textTransform: 'none', fontWeight: 600 }}
           >
             Approve order
           </Button>
@@ -1500,7 +1500,7 @@ function TaskDetailPanel({
             color="inherit"
             startIcon={<CloseOutlined />}
             onClick={() => onDeclineScribeOrder(task.id)}
-            sx={{ textTransform: 'none', fontWeight: 600, borderRadius: '8px' }}
+            sx={{ textTransform: 'none', fontWeight: 600 }}
           >
             Decline
           </Button>
@@ -1579,7 +1579,7 @@ function TaskDetailPanel({
             color="primary"
             startIcon={<CheckOutlined />}
             onClick={() => onResolveMockTask(task.id)}
-            sx={{ textTransform: 'none', fontWeight: 600, borderRadius: '8px' }}
+            sx={{ textTransform: 'none', fontWeight: 600 }}
           >
             {isMedication ? 'Approve refill' : 'Approve order'}
           </Button>
@@ -1588,7 +1588,7 @@ function TaskDetailPanel({
             color="inherit"
             startIcon={<CloseOutlined />}
             onClick={() => onResolveMockTask(task.id)}
-            sx={{ textTransform: 'none', fontWeight: 600, borderRadius: '8px' }}
+            sx={{ textTransform: 'none', fontWeight: 600 }}
           >
             Decline
           </Button>

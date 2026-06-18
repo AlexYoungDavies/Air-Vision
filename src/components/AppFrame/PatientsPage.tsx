@@ -79,14 +79,13 @@ export function PatientsPage() {
                   Patients
                 </Typography>
                 <Button
-                  variant="text"
-                  color="primary"
+                  variant="outlined"
+                  color="inherit"
                   size="small"
                   startIcon={<PersonAddOutlined />}
                   sx={{
                     textTransform: 'none',
                     fontWeight: 600,
-                    borderRadius: '8px',
                   }}
                 >
                   New Patient

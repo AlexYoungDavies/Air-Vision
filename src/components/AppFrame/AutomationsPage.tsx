@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Box, Paper, Tab, Tabs, Typography } from '@mui/material';
 import { BillingRulesAutomationContent } from './BillingRulesAutomationContent';
 import { PatientStatementsAutomationContent } from './PatientStatementsAutomationContent';
+import { underlineTabsSx } from '../ui';
 
 const AUTOMATION_TABS = [
   'Billing Rules',
@@ -11,24 +12,6 @@ const AUTOMATION_TABS = [
   'Encounter Imports',
   'Charge Master',
 ] as const;
-
-/** Same tab chrome as `RemittancesPage` (underline indicator, typography). */
-const REMITTANCE_STYLE_TABS_SX = {
-  minHeight: 0,
-  flex: 1,
-  minWidth: 0,
-  '& .MuiTabs-flexContainer': { gap: 0 },
-  '& .MuiTabs-indicator': { height: 2 },
-  '& .MuiTab-root': {
-    minHeight: 0,
-    minWidth: 'unset',
-    py: 1.5,
-    px: 2,
-    textTransform: 'none',
-    fontWeight: 500,
-    fontSize: 14,
-  },
-} as const;
 
 export function AutomationsPage() {
   const [tab, setTab] = useState(0);
@@ -74,7 +57,11 @@ export function AutomationsPage() {
             onChange={(_, v) => setTab(v)}
             variant="scrollable"
             scrollButtons={false}
-            sx={REMITTANCE_STYLE_TABS_SX}
+            sx={{
+              flex: 1,
+              minWidth: 0,
+              ...underlineTabsSx,
+            }}
           >
             {AUTOMATION_TABS.map((label, idx) => (
               <Tab key={label} id={`automation-tab-${idx}`} disableRipple value={idx} label={label} />

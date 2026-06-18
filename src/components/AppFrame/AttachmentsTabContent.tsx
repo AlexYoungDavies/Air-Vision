@@ -159,7 +159,7 @@ export function AttachmentsTabContent({ patientId }: AttachmentsTabContentProps)
               color="primary"
               size="small"
               startIcon={<UploadIcon sx={{ fontSize: 18 }} />}
-              sx={{ textTransform: 'none', fontWeight: 600, boxShadow: 'none', height: 32, minHeight: 32 }}
+              sx={{ textTransform: 'none', fontWeight: 600 }}
             >
               Upload
             </Button>

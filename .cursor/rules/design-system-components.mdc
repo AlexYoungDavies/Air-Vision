@@ -1,0 +1,37 @@
+---
+description: Use shared design-system components from the Components page library; canvas edits must update global sources
+alwaysApply: true
+---
+
+# Design system components
+
+Unless the user specifies otherwise, build UI with the shared primitives catalogued on `/components`.
+
+## Use these sources
+
+| Control | Shared source |
+|---------|----------------|
+| Button | MUI `Button` — primary (contained), neutral (outlined inherit), tertiary/ghost (`text` + `primary`) |
+| Icon button | `AppIconButton` — variants: `primary`, `secondary`, `emphasis`; radius 8/10/12 by size |
+| Tab menu | `pillTabsSx` / `underlineTabsSx` (`src/components/ui/tabMenuStyles.ts`) |
+| Nav menu item | `AppNavMenuItem` (`src/components/ui/AppNavMenuItem.tsx`) |
+| Text field | `AppTextField` — S/M/L heights, 8px radius, label above, `outlined` \| `filled` |
+| Dropdown | `AppSelectField` — same field rules as text |
+| Search field | `AppSearchField` — same field rules + search icon |
+| Switch | `AppSwitch` — inset knob; sizes `small` (28px) and `medium` (36px) |
+
+Import from `src/components/ui` when available.
+
+## Components page = global QA surface
+
+`ComponentsPage.tsx` is a **viewer only** — it imports shared primitives, never one-off demo styling.
+
+Canvas edits on the Components page must update the shared module or theme, not local page `sx`.
+
+## Defaults
+
+- Button / field heights: 28px (S), 36px (M), 44px (L)
+- Neutral buttons: light outline (`NEUTRAL_BUTTON_BORDER_*`) + tactile depth
+- Filled fields: `rgba(0,0,0,0.05)` background, no border
+- Exceptions: visit note toolbar + Notarize Sign button (`visit-note-button-exempt`)
+- Inline link actions: `BUTTON_LINK_CLASS` on text buttons

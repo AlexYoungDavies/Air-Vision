@@ -4,6 +4,7 @@ import { AppFrame } from './components/AppFrame'
 import { EmptyDemoPage } from './components/AppFrame/EmptyDemoPage'
 import { VisitsPage } from './components/AppFrame/VisitsPage'
 import { PreferencesPage } from './components/AppFrame/PreferencesPage'
+import { ComponentsPage } from './components/AppFrame/ComponentsPage'
 import { HomePageContent } from './components/AppFrame/HomePageContent'
 import { PatientsPage } from './components/AppFrame/PatientsPage'
 import { ClaimsPage } from './components/AppFrame/ClaimsPage'
@@ -46,6 +47,7 @@ function App() {
           <Route path="payments" element={<EmptyDemoPage />} />
           <Route path="statements" element={<EmptyDemoPage />} />
           <Route path="preferences" element={<PreferencesPage />} />
+          <Route path="components" element={<ComponentsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

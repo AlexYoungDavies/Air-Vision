@@ -18,10 +18,7 @@ import {
   MenuItem,
 } from '@mui/material';
 import { AppIconButton } from '../AppIconButton';
-import PushPinOutlined from '@mui/icons-material/PushPinOutlined';
-import QuestionAnswerOutlined from '@mui/icons-material/QuestionAnswerOutlined';
-import TaskAltOutlined from '@mui/icons-material/TaskAltOutlined';
-import HistoryOutlined from '@mui/icons-material/HistoryOutlined';
+import { PinIcon, ConversationIcon, CircleCheckIcon, HistoryIcon } from '../icons';
 import AddOutlined from '@mui/icons-material/AddOutlined';
 import Emergency from '@mui/icons-material/Emergency';
 import Gavel from '@mui/icons-material/Gavel';
@@ -41,7 +38,9 @@ import {
   getContactsForPatient,
   getAlertsForPatient,
 } from '../../data/mockOverview';
+import { BUTTON_LINK_CLASS } from '../../theme/buttonStyleConstants';
 import { LabelValue } from './LabelValue';
+import { pillTabsSx } from '../ui';
 
 const OVERVIEW_SUB_TABS = [
   { id: 'summary', label: 'Summary' },
@@ -53,6 +52,26 @@ const OVERVIEW_SUB_TABS = [
 type OverviewSubTabId = (typeof OVERVIEW_SUB_TABS)[number]['id'];
 
 export type SecondaryPanelIconMode = 'pin' | 'chat' | 'tasks' | 'history';
+
+const SECONDARY_PANEL_ICONS: { mode: SecondaryPanelIconMode; title: string }[] = [
+  { mode: 'pin', title: 'Pin' },
+  { mode: 'chat', title: 'Chat' },
+  { mode: 'tasks', title: 'Tasks' },
+  { mode: 'history', title: 'History' },
+];
+
+function secondaryPanelIconForMode(mode: SecondaryPanelIconMode) {
+  switch (mode) {
+    case 'pin':
+      return PinIcon;
+    case 'chat':
+      return ConversationIcon;
+    case 'tasks':
+      return CircleCheckIcon;
+    case 'history':
+      return HistoryIcon;
+  }
+}
 
 export interface OverviewTabContentProps {
   patient: Patient;
@@ -363,6 +382,7 @@ function SummaryView({
                                 <Button
                                   variant="text"
                                   size="small"
+                                  className={BUTTON_LINK_CLASS}
                                   onClick={() => onOpenNote?.(apt)}
                                   sx={{ textTransform: 'none', fontWeight: 500, minWidth: 'auto', px: 0.5 }}
                                 >
@@ -379,6 +399,7 @@ function SummaryView({
                                 <Button
                                   variant="text"
                                   size="small"
+                                  className={BUTTON_LINK_CLASS}
                                   href="#"
                                   sx={{ textTransform: 'none', fontWeight: 500, minWidth: 'auto', px: 0.5 }}
                                 >
@@ -831,14 +852,10 @@ export function OverviewTabContent({ patient, onSecondaryPanelMode, secondaryPan
             <Typography sx={{ fontSize: 32, fontWeight: 700 }}>
               {patient.fullName}
             </Typography>
-            <Box sx={{ display: 'flex', gap: 0.5 }}>
-              {[
-                { mode: 'pin' as const, Icon: PushPinOutlined, title: 'Pin' },
-                { mode: 'chat' as const, Icon: QuestionAnswerOutlined, title: 'Chat' },
-                { mode: 'tasks' as const, Icon: TaskAltOutlined, title: 'Tasks' },
-                { mode: 'history' as const, Icon: HistoryOutlined, title: 'History' },
-              ].map(({ mode, Icon, title }) => {
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+              {SECONDARY_PANEL_ICONS.map(({ mode, title }) => {
                 const isActive = secondaryPanelMode === mode;
+                const Icon = secondaryPanelIconForMode(mode);
                 return (
                   <AppIconButton
                     key={mode}
@@ -846,9 +863,9 @@ export function OverviewTabContent({ patient, onSecondaryPanelMode, secondaryPan
                     aria-label={title}
                     active={isActive}
                     onClick={() => onSecondaryPanelMode?.(isActive ? null : mode)}
-                    sx={{ borderRadius: '52px' }}
+                    sx={{ width: 28, height: 28 }}
                   >
-                    <Icon sx={{ fontSize: 20 }} />
+                    <Icon sx={{ fontSize: 18 }} />
                   </AppIconButton>
                 );
               })}
@@ -873,24 +890,7 @@ export function OverviewTabContent({ patient, onSecondaryPanelMode, secondaryPan
           onChange={(_, v: OverviewSubTabId) => setSubTab(v)}
           sx={{
             flexShrink: 0,
-            minHeight: 0,
-            '& .MuiTab-root': {
-              minHeight: 0,
-              py: 0.75,
-              px: 1.5,
-              fontSize: 14,
-              fontWeight: 400,
-              textTransform: 'none',
-              borderRadius: '8px !important',
-              color: 'text.secondary',
-            },
-            '& .Mui-selected': {
-              bgcolor: 'primary.light',
-              color: 'primary.dark',
-              fontWeight: 600,
-            },
-            '& .MuiTabs-indicator': { display: 'none' },
-            '& .MuiTabs-flexContainer': { gap: 0.5 },
+            ...pillTabsSx,
           }}
         >
           {OVERVIEW_SUB_TABS.map(({ id, label }) => (

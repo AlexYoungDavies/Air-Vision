@@ -26,6 +26,7 @@ import {
 import DownloadOutlined from '@mui/icons-material/DownloadOutlined';
 import AddOutlined from '@mui/icons-material/AddOutlined';
 import FilterListOutlined from '@mui/icons-material/FilterListOutlined';
+import { BUTTON_LINK_CLASS } from '../../theme/buttonStyleConstants';
 import {
   getBillingSummary,
   getBillingCharges,
@@ -235,7 +236,7 @@ export function BillingTabContent({ patient }: BillingTabContentProps) {
                 </Box>
               </Popover>
               <Button variant="outlined" size="small" sx={{ textTransform: 'none' }}>Verify</Button>
-              <Button variant="contained" color="primary" size="small" sx={{ textTransform: 'none', fontWeight: 600, boxShadow: 'none' }}>Pay Balance</Button>
+              <Button variant="contained" color="primary" size="small" sx={{ textTransform: 'none', fontWeight: 600 }}>Pay Balance</Button>
             </Box>
           </Box>
           <TableContainer component={Paper} sx={{ flex: 1, minHeight: 0, overflow: 'auto', borderRadius: 0, boxShadow: 'none' }}>
@@ -281,7 +282,7 @@ export function BillingTabContent({ patient }: BillingTabContentProps) {
                       <TableCell>
                         <Chip size="small" label={row.status} sx={{ ...CHARGE_STATUS_CHIP[row.status], fontSize: '0.75rem' }} />
                       </TableCell>
-                      <TableCell><Button variant="text" size="small" sx={{ textTransform: 'none', p: 0, minWidth: 0 }}>View Details</Button></TableCell>
+                      <TableCell><Button variant="text" size="small" className={BUTTON_LINK_CLASS} sx={{ textTransform: 'none', p: 0, minWidth: 0 }}>View Details</Button></TableCell>
                     </TableRow>
                   ))
                 )}
