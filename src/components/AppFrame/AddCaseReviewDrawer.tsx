@@ -17,6 +17,7 @@ import {
   MenuItem,
   Select,
 } from '@mui/material';
+import type { SxProps, Theme } from '@mui/material/styles';
 import CloseOutlined from '@mui/icons-material/CloseOutlined';
 import FormatBoldOutlined from '@mui/icons-material/FormatBoldOutlined';
 import FormatItalicOutlined from '@mui/icons-material/FormatItalicOutlined';
@@ -25,17 +26,63 @@ import StrikethroughSOutlined from '@mui/icons-material/StrikethroughSOutlined';
 import FormatListBulletedOutlined from '@mui/icons-material/FormatListBulletedOutlined';
 import FormatListNumberedOutlined from '@mui/icons-material/FormatListNumberedOutlined';
 import AddOutlined from '@mui/icons-material/AddOutlined';
+import MedicationOutlined from '@mui/icons-material/MedicationOutlined';
+import EditOutlined from '@mui/icons-material/EditOutlined';
 import RemoveOutlined from '@mui/icons-material/RemoveOutlined';
 import DeleteOutlineOutlined from '@mui/icons-material/DeleteOutlineOutlined';
 import type { Patient } from '../../data/mockPatients';
+import { MOCK_PROVIDERS } from '../../data/mockProviders';
 import {
   getAppointmentsForPatient,
   type Appointment,
 } from '../../data/mockAppointments';
 import { getAttachmentsForPatient, type Attachment } from '../../data/mockAttachments';
+import { AppIconButton } from '../AppIconButton';
+import { getFieldOutlineBorder, getFieldOutlineBorderHover } from '../ui/fieldStyles';
 
 const DRAWER_WIDTH = 700;
-const RICH_TEXT_MIN_HEIGHT = 280;
+const RICH_TEXT_MIN_HEIGHT = 140;
+const SOURCE_OPTIONS = [
+  'Patient',
+  'Caregiver or family member',
+  'Care team',
+  'Patient portal',
+  'External record',
+] as const;
+
+const careNoteAutocompleteSx: SxProps<Theme> = {
+  '& .MuiOutlinedInput-root': {
+    minHeight: 36,
+    borderRadius: '8px',
+    py: '2px',
+    pl: 1.5,
+    pr: '36px !important',
+    fontSize: 14,
+    bgcolor: 'background.paper',
+    '& fieldset': {
+      borderColor: (theme) => getFieldOutlineBorder(theme.palette.mode),
+    },
+    '&:hover:not(.Mui-disabled):not(.Mui-focused) fieldset': {
+      borderColor: (theme) => getFieldOutlineBorderHover(theme.palette.mode),
+    },
+  },
+  '& .MuiAutocomplete-input': {
+    minWidth: '24px !important',
+    py: '0 !important',
+    px: '0 !important',
+  },
+  '& .MuiAutocomplete-endAdornment': {
+    top: '50%',
+    right: 4,
+    transform: 'translateY(-50%)',
+  },
+  '& .MuiAutocomplete-popupIndicator, & .MuiAutocomplete-clearIndicator': {
+    width: 28,
+    height: 28,
+    p: 0,
+  },
+  '& .MuiChip-root': { height: 24 },
+};
 
 const BILLABLE_FIELD_HEIGHT = 28;
 const BILLABLE_FIELD_BG = 'rgba(0, 0, 0, 0.05)';
@@ -184,6 +231,8 @@ export interface AddCaseReviewDrawerProps {
     icd10Codes: string[];
     attachmentIds: string[];
     isBillable: boolean;
+    source: string | null;
+    assignedStaffId: string | null;
     billableServices: Array<{
       cptCode: string;
       modifier: string | null;
@@ -231,6 +280,8 @@ export function AddCaseReviewDrawer({
   const [attachments, setAttachments] = useState<AttachmentOption[]>([]);
   const [isBillable, setIsBillable] = useState(false);
   const [billableServices, setBillableServices] = useState<BillableServiceRow[]>([]);
+  const [source, setSource] = useState('');
+  const [assignedStaffId, setAssignedStaffId] = useState('');
 
   const visitOptions = useMemo<VisitOption[]>(() => {
     const list = selectedCase
@@ -273,6 +324,8 @@ export function AddCaseReviewDrawer({
     setAttachments([]);
     setIsBillable(false);
     setBillableServices([]);
+    setSource('');
+    setAssignedStaffId('');
   };
 
   const handleClose = () => {
@@ -293,6 +346,8 @@ export function AddCaseReviewDrawer({
       icd10Codes: icd10Codes.map((c) => c.value),
       attachmentIds: attachments.map((a) => a.id),
       isBillable,
+      source: source || null,
+      assignedStaffId: assignedStaffId || null,
       billableServices: billableServices
         .filter((row) => row.cptCode)
         .map((row) => ({
@@ -376,15 +431,15 @@ export function AddCaseReviewDrawer({
       >
         <Box>
           <Typography variant="subtitle1" sx={{ fontWeight: 600, fontSize: 16, lineHeight: 1.3 }}>
-            Non-visit Note
+            Create Care Note
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
             {patient.fullName}
           </Typography>
         </Box>
-        <IconButton size="small" onClick={handleClose} aria-label="Close">
+        <AppIconButton size="small" onClick={handleClose} aria-label="Close" tooltip="Close">
           <CloseOutlined sx={{ fontSize: 20 }} />
-        </IconButton>
+        </AppIconButton>
       </Box>
 
       <Box
@@ -399,152 +454,116 @@ export function AddCaseReviewDrawer({
           gap: 2,
         }}
       >
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
-          <FieldRow label="Case (Optional)">
-            <Autocomplete<CaseOption, false, false, false>
-              value={selectedCase}
-              onChange={(_, v) => setSelectedCase(v)}
-              options={caseOptions}
-              getOptionLabel={(o) => o.name}
-              isOptionEqualToValue={(a, b) => a.id === b.id}
-              renderInput={(params) => (
-                <TextField {...params} placeholder="Select a case" size="small" />
-              )}
-            />
-          </FieldRow>
-          <FieldRow label="Visit (Optional)">
-            <Autocomplete<VisitOption, false, false, false>
-              value={selectedVisit}
-              onChange={(_, v) => setSelectedVisit(v)}
-              options={visitOptions}
-              getOptionLabel={(o) => o.label}
-              isOptionEqualToValue={(a, b) => a.id === b.id}
-              renderOption={(props, option) => {
-                const { key, ...rest } = props as React.HTMLAttributes<HTMLLIElement> & {
-                  key?: React.Key;
-                };
-                return (
-                  <Box
-                    component="li"
-                    key={key ?? option.id}
-                    {...rest}
-                    sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start !important', py: 0.75 }}
-                  >
-                    <Typography variant="body2" sx={{ fontWeight: 500, fontSize: 14 }}>
-                      {option.label}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {option.sublabel}
-                    </Typography>
-                  </Box>
-                );
-              }}
-              renderInput={(params) => (
-                <TextField {...params} placeholder="Select a visit" size="small" />
-              )}
-            />
-          </FieldRow>
-        </Box>
-
         <FieldRow label="Note">
-          <RichTextEditor value={contentHtml} onChange={setContentHtml} />
+          <RichTextEditor value={contentHtml} onChange={setContentHtml} placeholder="Write a care note…" />
         </FieldRow>
 
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
-          <FieldRow label="ICD-10(s)">
-            <Autocomplete<CodeOption, true, false, false>
-              multiple
-              limitTags={1}
-              value={icd10Codes}
-              onChange={(_, v) => setIcd10Codes(v)}
-              options={ICD10_CODE_OPTIONS}
-              getOptionLabel={(o) => o.label}
-              isOptionEqualToValue={(a, b) => a.value === b.value}
-              renderTags={(value, getTagProps) =>
-                value.map((option, index) => {
-                  const tagProps = getTagProps({ index });
-                  return (
-                    <Chip
-                      {...tagProps}
-                      key={option.value}
-                      size="small"
-                      label={option.label}
-                      sx={{ height: 24, maxWidth: '100%', '& .MuiChip-label': { fontSize: 12 } }}
-                    />
-                  );
-                })
-              }
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  placeholder={icd10Codes.length === 0 ? 'Select ICD-10 codes' : ''}
-                  size="small"
-                />
-              )}
-            />
-          </FieldRow>
-          <FieldRow label="Attachments">
-            <Autocomplete<AttachmentOption, true, false, false>
-              multiple
-              limitTags={1}
-              value={attachments}
-              onChange={(_, v) => setAttachments(v)}
-              options={attachmentOptions}
-              getOptionLabel={(o) => o.name}
-              isOptionEqualToValue={(a, b) => a.id === b.id}
-              renderTags={(value, getTagProps) =>
-                value.map((option, index) => {
-                  const tagProps = getTagProps({ index });
-                  return (
-                    <Chip
-                      {...tagProps}
-                      key={option.id}
-                      size="small"
-                      label={option.name}
-                      sx={{ height: 24, maxWidth: '100%', '& .MuiChip-label': { fontSize: 12 } }}
-                    />
-                  );
-                })
-              }
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  placeholder={attachments.length === 0 ? 'Select attachments' : ''}
-                  size="small"
-                />
-              )}
-            />
-          </FieldRow>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: '180px minmax(0, 1fr)' },
+            columnGap: 2,
+            rowGap: 1,
+            alignItems: 'center',
+          }}
+        >
+          <CompactFieldLabel label="Case (optional)" />
+          <Autocomplete<CaseOption, false, false, false>
+            value={selectedCase}
+            onChange={(_, value) => setSelectedCase(value)}
+            options={caseOptions}
+            getOptionLabel={(option) => option.name}
+            isOptionEqualToValue={(a, b) => a.id === b.id}
+            renderInput={(params) => (
+              <TextField {...params} placeholder="Select case" size="small" />
+            )}
+            sx={careNoteAutocompleteSx}
+          />
+
+          <CompactFieldLabel label="Attachment (optional)" />
+          <Autocomplete<AttachmentOption, true, false, false>
+            multiple
+            limitTags={1}
+            value={attachments}
+            onChange={(_, value) => setAttachments(value)}
+            options={attachmentOptions}
+            getOptionLabel={(option) => option.name}
+            isOptionEqualToValue={(a, b) => a.id === b.id}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                placeholder={attachments.length === 0 ? 'Select attachment' : ''}
+                size="small"
+              />
+            )}
+            sx={careNoteAutocompleteSx}
+          />
+
+          <CompactFieldLabel
+            label="Source (optional)"
+            description="Who provided the information for this note?"
+          />
+          <Autocomplete<string, false, false, false>
+            value={source || null}
+            onChange={(_, value) => setSource(value ?? '')}
+            options={[...SOURCE_OPTIONS]}
+            renderInput={(params) => (
+              <TextField {...params} placeholder="Select source" size="small" />
+            )}
+            sx={careNoteAutocompleteSx}
+          />
         </Box>
 
-        <FormControlLabel
-          control={
-            <Switch
-              checked={isBillable}
-              onChange={(_, checked) => setIsBillable(checked)}
-              color="primary"
-            />
-          }
-          label={
-            <Typography variant="body2" sx={{ fontSize: 14 }}>
-              This note is billable.
-            </Typography>
-          }
-          sx={{ mx: 0, alignSelf: 'flex-start' }}
-        />
+        <Divider />
 
-        {isBillable && (
-          <BillableServicesSection
-            services={billableServices}
-            icdOptions={serviceIcdOptions}
-            onAddService={addServiceRow}
-            onRemoveService={removeServiceRow}
-            onUpdateService={updateServiceRow}
-            onAddIcdAssociation={addIcdAssociation}
-            onRemoveIcdAssociation={removeIcdAssociation}
-            onUpdateIcdAssociation={updateIcdAssociation}
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: '180px minmax(0, 1fr)' },
+            columnGap: 2,
+            alignItems: 'center',
+          }}
+        >
+          <CompactFieldLabel
+            label="Assign member as task (optional)"
+            description="This will appear in the tasks page."
           />
-        )}
+          <Autocomplete<(typeof MOCK_PROVIDERS)[number], false, false, false>
+            value={MOCK_PROVIDERS.find((provider) => provider.id === assignedStaffId) ?? null}
+            onChange={(_, value) => setAssignedStaffId(value?.id ?? '')}
+            options={MOCK_PROVIDERS}
+            getOptionLabel={(provider) => provider.fullName}
+            isOptionEqualToValue={(a, b) => a.id === b.id}
+            renderOption={(props, provider) => (
+              <Box component="li" {...props} key={provider.id}>
+                {provider.fullName} · {provider.specialty}
+              </Box>
+            )}
+            renderInput={(params) => (
+              <TextField {...params} placeholder="Select team member" size="small" />
+            )}
+            sx={careNoteAutocompleteSx}
+          />
+        </Box>
+
+        <Divider />
+
+        <Box>
+          <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+            Available Actions
+          </Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            <Button variant="outlined" color="inherit" size="small" startIcon={<AddOutlined />}>
+              Order
+            </Button>
+            <Button variant="outlined" color="inherit" size="small" startIcon={<MedicationOutlined />}>
+              Medication
+            </Button>
+          </Box>
+        </Box>
+
+        <Divider />
+        <ActivityLog patientName={patient.fullName} assignedStaffId={assignedStaffId} />
       </Box>
 
       <Box
@@ -552,7 +571,7 @@ export function AddCaseReviewDrawer({
           flexShrink: 0,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'flex-end',
+          justifyContent: 'flex-start',
           gap: 1,
           px: 2.5,
           py: 1.5,
@@ -561,14 +580,135 @@ export function AddCaseReviewDrawer({
           bgcolor: 'background.paper',
         }}
       >
-        <Button variant="text" color="inherit" size="small" onClick={handleClose}>
-          Cancel
-        </Button>
         <Button variant="contained" color="primary" size="small" onClick={handleSubmit}>
-          Create Note
+          Create Care Note
+        </Button>
+        <Button variant="outlined" color="inherit" size="small" startIcon={<EditOutlined />}>
+          Save as Draft
+        </Button>
+        <Button variant="text" color="primary" size="small" onClick={handleClose}>
+          Close Note &amp; Associated Tasks
         </Button>
       </Box>
     </Drawer>
+  );
+}
+
+function CompactFieldLabel({
+  label,
+  description,
+}: {
+  label: string;
+  description?: string;
+}) {
+  return (
+    <Box sx={{ minWidth: 0 }}>
+      <Typography variant="caption" sx={{ display: 'block', fontWeight: 600, color: 'text.primary' }}>
+        {label}
+      </Typography>
+      {description ? (
+        <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', lineHeight: 1.35 }}>
+          {description}
+        </Typography>
+      ) : null}
+    </Box>
+  );
+}
+
+function ActivityLog({
+  patientName,
+  assignedStaffId,
+}: {
+  patientName: string;
+  assignedStaffId: string;
+}) {
+  const [showModificationDetails, setShowModificationDetails] = useState(true);
+  const assignedStaff = MOCK_PROVIDERS.find((provider) => provider.id === assignedStaffId);
+  const actor = MOCK_PROVIDERS[2].fullName;
+  const timestamp = 'Jul 30, 2026 · 10:32 AM';
+
+  const events = [
+    { id: 'closed', action: 'Care note was closed', detail: `${actor} · ${timestamp}` },
+    { id: 'modified', action: 'Care note was modified', detail: `${actor} · ${timestamp}` },
+    {
+      id: 'assigned',
+      action: `Care note was assigned to ${assignedStaff?.fullName ?? MOCK_PROVIDERS[6].fullName}`,
+      detail: `${actor} · ${timestamp}`,
+    },
+    { id: 'created', action: 'Care note was created', detail: `${actor} · ${timestamp}` },
+  ];
+
+  return (
+    <Box>
+      <Typography variant="subtitle2" sx={{ mb: 1.25, fontWeight: 600 }}>
+        Activity
+      </Typography>
+      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+        {events.map((event, index) => (
+          <Box key={event.id} sx={{ display: 'grid', gridTemplateColumns: '16px minmax(0, 1fr)', columnGap: 1 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <Box
+                sx={{
+                  mt: '5px',
+                  width: 9,
+                  height: 9,
+                  borderRadius: '50%',
+                  border: '1.5px solid',
+                  borderColor: 'text.disabled',
+                  bgcolor: 'background.paper',
+                  zIndex: 1,
+                }}
+              />
+              {index < events.length - 1 ? (
+                <Box sx={{ width: '1px', flex: 1, minHeight: 22, bgcolor: 'divider' }} />
+              ) : null}
+            </Box>
+            <Box sx={{ pb: index < events.length - 1 ? 1.5 : 0 }}>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, alignItems: 'baseline' }}>
+                <Typography variant="body2" sx={{ fontSize: 13, fontWeight: 600 }}>
+                  {event.action}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  · {event.detail}
+                </Typography>
+                {event.id === 'modified' ? (
+                  <Button
+                    variant="text"
+                    size="small"
+                    onClick={() => setShowModificationDetails((current) => !current)}
+                    sx={{ minWidth: 0, height: 'auto', p: 0, ml: 0.25, fontSize: 12 }}
+                  >
+                    {showModificationDetails ? 'Collapse' : 'Expand'}
+                  </Button>
+                ) : null}
+              </Box>
+              {event.id === 'modified' && showModificationDetails ? (
+                <Box sx={{ mt: 0.75, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                  {['Case modified', 'Attachment added', `Source changed to Patient`, `Note updated for ${patientName}`].map(
+                    (detail) => (
+                      <Box key={detail} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Box
+                          sx={{
+                            width: 7,
+                            height: 7,
+                            borderRadius: '50%',
+                            border: '1.5px solid',
+                            borderColor: 'text.disabled',
+                          }}
+                        />
+                        <Typography variant="caption" color="text.secondary">
+                          {detail}
+                        </Typography>
+                      </Box>
+                    ),
+                  )}
+                </Box>
+              ) : null}
+            </Box>
+          </Box>
+        ))}
+      </Box>
+    </Box>
   );
 }
 

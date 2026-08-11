@@ -8,4 +8,9 @@ export {
   type AppNavMenuItemProps,
 } from './AppNavMenuItem';
 export { AppSwitch, type AppSwitchProps, type AppSwitchSize } from './AppSwitch';
+export {
+  AppointmentBlock,
+  type AppointmentBlockProps,
+  type AppointmentBlockDensity,
+} from './AppointmentBlock';
 export { fieldLabelSx, getFieldShellSx, labeledFieldWrapperSx } from './fieldStyles';

@@ -1,12 +1,15 @@
 import { useMemo } from 'react';
 import { Box, Typography, Card, CardContent, Avatar } from '@mui/material';
 import { Link } from 'react-router-dom';
-import { TODAYS_PATIENTS, type Patient } from '../../data/mockPatients';
+import { type Patient } from '../../data/mockPatients';
+import { TODAYS_PATIENTS } from '../../data/mockTodaysVisits';
+import { getAppointmentTypeVisual } from '../../data/mockAppointmentTypes';
 
-/** Parse "7:00 AM" / "2:30 PM" to minutes since midnight, or null if unparseable. */
+/** Parse appointment time or range start ("7:30 AM" / "7:30 AM – 8:00 AM") to minutes since midnight. */
 function parseTimeToMinutes(time: string | undefined): number | null {
   if (!time) return null;
-  const match = time.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  const startPart = time.split(/\s*[–-]\s*/)[0].trim();
+  const match = startPart.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
   if (!match) return null;
   let hours = parseInt(match[1], 10);
   const minutes = parseInt(match[2], 10);
@@ -84,6 +87,9 @@ export function TodayPatientsContent() {
 }
 
 function TodayPatientCard({ patient }: { patient: Patient }) {
+  const typeAccent = patient.appointmentType
+    ? getAppointmentTypeVisual(patient.appointmentType).accent
+    : 'divider';
   return (
     <Card
       component={Link}
@@ -100,24 +106,35 @@ function TodayPatientCard({ patient }: { patient: Patient }) {
       }}
     >
       <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
-        <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'center', justifyContent: 'flex-start' }}>
+        <Box sx={{ display: 'flex', gap: 1.25, alignItems: 'stretch', justifyContent: 'flex-start' }}>
+          <Box sx={{ width: 3, flexShrink: 0, bgcolor: typeAccent, borderRadius: 1 }} />
           <Avatar
             variant="rounded"
             src={patient.picture}
             alt={patient.fullName}
-            sx={{ width: 40, height: 40, flexShrink: 0, borderRadius: 1 }}
+            sx={{ width: 40, height: 40, flexShrink: 0, borderRadius: 1, alignSelf: 'center' }}
           />
-          <Box sx={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: 0 }}>
+          <Box sx={{ minWidth: 0, flex: 1, display: 'flex', flexDirection: 'column', gap: 0, py: 0.5, pr: 1 }}>
             <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: 13, lineHeight: 1.3 }}>
               {patient.fullName}
             </Typography>
+            {patient.appointmentType && (
+              <Typography variant="body2" sx={{ mt: 0.15, fontSize: 12, fontWeight: 600, color: typeAccent }}>
+                {patient.appointmentType}
+              </Typography>
+            )}
             {patient.reasonForVisit && (
               <Typography
                 variant="body2"
                 color="text.secondary"
-                sx={{ mt: 0.25, fontSize: 12 }}
+                sx={{ mt: 0.15, fontSize: 12 }}
               >
                 {patient.reasonForVisit}
+              </Typography>
+            )}
+            {patient.appointmentTime && (
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 0.15 }}>
+                {patient.appointmentTime}
               </Typography>
             )}
           </Box>

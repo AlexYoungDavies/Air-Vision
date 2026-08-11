@@ -29,6 +29,7 @@ import { MOCK_PATIENTS } from '../../data/mockPatients';
 import { AppScribeProvider, type ScribePendingOrderTask } from './AppScribeContext';
 import { AppAssistantProvider, type AppAssistantContextValue } from './AppAssistantContext';
 import { AICheckActionsProvider } from './AICheckActionsContext';
+import { HeaderBreadcrumbProvider } from './HeaderBreadcrumbContext';
 import type { AICheckReport, SeededAssistantChat } from './AICheckChat';
 
 const PANEL_WIDTH = 280;
@@ -473,6 +474,7 @@ export function AppFrame({ children }: AppFrameProps) {
             bgcolor: 'background.default',
           }}
         >
+          <HeaderBreadcrumbProvider>
           <HeaderBar
             navCollapsed={navCollapsed}
             onToggleNav={() => setNavCollapsed((c) => !c)}
@@ -548,6 +550,7 @@ export function AppFrame({ children }: AppFrameProps) {
               </AICheckActionsProvider>
             </AppAssistantProvider>
           </AppScribeProvider>
+          </HeaderBreadcrumbProvider>
         </Box>
       </Box>
       <ColorPickerPopover

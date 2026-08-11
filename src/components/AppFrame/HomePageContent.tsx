@@ -34,15 +34,18 @@ import TaskAltOutlined from '@mui/icons-material/TaskAltOutlined';
 import AssignmentOutlined from '@mui/icons-material/AssignmentOutlined';
 import AssignmentLateOutlined from '@mui/icons-material/AssignmentLateOutlined';
 import { Link, useNavigate } from 'react-router-dom';
-import { MOCK_PATIENTS, TODAYS_PATIENTS, getNextUpcomingTodayPatientId, type Patient } from '../../data/mockPatients';
-import { getAppointmentsForPatient, type Appointment } from '../../data/mockAppointments';
-import { getPatientVisitPanelData, type ProfileInfoRow } from '../../data/mockPatientVisitPanel';
-import { MOCK_CHATS, getChatById, getMessagesForChat } from '../../data/mockChats';
+import { MOCK_PATIENTS, getNextUpcomingTodayPatientId, type Patient } from '../../data/mockPatients';
+import { getAppointmentTypeVisual } from '../../data/mockAppointmentTypes';
+import { getHomeProvider } from '../../data/mockProviders';
 import {
   END_OF_DAY_LABEL,
+  TODAYS_PATIENTS,
   getHomeVisitAppointmentStatus,
   getVisitOverrunMinutes,
 } from '../../data/mockTodaysVisits';
+import { getAppointmentsForPatient, type Appointment } from '../../data/mockAppointments';
+import { getPatientVisitPanelData, type ProfileInfoRow } from '../../data/mockPatientVisitPanel';
+import { MOCK_CHATS, getChatById, getMessagesForChat } from '../../data/mockChats';
 import { VisitNoteContent } from './VisitNoteContent';
 import { ThingsToReviewAlertItem } from './ThingsToReviewAlertItem';
 import { AICheckIcon } from '../icons';
@@ -52,7 +55,7 @@ import CloseOutlined from '@mui/icons-material/CloseOutlined';
 import MedicationOutlined from '@mui/icons-material/MedicationOutlined';
 
 /** Provider whose home page this is — used as the assignee for any task in the demo. */
-const HOME_PROVIDER_NAME = 'Dr. Garcia';
+const HOME_PROVIDER_NAME = getHomeProvider().fullName;
 
 // Icons matching global nav: Patients (person/group), Messages (chat). Custom: Notes (signature), Tasks (checklist). Settings at bottom.
 function PatientsNavIcon(props: React.ComponentProps<typeof SvgIcon>) {
@@ -320,14 +323,9 @@ function PatientsListPanel({
           const isActive = appointmentStatus === 'active';
           const overrunMinutes = getVisitOverrunMinutes(p.appointmentTime);
           const runsPastEod = overrunMinutes > 0;
-          const blockColor =
-            p.appointmentType === 'Initial Consultation' || p.appointmentType === 'New Patient'
-              ? theme.palette.info.main
-              : p.appointmentType === 'Follow-up Visit'
-                ? theme.palette.success.main
-                : p.appointmentType === 'Post-op Visit'
-                  ? theme.palette.warning.main
-                  : theme.palette.divider;
+          const blockColor = p.appointmentType
+            ? getAppointmentTypeVisual(p.appointmentType).accent
+            : theme.palette.divider;
           return (
             <ListItemButton
               key={p.id}

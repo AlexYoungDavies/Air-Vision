@@ -13,13 +13,8 @@ import { Link, useParams, Outlet } from 'react-router-dom';
 import { SearchIcon } from '../icons';
 import PersonAddOutlined from '@mui/icons-material/PersonAddOutlined';
 import { MOCK_PATIENTS, type Patient } from '../../data/mockPatients';
+import { getAppointmentTypeVisual } from '../../data/mockAppointmentTypes';
 
-const APPOINTMENT_TYPE_COLORS: Record<NonNullable<Patient['appointmentType']>, string> = {
-  'Initial Consultation': '#1976d2',
-  'Follow-up Visit': '#2e7d32',
-  'Post-op Visit': '#ed6c02',
-  'New Patient': '#01579b',
-};
 const DEFAULT_APPOINTMENT_BORDER_COLOR = 'rgba(0, 0, 0, 0.2)';
 
 export function PatientsPage() {
@@ -126,7 +121,7 @@ export function PatientsPage() {
               {filteredPatients.map((patient) => {
                 const blockColor =
                   patient.appointmentType != null
-                    ? APPOINTMENT_TYPE_COLORS[patient.appointmentType]
+                    ? getAppointmentTypeVisual(patient.appointmentType).accent
                     : DEFAULT_APPOINTMENT_BORDER_COLOR;
                 return (
                   <ListItemButton

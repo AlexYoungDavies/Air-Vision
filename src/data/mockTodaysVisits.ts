@@ -1,6 +1,12 @@
 import type { AccentKey } from '../theme/accents';
 import { ACCENT_KEYS } from '../theme/accents';
-import { MOCK_PATIENTS, TODAYS_PATIENTS, type Patient } from './mockPatients';
+import { MOCK_PATIENTS, type Patient } from './mockPatients';
+import {
+  formatAppointmentClockRange,
+  getAppointmentsForProvider,
+  type CalendarAppointment,
+} from './mockCalendarAppointments';
+import { HOME_PROVIDER_ID } from './mockProviders';
 import { getPatientVisitPanelData } from './mockPatientVisitPanel';
 
 export type ScribeVisitGroup = 'upcoming' | 'action' | 'completed';
@@ -53,6 +59,43 @@ export interface MockScribeMidVisitSummary {
   /** Orders the scribe has staged during the visit. */
   orders: MockScribeMidVisitOrder[];
 }
+
+/**
+ * Map a calendar appointment onto the shared Patient shape used by Home / Scribe.
+ * Patient demographics come from `MOCK_PATIENTS`; schedule fields come from the appointment.
+ */
+export function patientFromCalendarAppointment(appt: CalendarAppointment): Patient {
+  const base = MOCK_PATIENTS.find((p) => p.id === appt.patientId);
+  if (!base) {
+    throw new Error(`Calendar appointment ${appt.id} references unknown patient ${appt.patientId}`);
+  }
+  return {
+    ...base,
+    case: appt.caseName,
+    reasonForVisit: appt.caseName,
+    appointmentTime: formatAppointmentClockRange(appt.startMinutes, appt.endMinutes),
+    appointmentType: appt.appointmentType,
+    hasNewLabs: Boolean(appt.alerts?.hasChecklist || appt.alerts?.hasBillingIssue),
+    hasNewImaging: Boolean(appt.alerts?.hasNotes),
+  };
+}
+
+/**
+ * Today's roster for a provider — same appointments as that provider's Visits calendar column
+ * (and the Visits list view when that provider is visible), sorted by start time.
+ */
+export function getTodaysPatientsForProvider(providerId: string = HOME_PROVIDER_ID): Patient[] {
+  return getAppointmentsForProvider(providerId)
+    .slice()
+    .sort((a, b) => a.startMinutes - b.startMinutes || a.patientName.localeCompare(b.patientName))
+    .map(patientFromCalendarAppointment);
+}
+
+/**
+ * Home / Scribe / “Today's Patients” roster for the signed-in provider.
+ * Single source of truth with Visits calendar + list for that provider.
+ */
+export const TODAYS_PATIENTS: Patient[] = getTodaysPatientsForProvider(HOME_PROVIDER_ID);
 
 function formatAppointmentStart(appointmentTime: string): string {
   return appointmentTime.split(/\s*[–-]\s*/)[0].trim();
@@ -172,8 +215,8 @@ export function getVisitOverrunMinutes(appointmentTime: string | undefined): num
 
 export interface TodaysVisitsSummary {
   totalVisits: number;
-  /** Counts of each appointment type, e.g. { 'Follow-up Visit': 5, ... }. */
-  typeCounts: Record<NonNullable<Patient['appointmentType']>, number>;
+  /** Counts of each appointment type label present on today's roster. */
+  typeCounts: Record<string, number>;
   /** Number of patients with at least one labs/imaging/items-to-review flag. */
   patientsWithReviewItems: number;
   labsCount: number;
@@ -188,19 +231,16 @@ export interface TodaysVisitsSummary {
  * the on-screen list stay in sync.
  */
 export function getTodaysVisitsSummary(): TodaysVisitsSummary {
-  const typeCounts: TodaysVisitsSummary['typeCounts'] = {
-    'Initial Consultation': 0,
-    'Follow-up Visit': 0,
-    'Post-op Visit': 0,
-    'New Patient': 0,
-  };
+  const typeCounts: TodaysVisitsSummary['typeCounts'] = {};
   let labsCount = 0;
   let imagingCount = 0;
   let patientsWithReviewItems = 0;
   const overrunPatients: Patient[] = [];
 
   for (const p of TODAYS_PATIENTS) {
-    if (p.appointmentType) typeCounts[p.appointmentType] += 1;
+    if (p.appointmentType) {
+      typeCounts[p.appointmentType] = (typeCounts[p.appointmentType] ?? 0) + 1;
+    }
     if (p.hasNewLabs) labsCount += 1;
     if (p.hasNewImaging) imagingCount += 1;
     if (p.hasNewLabs || p.hasNewImaging) patientsWithReviewItems += 1;

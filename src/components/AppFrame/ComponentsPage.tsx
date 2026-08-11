@@ -23,9 +23,11 @@ import {
   AppSelectField,
   AppNavMenuItem,
   AppSwitch,
+  AppointmentBlock,
   pillTabsSx,
   underlineTabsSx,
 } from '../ui';
+import type { CalendarAppointmentStatus } from '../../data/mockCalendarAppointments';
 
 function ComponentSection({
   title,
@@ -83,6 +85,16 @@ export function ComponentsPage() {
   const [dropdownValue, setDropdownValue] = useState('option-a');
   const [searchValue, setSearchValue] = useState('');
   const [switchOn, setSwitchOn] = useState(true);
+  const [activeApptStatus, setActiveApptStatus] = useState<CalendarAppointmentStatus | null>('checkedIn');
+
+  const apptStatuses: { status: CalendarAppointmentStatus; label: string }[] = [
+    { status: 'scheduled', label: 'Scheduled' },
+    { status: 'confirmed', label: 'Confirmed' },
+    { status: 'checkedIn', label: 'Checked-in' },
+    { status: 'completed', label: 'Completed' },
+    { status: 'canceled', label: 'Canceled' },
+    { status: 'noShow', label: 'No Show' },
+  ];
 
   return (
     <Box
@@ -361,6 +373,78 @@ export function ComponentsPage() {
                 label="Include facesheet"
               />
               <FormControlLabel control={<AppSwitch size="medium" />} label="Disabled" disabled />
+            </DemoRow>
+          </ComponentSection>
+
+          <ComponentSection
+            title="Appointment block"
+            description="Calendar appointment blocks — status variants (scheduled / confirmed / checked-in / completed / canceled / no-show). Click to toggle active. Used on Visits day grid."
+          >
+            <DemoRow label="Statuses">
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
+                  gap: 1.5,
+                  width: '100%',
+                }}
+              >
+                {apptStatuses.map(({ status, label }) => (
+                  <Box key={status} sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+                    <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                      {label}
+                    </Typography>
+                    <Box sx={{ height: 72 }}>
+                      <AppointmentBlock
+                        patientName="Firstname Lastname"
+                        caseName="Case Name"
+                        appointmentType="Appointment Type"
+                        facilityName="Facility Name"
+                        status={status}
+                        startMinutes={9 * 60}
+                        endMinutes={10 * 60}
+                        alerts={{
+                          hasChecklist: true,
+                          hasBillingIssue: true,
+                          hasNotes: true,
+                          extraCount: 2,
+                        }}
+                        active={activeApptStatus === status}
+                        onClick={() =>
+                          setActiveApptStatus((prev) => (prev === status ? null : status))
+                        }
+                      />
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
+            </DemoRow>
+            <DemoRow label="Thin (30 min)">
+              <Box sx={{ height: 28, width: 240 }}>
+                <AppointmentBlock
+                  patientName="Craig Haverford"
+                  caseName="Hypertension"
+                  appointmentType="1 on 1"
+                  facilityName="Main Campus"
+                  status="checkedIn"
+                  startMinutes={8 * 60}
+                  endMinutes={8 * 60 + 30}
+                  density="thin"
+                  alerts={{ hasChecklist: true, hasBillingIssue: true, extraCount: 2 }}
+                />
+              </Box>
+              <Box sx={{ height: 28, width: 240 }}>
+                <AppointmentBlock
+                  patientName="Mia Torres"
+                  caseName="Wellness"
+                  appointmentType="Annual"
+                  facilityName="Main Campus"
+                  status="noShow"
+                  startMinutes={9 * 60}
+                  endMinutes={9 * 60 + 30}
+                  density="thin"
+                />
+              </Box>
             </DemoRow>
           </ComponentSection>
         </Box>

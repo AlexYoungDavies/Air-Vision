@@ -1,7 +1,8 @@
 import { useMemo, useRef, useLayoutEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
 import {
   Box,
+  Breadcrumbs,
   IconButton,
   Button,
   SvgIcon,
@@ -13,6 +14,7 @@ import {
   Tabs,
   Tab,
   Badge,
+  Link,
 } from '@mui/material';
 import { alpha } from '@mui/material/styles';
 import { keyframes } from '@mui/system';
@@ -23,6 +25,10 @@ import { ScribeLiveActivityBar } from './ScribeLiveActivityBar';
 import Lottie, { type LottieRefCurrentProps } from 'lottie-react';
 import hoverAnimationData from '../../assets/hover.json';
 import { MOCK_PATIENTS } from '../../data/mockPatients';
+import {
+  useOptionalHeaderBreadcrumbs,
+  type HeaderBreadcrumbCrumb,
+} from './HeaderBreadcrumbContext';
 const lottieSlowSpin = keyframes`
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
@@ -87,7 +93,7 @@ function DictationSoundWaveBars({ active = true }: { active?: boolean }) {
 const ICON_SIZE = 20;
 const LOTTIE_SIZE = 22;
 
-// ----- Header page-name (left of the collapse button) -----
+// ----- Header breadcrumbs (left of the collapse button) -----
 
 const PAGE_LABELS: Record<string, string> = {
   '/': 'Home',
@@ -111,14 +117,114 @@ const PAGE_LABELS: Record<string, string> = {
   '/components': 'Components',
 };
 
-function getPageLabel(pathname: string, search: string): string {
+function getDefaultBreadcrumbs(pathname: string): HeaderBreadcrumbCrumb[] {
   const patientMatch = pathname.match(/^\/patients\/([^/]+)$/);
   if (patientMatch) {
     const patient = MOCK_PATIENTS.find((p) => p.id === patientMatch[1]);
-    const name = patient?.fullName ?? 'Patient profile';
-    return search.includes('openNote=1') ? `${name} · Visit note` : name;
+    return [
+      { label: 'Patients', to: '/patients' },
+      { label: patient?.fullName ?? 'Patient profile' },
+    ];
   }
-  return PAGE_LABELS[pathname] ?? 'Page';
+  if (pathname === '/patients') {
+    return [{ label: 'Patients' }];
+  }
+  return [{ label: PAGE_LABELS[pathname] ?? 'Page' }];
+}
+
+const crumbSx = {
+  fontSize: 15,
+  fontWeight: 500,
+  lineHeight: 1,
+  whiteSpace: 'nowrap',
+} as const;
+
+function HeaderBreadcrumbTrail({ crumbs }: { crumbs: HeaderBreadcrumbCrumb[] }) {
+  return (
+    <Breadcrumbs
+      aria-label="Page breadcrumb"
+      separator="/"
+      sx={{
+        ml: 1,
+        minWidth: 0,
+        maxWidth: 420,
+        '& .MuiBreadcrumbs-ol': {
+          flexWrap: 'nowrap',
+        },
+        '& .MuiBreadcrumbs-li': {
+          minWidth: 0,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        },
+        '& .MuiBreadcrumbs-separator': {
+          mx: 0.75,
+          fontSize: 15,
+          fontWeight: 500,
+          color: 'text.disabled',
+          lineHeight: 1,
+        },
+      }}
+    >
+      {crumbs.map((crumb, index) => {
+        const isLast = index === crumbs.length - 1;
+        if (!isLast && crumb.to) {
+          return (
+            <Link
+              key={`${crumb.label}-${index}`}
+              component={RouterLink}
+              to={crumb.to}
+              underline="hover"
+              color="text.secondary"
+              sx={{
+                ...crumbSx,
+                '&:hover': { color: 'primary.main' },
+              }}
+            >
+              {crumb.label}
+            </Link>
+          );
+        }
+        if (!isLast && crumb.onClick) {
+          return (
+            <Link
+              key={`${crumb.label}-${index}`}
+              component="button"
+              type="button"
+              underline="hover"
+              color="text.secondary"
+              onClick={crumb.onClick}
+              sx={{
+                ...crumbSx,
+                border: 'none',
+                background: 'none',
+                cursor: 'pointer',
+                p: 0,
+                fontFamily: 'inherit',
+                '&:hover': { color: 'primary.main' },
+              }}
+            >
+              {crumb.label}
+            </Link>
+          );
+        }
+        return (
+          <Typography
+            key={`${crumb.label}-${index}`}
+            component="span"
+            sx={{
+              ...crumbSx,
+              color: 'text.primary',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: 'block',
+            }}
+          >
+            {crumb.label}
+          </Typography>
+        );
+      })}
+    </Breadcrumbs>
+  );
 }
 
 // ----- Notifications popover mock data -----
@@ -301,7 +407,8 @@ export function HeaderBar({
   onSearchClick,
 }: HeaderBarProps = {}) {
   const location = useLocation();
-  const pageLabel = getPageLabel(location.pathname, location.search);
+  const breadcrumbContext = useOptionalHeaderBreadcrumbs();
+  const pageCrumbs = breadcrumbContext?.crumbs ?? getDefaultBreadcrumbs(location.pathname);
   const askAthelasLottieRef = useRef<LottieRefCurrentProps | null>(null);
   const notificationsButtonRef = useRef<HTMLButtonElement>(null);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -349,7 +456,7 @@ export function HeaderBar({
         position: 'relative',
         width: '100%',
         height: 'fit-content',
-        pl: 1,
+        pl: 0,
         pr: 1,
         pt: 0.5,
         pb: 0.5,
@@ -382,21 +489,7 @@ export function HeaderBar({
             />
           </IconButton>
         )}
-        <Typography
-          sx={{
-            ml: 1,
-            fontSize: 15,
-            fontWeight: 500,
-            color: 'text.primary',
-            lineHeight: 1,
-            whiteSpace: 'nowrap',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            maxWidth: 260,
-          }}
-        >
-          {pageLabel}
-        </Typography>
+        <HeaderBreadcrumbTrail crumbs={pageCrumbs} />
       </Box>
 
       <Box

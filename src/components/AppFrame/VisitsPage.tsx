@@ -10,6 +10,7 @@ import {
   ListItem,
   ListItemButton,
   ListItemText,
+  Menu,
   MenuItem,
   Popover,
   Select,
@@ -29,11 +30,23 @@ import ChevronRightOutlined from '@mui/icons-material/ChevronRightOutlined';
 import CalendarMonthOutlined from '@mui/icons-material/CalendarMonthOutlined';
 import ViewListOutlined from '@mui/icons-material/ViewListOutlined';
 import AddOutlined from '@mui/icons-material/AddOutlined';
+import AttachMoneyOutlined from '@mui/icons-material/AttachMoneyOutlined';
+import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined';
 import PersonOutlineOutlined from '@mui/icons-material/PersonOutlineOutlined';
 import CloseOutlined from '@mui/icons-material/CloseOutlined';
+import SearchOutlined from '@mui/icons-material/SearchOutlined';
+import SyncOutlined from '@mui/icons-material/SyncOutlined';
 import VisibilityOffOutlined from '@mui/icons-material/VisibilityOffOutlined';
 import VisibilityOutlined from '@mui/icons-material/VisibilityOutlined';
 import { AppIconButton } from '../AppIconButton';
+import { AppointmentBlock } from '../ui';
+import { VisitsListView } from './VisitsListView';
+import {
+  getAppointmentsForProvider,
+  getVisitCountForProvider,
+  layoutProviderAppointments,
+} from '../../data/mockCalendarAppointments';
+import { MOCK_PROVIDERS } from '../../data/mockProviders';
 
 /** Visits calendar header: icon buttons, toggles outer shell, Today control. */
 const HEADER_CONTROL_HEIGHT = 28;
@@ -131,21 +144,11 @@ const visitsHeaderToggleGroupSx = {
   },
 };
 
-/** Mock providers for the multi-column day view (one column per provider). */
-const MOCK_PROVIDERS = [
-  { id: '1', displayName: 'Emily Chen', visitCount: 4 },
-  { id: '2', displayName: 'James Wilson', visitCount: 2 },
-  { id: '3', displayName: 'Maria Garcia', visitCount: 6 },
-  { id: '4', displayName: 'David Kim', visitCount: 1 },
-  { id: '5', displayName: 'Sarah Johnson', visitCount: 3 },
-  { id: '6', displayName: 'Robert Lee', visitCount: 5 },
-  { id: '7', displayName: 'Amy Foster', visitCount: 2 },
-  { id: '8', displayName: 'Chris Taylor', visitCount: 7 },
-  { id: '9', displayName: 'Priya Sharma', visitCount: 3 },
-  { id: '10', displayName: 'Marcus Webb', visitCount: 0 },
-  { id: '11', displayName: 'Nina Okonkwo', visitCount: 4 },
-  { id: '12', displayName: 'Hannah Brooks', visitCount: 1 },
-] as const;
+const DAY_START_HOUR = 6;
+const DAY_HOUR_COUNT = 13;
+const HOUR_HEIGHT_PX = 48;
+const DAY_GRID_HEIGHT_PX = DAY_HOUR_COUNT * HOUR_HEIGHT_PX;
+const DAY_START_MINUTES = DAY_START_HOUR * 60;
 
 type MockProvider = (typeof MOCK_PROVIDERS)[number];
 
@@ -171,14 +174,14 @@ const MOCK_SAVED_VIEWS = [
 const MOCK_WAITLIST = [
   {
     id: 'wl1',
-    patientName: 'Jordan Lee',
-    appointmentType: 'Annual physical',
+    patientName: 'Stephen Wellbeck',
+    appointmentType: 'Annual Wellness',
     desire: 'Soonest slot',
     preferredTimes: 'Tue–Thu, 9 AM–12 PM. Can do Friday afternoon if needed.',
   },
   {
     id: 'wl2',
-    patientName: 'Sam Patel',
+    patientName: 'Sam Rivera',
     appointmentType: 'Follow-up',
     desire: 'Same provider as last visit',
     preferredTimes: 'After 3 PM weekdays only.',
@@ -186,14 +189,14 @@ const MOCK_WAITLIST = [
   {
     id: 'wl3',
     patientName: 'Riley Morgan',
-    appointmentType: 'New patient',
+    appointmentType: 'New Patient Consult',
     desire: 'First available',
     preferredTimes: 'Mornings preferred; avoid lunch hour.',
   },
   {
     id: 'wl4',
-    patientName: 'Casey Nguyen',
-    appointmentType: 'Urgent care follow-up',
+    patientName: 'Noah Singh',
+    appointmentType: 'Walk-in',
     desire: 'Within 48 hours',
     preferredTimes: 'Any time Sat or Sun; weekdays before 11 AM.',
   },
@@ -202,28 +205,37 @@ const MOCK_WAITLIST = [
 const SECONDARY_PANEL_WIDTH_PX = 280;
 
 /** Hour labels from 6 AM through 6 PM (13 rows). */
-const HOUR_ROWS = Array.from({ length: 13 }, (_, i) => {
-  const h = 6 + i;
+const HOUR_ROWS = Array.from({ length: DAY_HOUR_COUNT }, (_, i) => {
+  const h = DAY_START_HOUR + i;
   if (h === 12) return '12 PM';
   if (h < 12) return `${h} AM`;
   return `${h - 12} PM`;
 });
 
+function minutesToTopPercent(minutes: number) {
+  return `${((minutes - DAY_START_MINUTES) / (DAY_HOUR_COUNT * 60)) * 100}%`;
+}
+
 function VisitsCalendarHeaderBar({
+  calendarView,
+  onCalendarViewChange,
   secondaryPanelMode,
   onToggleSecondaryPanel,
   scheduleDate,
   onScheduleDateChange,
 }: {
+  calendarView: 'calendar' | 'list';
+  onCalendarViewChange: (view: 'calendar' | 'list') => void;
   secondaryPanelMode: VisitsSecondaryPanelMode | null;
   onToggleSecondaryPanel: (mode: VisitsSecondaryPanelMode) => void;
   scheduleDate: Dayjs;
   onScheduleDateChange: (next: Dayjs) => void;
 }) {
-  const [calendarView, setCalendarView] = useState<'calendar' | 'list'>('calendar');
   const [rangeView, setRangeView] = useState<'day' | 'week' | 'month'>('day');
   const [datePickerAnchor, setDatePickerAnchor] = useState<HTMLElement | null>(null);
+  const [addMenuAnchor, setAddMenuAnchor] = useState<HTMLElement | null>(null);
   const datePickerOpen = Boolean(datePickerAnchor);
+  const addMenuOpen = Boolean(addMenuAnchor);
 
   const panelButton = (mode: VisitsSecondaryPanelMode, title: string, Icon: React.ComponentType<React.ComponentProps<typeof SvgIcon>>) => {
     const active = secondaryPanelMode === mode;
@@ -247,6 +259,57 @@ function VisitsCalendarHeaderBar({
     );
   };
 
+  const addButton = (
+    <>
+      <IconButton
+        size="small"
+        color="primary"
+        aria-label="Create new"
+        aria-haspopup="menu"
+        aria-expanded={addMenuOpen}
+        aria-controls={addMenuOpen ? 'visits-add-menu' : undefined}
+        onClick={(e) => setAddMenuAnchor(e.currentTarget)}
+        sx={{
+          ...headerIconButtonSx,
+          bgcolor: 'primary.main',
+          color: 'primary.contrastText',
+          '&:hover': { bgcolor: 'primary.dark' },
+        }}
+      >
+        <AddOutlined sx={{ fontSize: 20 }} />
+      </IconButton>
+      <Menu
+        id="visits-add-menu"
+        anchorEl={addMenuAnchor}
+        open={addMenuOpen}
+        onClose={() => setAddMenuAnchor(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        slotProps={{
+          paper: {
+            sx: { mt: 0.5, minWidth: 200, borderRadius: 2 },
+          },
+        }}
+      >
+        {[
+          'New Appointment',
+          'New Block',
+          'New Reserved Block',
+          'Bulk Schedule',
+          'New Patient',
+        ].map((label) => (
+          <MenuItem
+            key={label}
+            onClick={() => setAddMenuAnchor(null)}
+            sx={{ fontSize: 13, py: 1 }}
+          >
+            {label}
+          </MenuItem>
+        ))}
+      </Menu>
+    </>
+  );
+
   return (
     <Box
       sx={{
@@ -256,7 +319,7 @@ function VisitsCalendarHeaderBar({
         justifyContent: 'space-between',
         flexWrap: 'nowrap',
         gap: 1,
-        py: 1.5,
+        py: 0.5,
         px: 1.5,
         borderBottom: 1,
         borderColor: 'divider',
@@ -348,12 +411,12 @@ function VisitsCalendarHeaderBar({
         </Popover>
       </Box>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'nowrap' }}>
         <ToggleButtonGroup
           exclusive
           size="small"
           value={calendarView}
-          onChange={(_, v) => v != null && setCalendarView(v)}
+          onChange={(_, v) => v != null && onCalendarViewChange(v)}
           sx={visitsHeaderToggleGroupSx}
         >
           <ToggleButton value="calendar" aria-label="Calendar view">
@@ -364,51 +427,80 @@ function VisitsCalendarHeaderBar({
           </ToggleButton>
         </ToggleButtonGroup>
 
-        <ToggleButtonGroup
-          exclusive
-          size="small"
-          value={rangeView}
-          onChange={(_, v) => v != null && setRangeView(v)}
-          sx={visitsHeaderToggleGroupSx}
-        >
-          <ToggleButton value="day">Day</ToggleButton>
-          <ToggleButton value="week">Week</ToggleButton>
-          <ToggleButton value="month">Month</ToggleButton>
-        </ToggleButtonGroup>
+        {calendarView === 'calendar' && (
+          <ToggleButtonGroup
+            exclusive
+            size="small"
+            value={rangeView}
+            onChange={(_, v) => v != null && setRangeView(v)}
+            sx={visitsHeaderToggleGroupSx}
+          >
+            <ToggleButton value="day">Day</ToggleButton>
+            <ToggleButton value="week">Week</ToggleButton>
+            <ToggleButton value="month">Month</ToggleButton>
+          </ToggleButtonGroup>
+        )}
       </Box>
 
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-        {panelButton('waitlist', 'Waitlist', WaitlistIcon)}
-        {panelButton('savedViews', 'Saved views', SavedViewsIcon)}
-        {panelButton('filters', 'Filters', FiltersIcon)}
-        <IconButton
-          size="small"
-          color="primary"
-          aria-label="Add appointment"
-          onClick={() => {}}
-          sx={{
-            ...headerIconButtonSx,
-            bgcolor: 'primary.main',
-            color: 'primary.contrastText',
-            '&:hover': { bgcolor: 'primary.dark' },
-          }}
-        >
-          <AddOutlined sx={{ fontSize: 20 }} />
-        </IconButton>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, flexWrap: 'nowrap' }}>
+        {calendarView === 'calendar' ? (
+          <>
+            {panelButton('filters', 'Filters', FiltersIcon)}
+            {panelButton('savedViews', 'Saved views', SavedViewsIcon)}
+            {panelButton('waitlist', 'Waitlist', WaitlistIcon)}
+            {addButton}
+          </>
+        ) : (
+          <>
+            <IconButton size="small" aria-label="Search appointments" sx={headerIconButtonSx}>
+              <SearchOutlined sx={{ fontSize: 20 }} />
+            </IconButton>
+            <IconButton size="small" aria-label="Balances" sx={headerIconButtonSx}>
+              <AttachMoneyOutlined sx={{ fontSize: 20 }} />
+            </IconButton>
+            <IconButton size="small" aria-label="More actions" sx={headerIconButtonSx}>
+              <MoreVertOutlined sx={{ fontSize: 20 }} />
+            </IconButton>
+            <Button
+              variant="outlined"
+              color="inherit"
+              size="small"
+              startIcon={<SyncOutlined sx={{ fontSize: 18 }} />}
+              onClick={() => {}}
+              sx={{
+                textTransform: 'none',
+                fontWeight: 600,
+                whiteSpace: 'nowrap',
+                minHeight: HEADER_CONTROL_HEIGHT,
+                height: HEADER_CONTROL_HEIGHT,
+                px: 1.5,
+              }}
+            >
+              Live Eligibility Check
+            </Button>
+            {addButton}
+          </>
+        )}
       </Box>
     </Box>
   );
 }
 
 function VisitsCalendarCanvas({ visibleProviders }: { visibleProviders: readonly MockProvider[] }) {
+  const [activeAppointmentId, setActiveAppointmentId] = useState<string | null>(null);
   const timeColWidth = 56;
-  const hourHeight = 48;
   const n = visibleProviders.length;
   const gridCols =
     n === 0
       ? `${timeColWidth}px`
       : `${timeColWidth}px repeat(${n}, minmax(120px, 1fr))`;
   const gridMinWidth = timeColWidth + n * 120;
+
+  const now = dayjs();
+  const nowMinutes = now.hour() * 60 + now.minute();
+  const showNowLine =
+    nowMinutes >= DAY_START_MINUTES && nowMinutes <= DAY_START_MINUTES + DAY_HOUR_COUNT * 60;
+  const nowTop = minutesToTopPercent(nowMinutes);
 
   return (
     <Box
@@ -427,7 +519,7 @@ function VisitsCalendarCanvas({ visibleProviders }: { visibleProviders: readonly
           gridTemplateColumns: gridCols,
           position: 'sticky',
           top: 0,
-          zIndex: 2,
+          zIndex: 3,
           minWidth: gridMinWidth,
           bgcolor: 'background.paper',
         }}
@@ -440,116 +532,223 @@ function VisitsCalendarCanvas({ visibleProviders }: { visibleProviders: readonly
             borderRightColor: 'divider',
           }}
         />
-        {visibleProviders.map((p) => (
-          <Box
-            key={p.id}
-            sx={{
-              borderBottom: 1,
-              borderColor: 'divider',
-              borderRight: 1,
-              borderRightColor: 'divider',
-              py: 1,
-              px: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'flex-start',
-              width: '100%',
-              minWidth: 0,
-            }}
-          >
-            <Typography
-              variant="caption"
-              sx={{
-                color: 'text.secondary',
-                fontWeight: 500,
-                textAlign: 'left',
-                minWidth: 0,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {p.displayName}
-            </Typography>
+        {visibleProviders.map((p) => {
+          const visitCount = getVisitCountForProvider(p.id);
+          return (
             <Box
+              key={p.id}
               sx={{
+                borderBottom: 1,
+                borderColor: 'divider',
+                borderRight: 1,
+                borderRightColor: 'divider',
+                py: 1,
+                px: 1,
                 display: 'flex',
                 alignItems: 'center',
-                gap: 0.5,
-                flexShrink: 0,
-                ml: 'auto',
+                justifyContent: 'flex-start',
+                width: '100%',
+                minWidth: 0,
               }}
             >
-              <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
-                {p.visitCount}
+              <Typography
+                variant="caption"
+                sx={{
+                  color: 'text.secondary',
+                  fontWeight: 500,
+                  textAlign: 'left',
+                  minWidth: 0,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {p.displayName}
               </Typography>
-              <Typography component="span" variant="caption" sx={{ color: 'text.disabled' }}>
-                #
-              </Typography>
-              <PersonOutlineOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 0.5,
+                  flexShrink: 0,
+                  ml: 'auto',
+                }}
+              >
+                <Typography variant="caption" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                  {visitCount}
+                </Typography>
+                <Typography component="span" variant="caption" sx={{ color: 'text.disabled' }}>
+                  #
+                </Typography>
+                <PersonOutlineOutlined sx={{ fontSize: 16, color: 'text.secondary' }} />
+              </Box>
             </Box>
-          </Box>
-        ))}
+          );
+        })}
       </Box>
 
-      {/* Hour rows */}
-      {HOUR_ROWS.map((label, rowIndex) => (
+      {/* Day body: time gutter + provider columns */}
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: gridCols,
+          minWidth: gridMinWidth,
+          position: 'relative',
+          height: `max(${DAY_GRID_HEIGHT_PX}px, calc(100% - 35px))`,
+        }}
+      >
+        {/* Time labels */}
         <Box
-          key={rowIndex}
           sx={{
-            display: 'grid',
-            gridTemplateColumns: gridCols,
-            minWidth: gridMinWidth,
+            position: 'sticky',
+            left: 0,
+            zIndex: 2,
+            bgcolor: 'background.paper',
+            borderRight: 1,
+            borderColor: 'divider',
+            height: '100%',
           }}
         >
-          <Box
-            sx={{
-              position: 'sticky',
-              left: 0,
-              zIndex: 1,
-              bgcolor: 'background.paper',
-              borderRight: 1,
-              borderColor: 'divider',
-              borderBottom: 1,
-              borderBottomColor: 'divider',
-              height: hourHeight,
-              display: 'flex',
-              alignItems: 'flex-start',
-              justifyContent: 'flex-end',
-              pr: 1,
-              pt: 0.5,
-            }}
-          >
-            <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: 11 }}>
-              {label}
-            </Typography>
-          </Box>
-          {visibleProviders.map((p) => (
+          {HOUR_ROWS.map((label, rowIndex) => (
             <Box
-              key={`${p.id}-${rowIndex}`}
+              key={label}
               sx={{
-                position: 'relative',
-                borderRight: 1,
-                borderColor: 'divider',
-                borderBottom: 1,
-                borderBottomColor: 'divider',
-                height: hourHeight,
-                bgcolor: 'background.paper',
-                '&::after': {
-                  content: '""',
-                  position: 'absolute',
-                  left: 0,
-                  right: 0,
-                  top: '50%',
-                  borderTop: '1px dashed',
-                  borderColor: 'divider',
-                  pointerEvents: 'none',
-                },
+                position: 'absolute',
+                top: `${(rowIndex / DAY_HOUR_COUNT) * 100}%`,
+                right: 8,
+                height: `${100 / DAY_HOUR_COUNT}%`,
+                display: 'flex',
+                alignItems: 'flex-start',
+                pt: 0.5,
               }}
-            />
+            >
+              <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: 11 }}>
+                {label}
+              </Typography>
+            </Box>
           ))}
         </Box>
-      ))}
+
+        {/* Provider columns */}
+        {visibleProviders.map((p) => {
+          const laidOut = layoutProviderAppointments(getAppointmentsForProvider(p.id));
+          return (
+            <Box
+              key={p.id}
+              sx={{
+                position: 'relative',
+                height: '100%',
+                borderRight: 1,
+                borderColor: 'divider',
+                bgcolor: 'background.paper',
+              }}
+            >
+              {/* Hour grid lines */}
+              {HOUR_ROWS.map((_, rowIndex) => (
+                <Box
+                  key={rowIndex}
+                  sx={{
+                    position: 'absolute',
+                    left: 0,
+                    right: 0,
+                    top: `${(rowIndex / DAY_HOUR_COUNT) * 100}%`,
+                    height: `${100 / DAY_HOUR_COUNT}%`,
+                    borderBottom: 1,
+                    borderColor: 'divider',
+                    pointerEvents: 'none',
+                    '&::after': {
+                      content: '""',
+                      position: 'absolute',
+                      left: 0,
+                      right: 0,
+                      top: '50%',
+                      borderTop: '1px dashed',
+                      borderColor: 'divider',
+                    },
+                  }}
+                />
+              ))}
+
+              {/* Appointments */}
+              {laidOut.map((appt) => {
+                const top = minutesToTopPercent(appt.startMinutes);
+                const heightPercent =
+                  ((appt.endMinutes - appt.startMinutes) / (DAY_HOUR_COUNT * 60)) * 100;
+                const widthPct = 100 / appt.columnCount;
+                const leftPct = appt.columnIndex * widthPct;
+                const duration = appt.endMinutes - appt.startMinutes;
+                const density =
+                  duration <= 30
+                    ? appt.columnCount > 1
+                      ? 'thinNarrow'
+                      : 'thin'
+                    : appt.columnCount > 1
+                      ? 'narrow'
+                      : 'default';
+
+                return (
+                  <Box
+                    key={appt.id}
+                    sx={{
+                      position: 'absolute',
+                      top,
+                      height: `max(22px, ${heightPercent}%)`,
+                      left: `calc(${leftPct}% + 2px)`,
+                      width: `calc(${widthPct}% - 4px)`,
+                      zIndex: activeAppointmentId === appt.id ? 2 : 1,
+                    }}
+                  >
+                    <AppointmentBlock
+                      patientName={appt.patientName}
+                      caseName={appt.caseName}
+                      appointmentType={appt.appointmentType}
+                      facilityName={appt.facilityName}
+                      status={appt.status}
+                      startMinutes={appt.startMinutes}
+                      endMinutes={appt.endMinutes}
+                      alerts={appt.alerts}
+                      density={density}
+                      durationMinutes={duration}
+                      active={activeAppointmentId === appt.id}
+                      onClick={() =>
+                        setActiveAppointmentId((prev) => (prev === appt.id ? null : appt.id))
+                      }
+                    />
+                  </Box>
+                );
+              })}
+            </Box>
+          );
+        })}
+
+        {/* Current time indicator */}
+        {showNowLine && (
+          <Box
+            sx={{
+              position: 'absolute',
+              left: timeColWidth,
+              right: 0,
+              top: nowTop,
+              zIndex: 4,
+              pointerEvents: 'none',
+              display: 'flex',
+              alignItems: 'center',
+            }}
+          >
+            <Box
+              sx={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                bgcolor: 'error.main',
+                ml: '-4px',
+                flexShrink: 0,
+              }}
+            />
+            <Box sx={{ flex: 1, height: 2, bgcolor: 'error.main' }} />
+          </Box>
+        )}
+      </Box>
     </Box>
   );
 }
@@ -828,6 +1027,7 @@ function VisitsSecondaryPanel({
  */
 export function VisitsPage() {
   const [scheduleDate, setScheduleDate] = useState<Dayjs>(() => dayjs().startOf('day'));
+  const [calendarView, setCalendarView] = useState<'calendar' | 'list'>('calendar');
   const [secondaryPanelMode, setSecondaryPanelMode] = useState<VisitsSecondaryPanelMode | null>(null);
   const [facilityId, setFacilityId] = useState<string>(MOCK_FACILITIES[0].id);
   const [visibleProviderIds, setVisibleProviderIds] = useState<Set<string>>(
@@ -856,6 +1056,11 @@ export function VisitsPage() {
     setVisibleProviderIds(new Set(view.providerIds));
   };
 
+  const handleCalendarViewChange = (view: 'calendar' | 'list') => {
+    setCalendarView(view);
+    if (view === 'list') setSecondaryPanelMode(null);
+  };
+
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <Box
@@ -868,15 +1073,21 @@ export function VisitsPage() {
         }}
       >
         <VisitsCalendarHeaderBar
+          calendarView={calendarView}
+          onCalendarViewChange={handleCalendarViewChange}
           secondaryPanelMode={secondaryPanelMode}
           onToggleSecondaryPanel={handleTogglePanel}
           scheduleDate={scheduleDate}
           onScheduleDateChange={setScheduleDate}
         />
       <Box sx={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'row', overflow: 'hidden' }}>
-        <VisitsCalendarCanvas visibleProviders={visibleProviders} />
+        {calendarView === 'calendar' ? (
+          <VisitsCalendarCanvas visibleProviders={visibleProviders} />
+        ) : (
+          <VisitsListView visibleProviderIds={visibleProviderIds} providers={MOCK_PROVIDERS} />
+        )}
         <VisitsSecondaryPanel
-          mode={secondaryPanelMode}
+          mode={calendarView === 'calendar' ? secondaryPanelMode : null}
           onClose={() => setSecondaryPanelMode(null)}
           facilityId={facilityId}
           onFacilityChange={setFacilityId}

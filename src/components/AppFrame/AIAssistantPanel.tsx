@@ -191,20 +191,25 @@ function buildInitialHistory(): ChatHistoryItem[] {
 }
 
 function formatTypeBreakdown(typeCounts: ReturnType<typeof getTodaysVisitsSummary>['typeCounts']): string {
-  const labelFor: Record<keyof typeof typeCounts, { singular: string; plural: string }> = {
-    'Follow-up Visit': { singular: 'follow-up', plural: 'follow-ups' },
+  const labelFor: Record<string, { singular: string; plural: string }> = {
+    'Follow-up': { singular: 'follow-up', plural: 'follow-ups' },
     'Post-op Visit': { singular: 'post-op', plural: 'post-ops' },
-    'Initial Consultation': { singular: 'initial consultation', plural: 'initial consultations' },
-    'New Patient': { singular: 'new patient visit', plural: 'new patient visits' },
+    'Initial Evaluation': { singular: 'initial evaluation', plural: 'initial evaluations' },
+    'New Patient Consult': { singular: 'new patient consult', plural: 'new patient consults' },
+    Consult: { singular: 'consult', plural: 'consults' },
+    'Progress Note': { singular: 'progress note', plural: 'progress notes' },
+    'Injection Visit': { singular: 'injection visit', plural: 'injection visits' },
   };
   const parts: string[] = [];
-  (['Follow-up Visit', 'Post-op Visit', 'Initial Consultation', 'New Patient'] as const).forEach((key) => {
-    const n = typeCounts[key];
-    if (n > 0) {
-      const label = n === 1 ? labelFor[key].singular : labelFor[key].plural;
-      parts.push(`${n} ${label}`);
+  for (const [key, n] of Object.entries(typeCounts)) {
+    if (n <= 0) continue;
+    const known = labelFor[key];
+    if (known) {
+      parts.push(`${n} ${n === 1 ? known.singular : known.plural}`);
+    } else {
+      parts.push(`${n} ${key.toLowerCase()}${n === 1 ? '' : 's'}`);
     }
-  });
+  }
   if (parts.length === 0) return '';
   if (parts.length === 1) return parts[0];
   return `${parts.slice(0, -1).join(', ')}, and ${parts[parts.length - 1]}`;

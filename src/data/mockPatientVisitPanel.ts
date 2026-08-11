@@ -374,7 +374,11 @@ function panelForGenericPatient(patient: Patient): PatientVisitPanelData {
   const thingsToReviewBullets: string[] = [];
   if (patient.hasNewImaging) thingsToReviewBullets.push('New imaging results since last visit');
   if (patient.hasNewLabs) thingsToReviewBullets.push('New laboratory results to reconcile');
-  if (patient.appointmentType === 'Initial Consultation' || patient.appointmentType === 'New Patient') {
+  if (
+    patient.appointmentType === 'Initial Evaluation' ||
+    patient.appointmentType === 'New Patient Consult' ||
+    patient.appointmentType === 'Medicare Initial Evaluation'
+  ) {
     thingsToReviewBullets.push('New patient intake — confirm visit type and benefits');
   }
 
@@ -384,7 +388,11 @@ function panelForGenericPatient(patient: Patient): PatientVisitPanelData {
   }
 
   const summaryAlerts: PreVisitSummaryAlert[] = [];
-  if (patient.appointmentType === 'Initial Consultation' || patient.appointmentType === 'New Patient') {
+  if (
+    patient.appointmentType === 'Initial Evaluation' ||
+    patient.appointmentType === 'New Patient Consult' ||
+    patient.appointmentType === 'Medicare Initial Evaluation'
+  ) {
     summaryAlerts.push({
       severity: 'warning',
       message: 'Prior authorization may be required for new patient visit',

@@ -49,6 +49,7 @@ import {
 } from './OverflowTabContent';
 import { AddCaseReviewDrawer } from './AddCaseReviewDrawer';
 import { HistoryPanelContent } from './HistoryPanelContent';
+import { useOptionalHeaderBreadcrumbs } from './HeaderBreadcrumbContext';
 
 const visitNoteTabSlideUp = keyframes`
   0% { transform: translateY(10px); opacity: 0.7; }
@@ -117,6 +118,11 @@ export interface PatientProfilePageProps {
 
 function isPrimaryTab(id: string): id is PrimaryTabId {
   return PRIMARY_TABS.some((t) => t.id === id);
+}
+
+/** "Mar 11th, 2025" → "Mar 11th" for breadcrumb trail. */
+function toBreadcrumbDateLabel(date: string) {
+  return date.replace(/,\s*\d{4}$/, '');
 }
 
 const SECONDARY_PANEL_ICONS: { mode: SecondaryPanelMode; title: string }[] = [
@@ -398,6 +404,25 @@ export function PatientProfilePage({
 
   const secondaryPanelOpen = secondaryPanelMode !== null;
   const activeVisitNote = openVisitNotes.find((n) => n.id === activeVisitNoteId);
+  const setHeaderCrumbs = useOptionalHeaderBreadcrumbs()?.setCrumbs;
+
+  useEffect(() => {
+    if (!setHeaderCrumbs) return;
+    const crumbs = [
+      { label: 'Patients', to: '/patients' },
+      activeVisitNote
+        ? {
+            label: patient.fullName,
+            onClick: () => setActiveVisitNoteId(null),
+          }
+        : { label: patient.fullName },
+      ...(activeVisitNote
+        ? [{ label: toBreadcrumbDateLabel(activeVisitNote.appointment.date) }]
+        : []),
+    ];
+    setHeaderCrumbs(crumbs);
+    return () => setHeaderCrumbs(null);
+  }, [setHeaderCrumbs, patient.fullName, activeVisitNote]);
 
   return (
     <Box

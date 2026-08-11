@@ -2,6 +2,8 @@
  * Mock appointment data per patient. Used in the Visits & Notes tab of the patient profile.
  */
 
+import { MOCK_PROVIDERS } from './mockProviders';
+
 export type AppointmentStatus =
   | 'Schedule'
   | 'Confirmed'
@@ -34,8 +36,29 @@ function formatDateOrdinal(d: Date): string {
   return `${months[d.getMonth()]} ${day}${suffix}, ${d.getFullYear()}`;
 }
 
-const TEMPLATES = ['Knee Sprain', 'ACL Tear', 'Annual Physical', 'Follow-up', 'Consultation', 'Lab Review', 'Hypertension Follow-up', 'Wellness Exam', 'Sports Physical', 'Migraine Management', 'Diabetes Check', 'Prenatal Care', 'Thyroid Follow-up', 'Allergy Testing', 'Cardiac Screening', 'Skin Check', 'Asthma Follow-up', 'Joint Pain', 'Sleep Study Follow-up', 'Anxiety Management'];
-const PROVIDERS = ['Dr. Emily Chen', 'Dr. James Wilson', 'Dr. Maria Garcia', 'Dr. David Kim', 'Dr. Sarah Johnson', 'Dr. Robert Lee', 'Dr. Amy Foster', 'Dr. Chris Taylor'];
+const TEMPLATES = [
+  'Knee Sprain',
+  'ACL Tear',
+  'Annual Physical',
+  'Follow-up',
+  'Consultation',
+  'Lab Review',
+  'Hypertension Follow-up',
+  'Wellness Exam',
+  'Sports Physical',
+  'Migraine Management',
+  'Diabetes Check',
+  'Prenatal Care',
+  'Thyroid Follow-up',
+  'Allergy Testing',
+  'Cardiac Screening',
+  'Skin Check',
+  'Asthma Follow-up',
+  'Joint Pain',
+  'Sleep Study Follow-up',
+  'Anxiety Management',
+];
+const PROVIDERS = MOCK_PROVIDERS.map((p) => p.fullName);
 const SINGLE_FACILITY = 'Portland Medical Center';
 const SINGLE_INSURANCE = 'Aetna';
 
@@ -149,7 +172,7 @@ function buildAppointmentsForPatient(patientId: string, patientIndex: number): A
 /** All appointments keyed by patient id. */
 export const MOCK_APPOINTMENTS_BY_PATIENT: Record<string, Appointment[]> = (() => {
   const map: Record<string, Appointment[]> = {};
-  for (let i = 1; i <= 20; i++) {
+  for (let i = 1; i <= 50; i++) {
     const id = String(i);
     map[id] = buildAppointmentsForPatient(id, i - 1);
   }

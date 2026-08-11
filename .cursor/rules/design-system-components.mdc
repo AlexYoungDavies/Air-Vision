@@ -19,6 +19,7 @@ Unless the user specifies otherwise, build UI with the shared primitives catalog
 | Dropdown | `AppSelectField` — same field rules as text |
 | Search field | `AppSearchField` — same field rules + search icon |
 | Switch | `AppSwitch` — inset knob; sizes `small` (28px) and `medium` (36px) |
+| Appointment block | `AppointmentBlock` — calendar visit card; statuses scheduled / confirmed / checkedIn / completed / canceled / noShow |
 
 Import from `src/components/ui` when available.
 

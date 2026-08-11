@@ -980,7 +980,8 @@ export function SideNav({ collapsed, onToggle: _onToggle }: SideNavProps) {
           gap: '12px',
           minHeight: 0,
           px: 1,
-          py: 3,
+          pt: 3,
+          pb: 1,
         }}
       >
         <Box
